@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
@@ -39,7 +40,7 @@ Route::get('/', function () {
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'ensure.2fa'])->name('dashboard');
 
 Route::get('blog', function () {
     $posts = App\Models\BlogPost::with('author')
@@ -75,11 +76,21 @@ Route::get('blog', function () {
 })->name('blog');
 
 // Blog Post Management Routes (Admin)
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'ensure.2fa'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('blog-posts', App\Http\Controllers\BlogPostController::class);
 });
 
 // Public blog post route (individual post viewing by slug)
 Route::get('blog/{slug}', [App\Http\Controllers\BlogPostController::class, 'showBySlug'])->name('blog.show');
+
+// Two-factor authentication setup routes (for new users during registration)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/register/setup-two-factor', function () {
+        $registerController = new App\Http\Controllers\Auth\RegisterController();
+        return $registerController->setupTwoFactorAuthentication(Auth::user());
+    })->name('register.setup-two-factor');
+    
+    Route::post('/two-factor-challenge/confirm', [App\Http\Controllers\Auth\RegisterController::class, 'confirmTwoFactorAuthentication']);
+});
 
 require __DIR__.'/settings.php';
