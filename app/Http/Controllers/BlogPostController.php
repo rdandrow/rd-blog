@@ -73,7 +73,7 @@ class BlogPostController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified resource (Admin).
      */
     public function show(BlogPost $blogPost)
     {
@@ -81,6 +81,21 @@ class BlogPostController extends Controller
 
         return Inertia::render('Admin/BlogPosts/Show', [
             'post' => $blogPost
+        ]);
+    }
+
+    /**
+     * Display a blog post by slug (Public).
+     */
+    public function showBySlug(string $slug)
+    {
+        $post = BlogPost::with('author')
+            ->where('slug', $slug)
+            ->where('is_published', true)
+            ->firstOrFail();
+            
+        return Inertia::render('BlogPost', [
+            'post' => $post
         ]);
     }
 

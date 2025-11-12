@@ -79,7 +79,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::resource('blog-posts', App\Http\Controllers\BlogPostController::class);
 });
 
-// Public blog post route (if needed for individual post viewing)
-Route::get('blog/{slug}', [App\Http\Controllers\BlogPostController::class, 'show'])->name('blog.show');
+// Public blog post route (individual post viewing by slug)
+Route::get('blog/{slug}', [App\Http\Controllers\BlogPostController::class, 'showBySlug'])->name('blog.show');
 
 require __DIR__.'/settings.php';
