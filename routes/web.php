@@ -5,8 +5,35 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::get('/', function () {
+    $posts = App\Models\BlogPost::with('author')
+        ->published()
+        ->orderBy('published_at', 'desc')
+        ->take(6) // Show latest 6 posts on landing page
+        ->get()
+        ->map(function ($post) {
+            return [
+                'id' => $post->id,
+                'title' => $post->title,
+                'excerpt' => $post->excerpt,
+                'slug' => $post->slug,
+                'featured_image' => $post->featured_image,
+                'author' => [
+                    'name' => $post->author->name,
+                ],
+                'published_at' => $post->published_at->toISOString(),
+                'reading_time' => $post->reading_time,
+                'tags' => $post->tags,
+                'is_featured' => $post->is_featured
+            ];
+        });
+
+    $featured_posts = $posts->where('is_featured', true)->take(2);
+    $recent_posts = $posts->take(4);
+
     return Inertia::render('Welcome', [
         'canRegister' => Features::enabled(Features::registration()),
+        'posts' => $recent_posts,
+        'featured_posts' => $featured_posts,
     ]);
 })->name('home');
 
