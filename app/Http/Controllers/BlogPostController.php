@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class BlogPostController extends Controller
@@ -43,12 +45,25 @@ class BlogPostController extends Controller
             'excerpt' => 'required|string|max:500',
             'content' => 'required|string',
             'featured_image' => 'nullable|string',
+            'featured_image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_featured' => 'boolean',
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
         ]);
+
+        // Handle file upload - file takes priority over URL
+        if ($request->hasFile('featured_image_file')) {
+            $file = $request->file('featured_image_file');
+            $extension = $file->getClientOriginalExtension();
+            $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $extension;
+            $path = $file->storeAs('blog-images', $filename, 'public');
+            $validated['featured_image'] = '/storage/' . $path;
+        } elseif (empty($validated['featured_image'])) {
+            // If no file and no URL, set to null
+            $validated['featured_image'] = null;
+        }
 
         // Generate unique slug
         $slug = Str::slug($validated['title']);
@@ -123,12 +138,31 @@ class BlogPostController extends Controller
             'excerpt' => 'required|string|max:500',
             'content' => 'required|string',
             'featured_image' => 'nullable|string',
+            'featured_image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'is_featured' => 'boolean',
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
         ]);
+
+        // Handle file upload - file takes priority over URL
+        if ($request->hasFile('featured_image_file')) {
+            // Delete old image if it exists and is stored locally
+            if ($blogPost->featured_image && str_starts_with($blogPost->featured_image, '/storage/')) {
+                $oldImagePath = str_replace('/storage/', '', $blogPost->featured_image);
+                \Storage::disk('public')->delete($oldImagePath);
+            }
+            
+            $file = $request->file('featured_image_file');
+            $extension = $file->getClientOriginalExtension();
+            $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $extension;
+            $path = $file->storeAs('blog-images', $filename, 'public');
+            $validated['featured_image'] = '/storage/' . $path;
+        } elseif (empty($validated['featured_image'])) {
+            // If no file and no URL, set to null
+            $validated['featured_image'] = null;
+        }
 
         // Handle slug update if title changed
         if ($validated['title'] !== $blogPost->title) {

@@ -42,11 +42,15 @@ const form = useForm({
   excerpt: props.post.excerpt,
   content: props.post.content,
   featured_image: props.post.featured_image || '',
+  featured_image_file: null as File | null,
   tags: [...props.post.tags],
   is_featured: props.post.is_featured,
   is_published: props.post.is_published,
   published_at: props.post.published_at ? new Date(props.post.published_at).toISOString().slice(0, 16) : null,
 });
+
+const imageInputType = ref<'url' | 'file'>(props.post.featured_image ? 'url' : 'url');
+const imagePreview = ref<string | null>(null);
 
 const tagInput = ref('');
 
@@ -69,8 +73,41 @@ const handleTagKeydown = (event: KeyboardEvent) => {
   }
 };
 
+const handleImageTypeChange = (type: 'url' | 'file') => {
+  imageInputType.value = type;
+  if (type === 'url') {
+    form.featured_image_file = null;
+    imagePreview.value = null;
+  } else {
+    form.featured_image = null;
+  }
+};
+
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  
+  if (file) {
+    form.featured_image_file = file;
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreview.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const removeImage = () => {
+  form.featured_image = null;
+  form.featured_image_file = null;
+  imagePreview.value = null;
+};
+
 const submit = () => {
   form.put(`/admin/blog-posts/${props.post.id}`, {
+    forceFormData: true,
     onSuccess: () => {
       // Success is handled by the controller redirect
     },
@@ -152,19 +189,93 @@ const submit = () => {
 
           <!-- Featured Image -->
           <div>
-            <label for="featured_image" class="block text-sm font-medium text-foreground mb-2">
-              Featured Image URL
+            <label class="block text-sm font-medium text-foreground mb-3">
+              Featured Image
             </label>
-            <input
-              id="featured_image"
-              v-model="form.featured_image"
-              type="url"
-              class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-              placeholder="https://example.com/image.jpg"
-            />
-            <p class="mt-1 text-sm text-muted-foreground">
-              Optional image URL to display with your post.
-            </p>
+            
+            <!-- Current Image Display -->
+            <div v-if="props.post.featured_image && !imagePreview && imageInputType === 'url'" class="mb-4">
+              <div class="flex items-start gap-3">
+                <img
+                  :src="props.post.featured_image"
+                  alt="Current featured image"
+                  class="w-32 h-24 object-cover rounded border"
+                />
+                <div class="text-sm text-muted-foreground">
+                  Current image
+                </div>
+              </div>
+            </div>
+            
+            <!-- Image Type Toggle -->
+            <div class="flex gap-4 mb-4">
+              <label class="flex items-center">
+                <input
+                  type="radio"
+                  :checked="imageInputType === 'url'"
+                  @change="handleImageTypeChange('url')"
+                  class="mr-2"
+                />
+                Image URL
+              </label>
+              <label class="flex items-center">
+                <input
+                  type="radio"
+                  :checked="imageInputType === 'file'"
+                  @change="handleImageTypeChange('file')"
+                  class="mr-2"
+                />
+                Upload New File
+              </label>
+            </div>
+
+            <!-- URL Input -->
+            <div v-if="imageInputType === 'url'">
+              <input
+                id="featured_image_url"
+                v-model="form.featured_image"
+                type="url"
+                class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                placeholder="https://example.com/image.jpg"
+              />
+              <p class="mt-1 text-sm text-muted-foreground">
+                Enter a URL to an image hosted elsewhere.
+              </p>
+            </div>
+
+            <!-- File Upload -->
+            <div v-if="imageInputType === 'file'">
+              <input
+                id="featured_image_file"
+                type="file"
+                accept="image/*"
+                @change="handleFileUpload"
+                class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-muted file:text-muted-foreground hover:file:bg-muted/80"
+              />
+              <p class="mt-1 text-sm text-muted-foreground">
+                Upload an image from your computer (JPG, PNG, GIF, WebP).
+              </p>
+            </div>
+
+            <!-- Image Preview -->
+            <div v-if="imagePreview || (imageInputType === 'url' && form.featured_image && form.featured_image !== props.post.featured_image)" class="mt-4">
+              <div class="flex items-start gap-3">
+                <img
+                  :src="imagePreview || form.featured_image"
+                  alt="Image preview"
+                  class="w-32 h-24 object-cover rounded border"
+                  @error="imagePreview = null"
+                />
+                <button
+                  type="button"
+                  @click="removeImage"
+                  class="text-sm text-destructive hover:text-destructive/80"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+
             <div v-if="form.errors.featured_image" class="mt-1 text-sm text-destructive">
               {{ form.errors.featured_image }}
             </div>
