@@ -131,20 +131,64 @@ class BlogPostController extends Controller
      */
     public function update(Request $request, BlogPost $blogPost)
     {
+        // Debug logging - only in development
+        if (config('app.debug')) {
+            \Log::info('BlogPost update started', [
+                'post_id' => $blogPost->id,
+                'request_data' => $request->all(),
+                'user_id' => auth()->id(),
+                'content_type' => $request->header('Content-Type'),
+                'has_file' => $request->hasFile('featured_image_file'),
+                'specific_fields' => [
+                    'title' => $request->input('title'),
+                    'title_type' => gettype($request->input('title')),
+                    'title_length' => strlen($request->input('title', '')),
+                    'excerpt' => $request->input('excerpt'),
+                    'excerpt_type' => gettype($request->input('excerpt')),
+                    'excerpt_length' => strlen($request->input('excerpt', '')),
+                    'content' => $request->input('content'),
+                    'content_type' => gettype($request->input('content')),
+                    'content_length' => strlen($request->input('content', '')),
+                ]
+            ]);
+        }
+
         $this->authorize('update', $blogPost);
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'excerpt' => 'required|string|max:500',
-            'content' => 'required|string',
-            'featured_image' => 'nullable|string',
-            'featured_image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:50',
-            'is_featured' => 'boolean',
-            'is_published' => 'boolean',
-            'published_at' => 'nullable|date',
-        ]);
+        if (config('app.debug')) {
+            \Log::info('Authorization passed for BlogPost update', [
+                'post_id' => $blogPost->id
+            ]);
+        }
+
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'excerpt' => 'required|string|max:500',
+                'content' => 'required|string',
+                'featured_image' => 'nullable|string',
+                'featured_image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'tags' => 'nullable|array',
+                'tags.*' => 'string|max:50',
+                'is_featured' => 'boolean',
+                'is_published' => 'boolean',
+                'published_at' => 'nullable|date',
+            ]);
+
+            if (config('app.debug')) {
+                \Log::info('Validation passed for BlogPost update', [
+                    'post_id' => $blogPost->id,
+                    'validated_data' => $validated
+                ]);
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed for BlogPost update', [
+                'post_id' => $blogPost->id,
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            throw $e;
+        }
 
         // Handle file upload - file takes priority over URL
         if ($request->hasFile('featured_image_file')) {

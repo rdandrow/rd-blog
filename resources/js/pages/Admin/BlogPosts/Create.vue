@@ -3,6 +3,53 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 
+// Debug flag - set to false for production
+const DEBUG_VALIDATION = import.meta.env.DEV || false;
+
+// Utility functions for validation
+const validateImageFile = (file: File): void => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+  const maxSize = 2 * 1024 * 1024; // 2MB
+  
+  if (!allowedTypes.includes(file.type)) {
+    throw new Error('Invalid file type. Please select a JPEG, PNG, JPG, GIF, or WebP image.');
+  }
+  
+  if (file.size > maxSize) {
+    throw new Error('File size too large. Please select an image smaller than 2MB.');
+  }
+};
+
+const validateRequiredFields = (form: any): void => {
+  if (DEBUG_VALIDATION) {
+    console.log('Validating form data:', { 
+      title: form.title, 
+      excerpt: form.excerpt, 
+      content: form.content,
+      formKeys: Object.keys(form || {})
+    });
+  }
+  
+  // Get the actual values, handling both direct properties and nested data
+  const titleValue = form.title || form.data?.title || '';
+  const excerptValue = form.excerpt || form.data?.excerpt || '';
+  const contentValue = form.content || form.data?.content || '';
+  
+  if (DEBUG_VALIDATION) {
+    console.log('Extracted values:', { titleValue, excerptValue, contentValue });
+  }
+  
+  if (!titleValue || !String(titleValue).trim()) {
+    throw new Error('Title is required');
+  }
+  if (!excerptValue || !String(excerptValue).trim()) {
+    throw new Error('Excerpt is required');
+  }
+  if (!contentValue || !String(contentValue).trim()) {
+    throw new Error('Content is required');
+  }
+};
+
 const breadcrumbs = [
   { title: 'Dashboard', href: '/dashboard' },
   { title: 'Blog Posts', href: '/admin/blog-posts' },
@@ -26,15 +73,56 @@ const imageInputType = ref<'url' | 'file'>('url');
 const imagePreview = ref<string | null>(null);
 
 const addTag = () => {
-  const tag = tagInput.value.trim();
-  if (tag && !form.tags.includes(tag)) {
+  try {
+    const tag = tagInput.value.trim();
+    
+    if (!tag) {
+      throw new Error('Tag cannot be empty');
+    }
+    
+    if (tag.length > 50) {
+      throw new Error('Tag must be 50 characters or less');
+    }
+    
+    if (form.tags.includes(tag)) {
+      throw new Error('Tag already exists');
+    }
+    
+    if (form.tags.length >= 10) {
+      throw new Error('Maximum of 10 tags allowed');
+    }
+    
     form.tags.push(tag);
     tagInput.value = '';
+    
+  } catch (error) {
+    console.error('Tag addition error:', error);
+    
+    if (error instanceof Error) {
+      alert(error.message);
+    } else {
+      alert('An error occurred while adding the tag.');
+    }
   }
 };
 
 const removeTag = (index: number) => {
-  form.tags.splice(index, 1);
+  try {
+    if (index < 0 || index >= form.tags.length) {
+      throw new Error('Invalid tag index');
+    }
+    
+    form.tags.splice(index, 1);
+    
+  } catch (error) {
+    console.error('Tag removal error:', error);
+    
+    if (error instanceof Error) {
+      alert(error.message);
+    } else {
+      alert('An error occurred while removing the tag.');
+    }
+  }
 };
 
 const handleTagKeydown = (event: KeyboardEvent) => {
@@ -45,28 +133,81 @@ const handleTagKeydown = (event: KeyboardEvent) => {
 };
 
 const handleImageTypeChange = (type: 'url' | 'file') => {
-  imageInputType.value = type;
-  if (type === 'url') {
-    form.featured_image_file = null;
-    imagePreview.value = null;
-  } else {
-    form.featured_image = null;
+  try {
+    if (type !== 'url' && type !== 'file') {
+      throw new Error('Invalid image type selection');
+    }
+    
+    imageInputType.value = type;
+    
+    if (type === 'url') {
+      form.featured_image_file = null;
+      imagePreview.value = null;
+    } else {
+      form.featured_image = null;
+    }
+    
+  } catch (error) {
+    console.error('Image type change error:', error);
+    
+    if (error instanceof Error) {
+      alert(error.message);
+    } else {
+      alert('An error occurred while changing image input type.');
+    }
   }
 };
 
 const handleFileUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
-  
-  if (file) {
+  try {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    
+    if (!file) {
+      return;
+    }
+
+    // Validate file
+    validateImageFile(file);
+
     form.featured_image_file = file;
     
-    // Create preview
+    // Create preview with error handling
     const reader = new FileReader();
+    
     reader.onload = (e) => {
-      imagePreview.value = e.target?.result as string;
+      try {
+        imagePreview.value = e.target?.result as string;
+      } catch (error) {
+        console.error('Error creating image preview:', error);
+        alert('Error creating image preview. The file will still be uploaded.');
+      }
     };
+    
+    reader.onerror = () => {
+      console.error('FileReader error occurred');
+      alert('Error reading the selected file. Please try again.');
+      // Reset the file input
+      target.value = '';
+      form.featured_image_file = null;
+    };
+    
     reader.readAsDataURL(file);
+    
+  } catch (error) {
+    console.error('File upload error:', error);
+    
+    // Reset the file input on error
+    const target = event.target as HTMLInputElement;
+    target.value = '';
+    form.featured_image_file = null;
+    imagePreview.value = null;
+    
+    if (error instanceof Error) {
+      alert(error.message);
+    } else {
+      alert('An error occurred while uploading the file. Please try again.');
+    }
   }
 };
 
@@ -76,13 +217,97 @@ const removeImage = () => {
   imagePreview.value = null;
 };
 
-const submit = () => {
-  form.post('/admin/blog-posts', {
-    forceFormData: true,
-    onSuccess: () => {
-      // Success is handled by the controller redirect
-    },
-  });
+const submit = async () => {
+  try {
+    if (DEBUG_VALIDATION) {
+      console.log('Starting form submission...');
+      console.log('Form data:', {
+        title: form.title,
+        excerpt: form.excerpt,
+        content: form.content
+      });
+
+      console.log('Form values before submission:', {
+        title: form.title,
+        excerpt: form.excerpt, 
+        content: form.content,
+        titleLength: String(form.title || '').trim().length,
+        excerptLength: String(form.excerpt || '').trim().length,
+        contentLength: String(form.content || '').trim().length
+      });
+    }
+    
+    // Client-side validation as a safety net (server-side validation is authoritative)
+    try {
+      validateRequiredFields(form);
+      if (DEBUG_VALIDATION) console.log('Client-side validation passed');
+    } catch (validationError) {
+      console.error('Client-side validation failed:', validationError);
+      
+      // Check if this is a false positive by examining the actual form state
+      const hasTitle = form.title && String(form.title).trim().length > 0;
+      const hasExcerpt = form.excerpt && String(form.excerpt).trim().length > 0;
+      const hasContent = form.content && String(form.content).trim().length > 0;
+      
+      if (DEBUG_VALIDATION) {
+        console.log('Form state check:', { hasTitle, hasExcerpt, hasContent });
+      }
+      
+      // If we actually have all required fields, log this as a validation bug but continue
+      if (hasTitle && hasExcerpt && hasContent) {
+        console.warn('Client-side validation failed but fields appear to be valid. Continuing with server validation.');
+      } else {
+        // Re-throw the error if fields are actually missing
+        throw validationError;
+      }
+    }
+
+    // Validate image file if uploaded
+    if (imageInputType.value === 'file' && form.featured_image_file) {
+      if (DEBUG_VALIDATION) console.log('Validating image file...');
+      validateImageFile(form.featured_image_file);
+    }
+
+    // Clear any previous errors
+    form.clearErrors();
+
+    // Handle form submission based on whether we have a file upload
+    const submitOptions = {
+      onSuccess: () => {
+        if (DEBUG_VALIDATION) console.log('Blog post created successfully');
+      },
+      onError: (errors) => {
+        console.error('Validation errors:', errors);
+        // Inertia will automatically handle field-specific errors
+      },
+      onFinish: () => {
+        // This runs regardless of success or failure
+        if (DEBUG_VALIDATION) console.log('Form submission finished');
+      }
+    };
+
+    // Only use FormData if we actually have a file to upload
+    if (imageInputType.value === 'file' && form.featured_image_file) {
+      submitOptions.forceFormData = true;
+      if (DEBUG_VALIDATION) console.log('Using FormData because file is present');
+    } else {
+      if (DEBUG_VALIDATION) console.log('Using regular JSON submission (no file upload)');
+    }
+
+    await form.post('/admin/blog-posts', submitOptions);
+
+  } catch (error) {
+    console.error('Form submission error:', error);
+    
+    // Handle client-side validation errors
+    if (error instanceof Error) {
+      // Show user-friendly error message
+      alert(error.message);
+    } else {
+      // Handle unexpected errors
+      alert('An unexpected error occurred. Please try again.');
+    }
+  }
 };
 </script>
 

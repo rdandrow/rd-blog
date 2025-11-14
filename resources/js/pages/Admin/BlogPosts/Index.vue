@@ -203,19 +203,27 @@ const deletePost = (post: BlogPost) => {
 
       <!-- Pagination -->
       <div v-if="props.posts?.links && props.posts.links.length > 3" class="flex items-center justify-center space-x-2">
-        <Link
-          v-for="link in props.posts.links"
-          :key="link.label || 'unknown'"
-          :href="link.url"
-          :class="[
-            'px-3 py-2 text-sm rounded-md transition-colors',
-            link.active 
-              ? 'bg-primary text-primary-foreground' 
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-            !link.url && 'opacity-50 cursor-not-allowed'
-          ]"
-          v-html="link.label || ''"
-        />
+        <template v-for="link in props.posts.links" :key="link.label || 'unknown'">
+          <Link
+            v-if="link.url"
+            :href="link.url"
+            :class="[
+              'px-3 py-2 text-sm rounded-md transition-colors',
+              link.active 
+                ? 'bg-primary text-primary-foreground' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            ]"
+            v-html="link.label || ''"
+          />
+          <span
+            v-else
+            :class="[
+              'px-3 py-2 text-sm rounded-md transition-colors',
+              'text-muted-foreground opacity-50 cursor-not-allowed'
+            ]"
+            v-html="link.label || ''"
+          />
+        </template>
       </div>
     </div>
   </AppLayout>
