@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { AppPageProps } from '@/types';
 
@@ -233,6 +232,7 @@ const deletePost = (post: BlogPost) => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

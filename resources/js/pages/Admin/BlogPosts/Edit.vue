@@ -2,79 +2,33 @@
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-
-// Utility functions for validation
-const validateImageFile = (file: File): void => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
-  const maxSize = 2 * 1024 * 1024; // 2MB
-  
-  if (!allowedTypes.includes(file.type)) {
-    throw new Error('Invalid file type. Please select a JPEG, PNG, JPG, GIF, or WebP image.');
-  }
-  
-  if (file.size > maxSize) {
-    throw new Error('File size too large. Please select an image smaller than 2MB.');
-  }
-};
+import ErrorDisplay from '@/components/ErrorDisplay.vue';
+import { useImageValidation, useFormValidation, useTagManagement } from '@/composables/useBlogPostForm';
 
 // Debug flag - set to false for production
 const DEBUG_VALIDATION = import.meta.env.DEV || false;
 
-const validateRequiredFields = (formData: any, postId?: number): void => {
-  if (DEBUG_VALIDATION) {
-    console.log('Validating form data:', { 
-      formData,
-      formType: typeof formData,
-      formKeys: Object.keys(formData || {}),
-      postId
-    });
-  }
-  
-  // For Inertia forms, the data is directly accessible as properties
-  const titleValue = formData.title;
-  const excerptValue = formData.excerpt;
-  const contentValue = formData.content;
-  
-  if (DEBUG_VALIDATION) {
-    console.log('Raw values:', { 
-      titleValue, 
-      excerptValue, 
-      contentValue,
-      titleType: typeof titleValue,
-      excerptType: typeof excerptValue,
-      contentType: typeof contentValue
-    });
-  }
-  
-  // Convert to strings and check if they have meaningful content
-  const titleStr = String(titleValue || '').trim();
-  const excerptStr = String(excerptValue || '').trim();
-  const contentStr = String(contentValue || '').trim();
-  
-  if (DEBUG_VALIDATION) {
-    console.log('Processed values:', { 
-      titleStr: `"${titleStr}"`, 
-      excerptStr: `"${excerptStr}"`, 
-      contentStr: `"${contentStr}"`,
-      titleLength: titleStr.length,
-      excerptLength: excerptStr.length,
-      contentLength: contentStr.length
-    });
-  }
-  
-  if (!titleStr) {
-    throw new Error('Title is required');
-  }
-  if (!excerptStr) {
-    throw new Error('Excerpt is required');
-  }
-  if (!contentStr) {
-    throw new Error('Content is required');
-  }
-  if (postId !== undefined && (!postId || postId <= 0)) {
-    throw new Error('Invalid post ID');
-  }
-};
+// Composables
+const { 
+  generalError,
+  clearGeneralError,
+  setGeneralError,
+  validateRequiredFields 
+} = useFormValidation();
+const { 
+  imageError, 
+  imagePreview, 
+  validateImageFile, 
+  handleFileUpload: handleImageUpload, 
+  clearImageError, 
+  resetImage 
+} = useImageValidation();
+const { 
+  tagError, 
+  addTag: addTagToList, 
+  removeTag: removeTagFromList, 
+  clearTagError 
+} = useTagManagement();
 
 interface BlogPost {
   id: number;
@@ -162,65 +116,24 @@ const getInitialImageInputType = (): 'url' | 'file' => {
   }
 };
 
+// Form state
 const imageInputType = ref<'url' | 'file'>(getInitialImageInputType());
-const imagePreview = ref<string | null>(null);
-
 const tagInput = ref('');
 
 const addTag = () => {
-  try {
-    const tag = tagInput.value.trim();
-    
-    if (!tag) {
-      throw new Error('Tag cannot be empty');
-    }
-    
-    if (tag.length > 50) {
-      throw new Error('Tag must be 50 characters or less');
-    }
-    
-    if (form.tags.includes(tag)) {
-      throw new Error('Tag already exists');
-    }
-    
-    if (form.tags.length >= 10) {
-      throw new Error('Maximum of 10 tags allowed');
-    }
-    
-    form.tags.push(tag);
-    tagInput.value = '';
-    
-  } catch (error) {
-    console.error('Tag addition error:', error);
-    
-    if (error instanceof Error) {
-      alert(error.message);
-    } else {
-      alert('An error occurred while adding the tag.');
-    }
-  }
+  tagInput.value = addTagToList(tagInput.value, form.tags);
 };
 
 const removeTag = (index: number) => {
-  try {
-    if (index < 0 || index >= form.tags.length) {
-      throw new Error('Invalid tag index');
-    }
-    
-    form.tags.splice(index, 1);
-    
-  } catch (error) {
-    console.error('Tag removal error:', error);
-    
-    if (error instanceof Error) {
-      alert(error.message);
-    } else {
-      alert('An error occurred while removing the tag.');
-    }
-  }
+  removeTagFromList(index, form.tags);
 };
 
 const handleTagKeydown = (event: KeyboardEvent) => {
+  // Clear error when user starts typing
+  if (event.key !== 'Enter') {
+    clearTagError();
+  }
+  
   if (event.key === 'Enter') {
     event.preventDefault();
     addTag();
@@ -228,88 +141,26 @@ const handleTagKeydown = (event: KeyboardEvent) => {
 };
 
 const handleImageTypeChange = (type: 'url' | 'file') => {
-  try {
-    if (type !== 'url' && type !== 'file') {
-      throw new Error('Invalid image type selection');
-    }
-    
-    imageInputType.value = type;
-    
-    if (type === 'url') {
-      form.featured_image_file = null;
-      imagePreview.value = null;
-    } else {
-      form.featured_image = null;
-    }
-    
-  } catch (error) {
-    console.error('Image type change error:', error);
-    
-    if (error instanceof Error) {
-      alert(error.message);
-    } else {
-      alert('An error occurred while changing image input type.');
-    }
+  clearImageError();
+  imageInputType.value = type;
+  
+  if (type === 'url') {
+    resetImage();
+  } else {
+    form.featured_image = null;
   }
 };
 
 const handleFileUpload = (event: Event) => {
-  try {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    
-    if (!file) {
-      return;
-    }
-
-    // Validate file
-    validateImageFile(file);
-
+  handleImageUpload(event, (file, preview) => {
     form.featured_image_file = file;
-    
-    // Create preview with error handling
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        imagePreview.value = e.target?.result as string;
-      } catch (error) {
-        console.error('Error creating image preview:', error);
-        alert('Error creating image preview. The file will still be uploaded.');
-      }
-    };
-    
-    reader.onerror = () => {
-      console.error('FileReader error occurred');
-      alert('Error reading the selected file. Please try again.');
-      // Reset the file input
-      target.value = '';
-      form.featured_image_file = null;
-    };
-    
-    reader.readAsDataURL(file);
-    
-  } catch (error) {
-    console.error('File upload error:', error);
-    
-    // Reset the file input on error
-    const target = event.target as HTMLInputElement;
-    target.value = '';
-    form.featured_image_file = null;
-    imagePreview.value = null;
-    
-    if (error instanceof Error) {
-      alert(error.message);
-    } else {
-      alert('An error occurred while uploading the file. Please try again.');
-    }
-  }
+  });
 };
 
 const removeImage = () => {
   form.featured_image = null;
   form.featured_image_file = null;
-  imagePreview.value = null;
+  resetImage();
 };
 
 const removeCurrentImage = () => {
@@ -331,6 +182,11 @@ const handleUrlInput = (event: Event) => {
 
 const submit = async () => {
   try {
+    // Clear all previous errors
+    clearGeneralError();
+    clearImageError();
+    clearTagError();
+    
     if (DEBUG_VALIDATION) {
       console.log('Starting form submission...');
       console.log('Form data:', {
@@ -352,7 +208,7 @@ const submit = async () => {
     
     // Client-side validation as a safety net (server-side validation is authoritative)
     try {
-      validateRequiredFields(form, props.post?.id);
+      validateRequiredFields(form);
       if (DEBUG_VALIDATION) console.log('Client-side validation passed');
     } catch (validationError) {
       console.error('Client-side validation failed:', validationError);
@@ -424,10 +280,10 @@ const submit = async () => {
 
     // Try without forceFormData first, only use it if we have a file upload
     const submitOptions = {
-      onSuccess: (response) => {
+      onSuccess: (response: any) => {
         console.log('Blog post updated successfully', response);
       },
-      onError: (errors) => {
+      onError: (errors: any) => {
         console.error('Server validation errors:', errors);
         console.log('Form errors object:', form.errors);
         console.log('Raw error response:', JSON.stringify(errors, null, 2));
@@ -437,7 +293,7 @@ const submit = async () => {
         // This runs regardless of success or failure
         console.log('Form submission finished');
       }
-    };
+    } as any;
 
     // Handle file uploads differently to ensure all fields are properly sent
     if (form.featured_image_file) {
@@ -492,10 +348,10 @@ const submit = async () => {
     // Handle client-side validation errors
     if (error instanceof Error) {
       // Show user-friendly error message
-      alert(error.message);
+      setGeneralError(error.message);
     } else {
       // Handle unexpected errors
-      alert('An unexpected error occurred. Please try again.');
+      setGeneralError('An unexpected error occurred. Please try again.');
     }
   }
 };
@@ -510,6 +366,16 @@ const submit = async () => {
         <h1 class="text-2xl font-bold text-foreground">Edit Blog Post</h1>
         <p class="text-muted-foreground">Update your blog post content and settings</p>
       </div>
+
+      <!-- General Error Display -->
+      <ErrorDisplay 
+        v-if="generalError" 
+        :error="generalError"
+        type="error" 
+        class="mb-6" 
+        dismissible
+        @dismiss="clearGeneralError"
+      />
 
       <form @submit.prevent="submit" class="space-y-6">
         <div class="bg-card border border-border rounded-lg p-6 space-y-6">
@@ -526,9 +392,12 @@ const submit = async () => {
               class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               placeholder="Enter post title..."
             />
-            <div v-if="form.errors.title" class="mt-1 text-sm text-destructive">
-              {{ form.errors.title }}
-            </div>
+            <ErrorDisplay 
+              v-if="form.errors.title" 
+              :error="form.errors.title" 
+              type="error" 
+              class="mt-1" 
+            />
           </div>
 
           <!-- Excerpt -->
@@ -547,9 +416,12 @@ const submit = async () => {
             <p class="mt-1 text-sm text-muted-foreground">
               A short summary that appears in post listings and social media previews.
             </p>
-            <div v-if="form.errors.excerpt" class="mt-1 text-sm text-destructive">
-              {{ form.errors.excerpt }}
-            </div>
+            <ErrorDisplay 
+              v-if="form.errors.excerpt" 
+              :error="form.errors.excerpt" 
+              type="error" 
+              class="mt-1" 
+            />
           </div>
 
           <!-- Content -->
@@ -568,9 +440,12 @@ const submit = async () => {
             <p class="mt-1 text-sm text-muted-foreground">
               You can use Markdown formatting for rich text content.
             </p>
-            <div v-if="form.errors.content" class="mt-1 text-sm text-destructive">
-              {{ form.errors.content }}
-            </div>
+            <ErrorDisplay 
+              v-if="form.errors.content" 
+              :error="form.errors.content" 
+              type="error" 
+              class="mt-1" 
+            />
           </div>
 
           <!-- Featured Image -->
@@ -664,7 +539,7 @@ const submit = async () => {
               <p class="text-sm font-medium text-muted-foreground mb-2">New Image Preview:</p>
               <div class="flex items-start gap-3">
                 <img
-                  :src="imagePreview || form.featured_image"
+                  :src="imagePreview || form.featured_image || ''"
                   alt="New image preview"
                   class="w-32 h-24 object-cover rounded border"
                   @error="imagePreview = null"
@@ -679,9 +554,20 @@ const submit = async () => {
               </div>
             </div>
 
-            <div v-if="form.errors.featured_image" class="mt-1 text-sm text-destructive">
-              {{ form.errors.featured_image }}
-            </div>
+            <!-- Client-side image error -->
+            <ErrorDisplay 
+              v-if="imageError" 
+              :error="imageError" 
+              type="error" 
+              class="mt-1" 
+            />
+            <!-- Server-side image error -->
+            <ErrorDisplay 
+              v-if="form.errors.featured_image" 
+              :error="form.errors.featured_image" 
+              type="error" 
+              class="mt-1" 
+            />
           </div>
 
           <!-- Tags -->
@@ -729,9 +615,20 @@ const submit = async () => {
                 </span>
               </div>
             </div>
-            <div v-if="form.errors.tags" class="mt-1 text-sm text-destructive">
-              {{ form.errors.tags }}
-            </div>
+            <!-- Client-side tag validation error -->
+            <ErrorDisplay 
+              v-if="tagError" 
+              :error="tagError" 
+              type="error" 
+              class="mt-1" 
+            />
+            <!-- Server-side tag validation error -->
+            <ErrorDisplay 
+              v-if="form.errors.tags" 
+              :error="form.errors.tags" 
+              type="error" 
+              class="mt-1" 
+            />
           </div>
         </div>
 
