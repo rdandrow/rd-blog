@@ -168,6 +168,7 @@ class BlogPostController extends Controller
                 'content' => 'required|string',
                 'featured_image' => 'nullable|string',
                 'featured_image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'remove_current_image' => 'boolean',
                 'tags' => 'nullable|array',
                 'tags.*' => 'string|max:50',
                 'is_featured' => 'boolean',
@@ -190,9 +191,9 @@ class BlogPostController extends Controller
             throw $e;
         }
 
-        // Handle file upload - file takes priority over URL
+        // Handle image updates based on user actions
         if ($request->hasFile('featured_image_file')) {
-            // Delete old image if it exists and is stored locally
+            // New file uploaded - delete old image if it exists and is stored locally
             if ($blogPost->featured_image && str_starts_with($blogPost->featured_image, '/storage/')) {
                 $oldImagePath = str_replace('/storage/', '', $blogPost->featured_image);
                 \Storage::disk('public')->delete($oldImagePath);
@@ -203,10 +204,27 @@ class BlogPostController extends Controller
             $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $extension;
             $path = $file->storeAs('blog-images', $filename, 'public');
             $validated['featured_image'] = '/storage/' . $path;
-        } elseif (empty($validated['featured_image'])) {
-            // If no file and no URL, set to null
+        } elseif ($validated['remove_current_image'] ?? false) {
+            // User explicitly requested to remove current image
+            if ($blogPost->featured_image && str_starts_with($blogPost->featured_image, '/storage/')) {
+                $oldImagePath = str_replace('/storage/', '', $blogPost->featured_image);
+                \Storage::disk('public')->delete($oldImagePath);
+            }
             $validated['featured_image'] = null;
+        } elseif (!empty($validated['featured_image']) && $validated['featured_image'] !== $blogPost->featured_image) {
+            // User provided a new URL - remove old local file if exists
+            if ($blogPost->featured_image && str_starts_with($blogPost->featured_image, '/storage/')) {
+                $oldImagePath = str_replace('/storage/', '', $blogPost->featured_image);
+                \Storage::disk('public')->delete($oldImagePath);
+            }
+            // Use the new URL
+        } elseif (str_starts_with($validated['featured_image'] ?? '', '/storage/')) {
+            // Keep existing local file unchanged
+            $validated['featured_image'] = $blogPost->featured_image;
         }
+        
+        // Remove the flag from the data to be saved
+        unset($validated['remove_current_image']);
 
         // Handle slug update if title changed
         if ($validated['title'] !== $blogPost->title) {

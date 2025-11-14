@@ -110,19 +110,59 @@ const breadcrumbs = [
   { title: 'Edit', href: `/admin/blog-posts/${props.post.id}/edit` },
 ];
 
+// Helper function to determine if a featured_image is a local file path or external URL
+const isLocalFilePath = (imagePath: string | null): boolean => {
+  if (!imagePath) return false;
+  return imagePath.startsWith('/storage/');
+};
+
+const isExternalUrl = (imagePath: string | null): boolean => {
+  if (!imagePath) return false;
+  return imagePath.startsWith('http://') || imagePath.startsWith('https://');
+};
+
+// Initialize form with proper handling of file paths vs URLs
+const initializeFeaturedImage = () => {
+  const existingImage = props.post.featured_image;
+  
+  if (isLocalFilePath(existingImage)) {
+    // Keep the local file path to preserve the image, but don't show it in URL input
+    return existingImage;
+  } else if (isExternalUrl(existingImage)) {
+    // If it's an external URL, show it in the URL field
+    return existingImage;
+  } else {
+    // If it's empty or invalid, default to empty
+    return '';
+  }
+};
+
 const form = useForm({
   title: props.post.title,
   excerpt: props.post.excerpt,
   content: props.post.content,
-  featured_image: props.post.featured_image || '',
+  featured_image: initializeFeaturedImage(),
   featured_image_file: null as File | null,
+  remove_current_image: false, // Flag to indicate if current image should be removed
   tags: [...props.post.tags],
   is_featured: props.post.is_featured,
   is_published: props.post.is_published,
   published_at: props.post.published_at ? new Date(props.post.published_at).toISOString().slice(0, 16) : null,
 });
 
-const imageInputType = ref<'url' | 'file'>(props.post.featured_image ? 'url' : 'url');
+// Set initial input type based on existing image
+const getInitialImageInputType = (): 'url' | 'file' => {
+  const existingImage = props.post.featured_image;
+  
+  if (isExternalUrl(existingImage)) {
+    return 'url';
+  } else {
+    // Default to 'url' for new entries or local files (user can switch to file if needed)
+    return 'url';
+  }
+};
+
+const imageInputType = ref<'url' | 'file'>(getInitialImageInputType());
 const imagePreview = ref<string | null>(null);
 
 const tagInput = ref('');
@@ -270,6 +310,23 @@ const removeImage = () => {
   form.featured_image = null;
   form.featured_image_file = null;
   imagePreview.value = null;
+};
+
+const removeCurrentImage = () => {
+  // Signal to the server to remove the current image
+  form.remove_current_image = true;
+  form.featured_image = '';
+  form.featured_image_file = null;
+  imagePreview.value = null;
+};
+
+const handleUrlInput = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  form.featured_image = target.value;
+  // If user enters a URL, they're replacing any existing image
+  if (target.value && target.value.trim()) {
+    form.remove_current_image = false; // Reset the removal flag since they're providing a new URL
+  }
 };
 
 const submit = async () => {
@@ -522,20 +579,6 @@ const submit = async () => {
               Featured Image
             </label>
             
-            <!-- Current Image Display -->
-            <div v-if="props.post.featured_image && !imagePreview && imageInputType === 'url'" class="mb-4">
-              <div class="flex items-start gap-3">
-                <img
-                  :src="props.post.featured_image"
-                  alt="Current featured image"
-                  class="w-32 h-24 object-cover rounded border"
-                />
-                <div class="text-sm text-muted-foreground">
-                  Current image
-                </div>
-              </div>
-            </div>
-            
             <!-- Image Type Toggle -->
             <div class="flex gap-4 mb-4">
               <label class="flex items-center">
@@ -562,7 +605,8 @@ const submit = async () => {
             <div v-if="imageInputType === 'url'">
               <input
                 id="featured_image_url"
-                v-model="form.featured_image"
+                :value="isExternalUrl(form.featured_image) ? form.featured_image : ''"
+                @input="handleUrlInput"
                 type="url"
                 class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                 placeholder="https://example.com/image.jpg"
@@ -586,12 +630,42 @@ const submit = async () => {
               </p>
             </div>
 
-            <!-- Image Preview -->
-            <div v-if="imagePreview || (imageInputType === 'url' && form.featured_image && form.featured_image !== props.post.featured_image)" class="mt-4">
+            <!-- Current Image (if exists and not being removed/replaced) -->
+            <div v-if="props.post.featured_image && !imagePreview && !form.remove_current_image && !form.featured_image_file && (!isExternalUrl(form.featured_image) || form.featured_image === props.post.featured_image)" class="mt-4">
+              <p class="text-sm font-medium text-muted-foreground mb-2">Current Image:</p>
+              <div class="flex items-start gap-3">
+                <img
+                  :src="props.post.featured_image"
+                  alt="Current featured image"
+                  class="w-32 h-24 object-cover rounded border"
+                />
+                <div class="flex-1">
+                  <p class="text-sm text-muted-foreground">
+                    <span v-if="isLocalFilePath(props.post.featured_image)">
+                      Uploaded file: {{ props.post.featured_image.split('/').pop() }}
+                    </span>
+                    <span v-else>
+                      External URL: {{ props.post.featured_image }}
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    @click="removeCurrentImage"
+                    class="text-sm text-destructive hover:text-destructive/80 mt-1"
+                  >
+                    Remove Current Image
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- New Image Preview (only show for actual new images) -->
+            <div v-if="imagePreview || (imageInputType === 'url' && form.featured_image && isExternalUrl(form.featured_image) && form.featured_image !== props.post.featured_image)" class="mt-4">
+              <p class="text-sm font-medium text-muted-foreground mb-2">New Image Preview:</p>
               <div class="flex items-start gap-3">
                 <img
                   :src="imagePreview || form.featured_image"
-                  alt="Image preview"
+                  alt="New image preview"
                   class="w-32 h-24 object-cover rounded border"
                   @error="imagePreview = null"
                 />
