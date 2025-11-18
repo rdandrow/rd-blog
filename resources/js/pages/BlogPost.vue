@@ -95,7 +95,7 @@
 
       <!-- Post Content -->
       <div class="prose prose-lg max-w-none dark:prose-invert">
-        <div v-html="formatContent(post.content)"></div>
+        <MarkdownRender :content="post.content" />
       </div>
 
       <!-- Footer -->
@@ -123,6 +123,7 @@
 
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import MarkdownRender from '@/components/MarkdownRender.vue';
 
 interface Author {
   id: number;
@@ -159,12 +160,6 @@ const formatDate = (dateString: string): string => {
   });
 };
 
-const formatContent = (content: string): string => {
-  // Basic content formatting - replace line breaks with paragraphs
-  return content
-    .split('\n\n')
-    .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
-    .join('');
-};
+// Markdown is rendered via <MarkdownRender />
 </script>
 

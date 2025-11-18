@@ -3,6 +3,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ErrorDisplay from '@/components/ErrorDisplay.vue';
+import MarkdownEditor from '@/components/MarkdownEditor.vue';
 import { 
   useImageValidation, 
   useFormValidation, 
@@ -282,22 +283,14 @@ const submit = async () => {
             />
           </div>
 
-          <!-- Content -->
+          <!-- Content (Markdown) -->
           <div>
-            <label for="content" class="block text-sm font-medium text-foreground mb-2">
-              Content *
-            </label>
-            <textarea
-              id="content"
+            <MarkdownEditor
               v-model="form.content"
-              required
-              rows="12"
-              class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-y"
-              placeholder="Write your post content here..."
+              label="Content"
+              placeholder="Write your post content in Markdown..."
+              :rows="12"
             />
-            <p class="mt-1 text-sm text-muted-foreground">
-              You can use Markdown formatting for rich text content.
-            </p>
             <ErrorDisplay 
               v-if="form.errors.content" 
               :error="form.errors.content" 

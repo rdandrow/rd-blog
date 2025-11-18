@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import MarkdownRender from '@/components/MarkdownRender.vue';
 
 interface BlogPost {
   id: number;
@@ -151,10 +152,8 @@ const statusInfo = computed(() => {
         <!-- Main Content -->
         <div class="p-6">
           <h2 class="text-lg font-semibold text-foreground mb-4">Content</h2>
-          <div class="prose prose-neutral max-w-none">
-            <div class="whitespace-pre-wrap text-foreground leading-relaxed">
-              {{ post.content }}
-            </div>
+          <div class="prose prose-neutral max-w-none dark:prose-invert">
+            <MarkdownRender :content="post.content" />
           </div>
         </div>
       </div>
