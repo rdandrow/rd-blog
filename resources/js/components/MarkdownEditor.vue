@@ -485,7 +485,7 @@ const wrapLines = async (prefix: string, ordered = false) => {
 const makeBold = () => replaceSelection('**', '**', 'bold');
 const makeItalic = () => replaceSelection('*', '*', 'italic');
 const makeCodeInline = () => replaceSelection('`', '`', 'code');
-const makeCodeBlock = () => replaceSelection('\n```\n', '\n```\n', 'code');
+const makeCodeBlock = () => replaceSelection('\n```javascript\n', '\n```\n', 'code');
 const makeLink = () => replaceSelection('[', '](https://)', 'link-text');
 const makeBulletedList = () => wrapLines('- ');
 const makeNumberedList = () => wrapLines('1. ', true);
@@ -703,6 +703,26 @@ onUnmounted(() => {
     <!-- Keyboard shortcuts help -->
     <div class="mt-2 text-xs text-muted-foreground space-y-1">
       <p>Supports Markdown: headings, lists, links, images, code, and more.</p>
+      <details class="cursor-pointer">
+        <summary class="hover:text-foreground">Code Syntax Highlighting</summary>
+        <div class="mt-2 text-xs bg-muted/30 p-3 rounded border">
+          <p class="mb-2">Add a language identifier after the opening backticks for syntax highlighting:</p>
+          <div class="bg-background/50 p-2 rounded font-mono text-xs mb-2">
+            ```javascript<br/>
+            const greeting = "Hello World";<br/>
+            ```
+          </div>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+            <div class="font-medium text-foreground col-span-2 mb-1">Supported Languages:</div>
+            <div>• <code class="text-xs">javascript</code> or <code class="text-xs">js</code></div>
+            <div>• <code class="text-xs">typescript</code> or <code class="text-xs">ts</code></div>
+            <div>• <code class="text-xs">python</code> or <code class="text-xs">py</code></div>
+            <div>• <code class="text-xs">php</code></div>
+            <div>• <code class="text-xs">ruby</code> or <code class="text-xs">rb</code></div>
+            <div>• <code class="text-xs">bash</code> or <code class="text-xs">sh</code></div>
+          </div>
+        </div>
+      </details>
       <details class="cursor-pointer">
         <summary class="hover:text-foreground">Keyboard Shortcuts</summary>
         <div class="mt-2 text-xs bg-muted/30 p-3 rounded border">
