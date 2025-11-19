@@ -4,6 +4,9 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Listeners\HandlePostRegistrationMfa;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -31,6 +34,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureActions();
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->configureEvents();
     }
 
     /**
@@ -87,5 +91,14 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by($throttleKey);
         });
+    }
+
+    /**
+     * Configure event listeners.
+     */
+    private function configureEvents(): void
+    {
+        // Listen for user registration to handle MFA setup
+        $this->app['events']->listen(Registered::class, HandlePostRegistrationMfa::class);
     }
 }
