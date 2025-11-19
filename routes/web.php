@@ -5,10 +5,29 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
-Route::get('/', function () {
-    $posts = App\Models\BlogPost::with('author')
-        ->published()
-        ->orderBy('published_at', 'desc')
+Route::get('/', function (Illuminate\Http\Request $request) {
+    $query = App\Models\BlogPost::with('author')->published();
+
+    // Apply search filter
+    if ($search = $request->input('search')) {
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+              ->orWhere('excerpt', 'like', "%{$search}%")
+              ->orWhere('content', 'like', "%{$search}%");
+        });
+    }
+
+    // Apply tag filter
+    if ($tag = $request->input('tag')) {
+        $query->whereJsonContains('tags', $tag);
+    }
+
+    // Apply author filter
+    if ($authorId = $request->input('author')) {
+        $query->where('user_id', $authorId);
+    }
+
+    $posts = $query->orderBy('published_at', 'desc')
         ->take(6) // Show latest 6 posts on landing page
         ->get()
         ->map(function ($post) {
@@ -19,6 +38,7 @@ Route::get('/', function () {
                 'slug' => $post->slug,
                 'featured_image' => $post->featured_image,
                 'author' => [
+                    'id' => $post->author->id,
                     'name' => $post->author->name,
                 ],
                 'published_at' => $post->published_at->toISOString(),
@@ -31,10 +51,35 @@ Route::get('/', function () {
     $featured_posts = $posts->where('is_featured', true)->take(2);
     $recent_posts = $posts->take(4);
 
+    // Get all available tags and authors for filters
+    $allTags = App\Models\BlogPost::published()
+        ->get()
+        ->pluck('tags')
+        ->flatten()
+        ->unique()
+        ->sort()
+        ->values();
+
+    $allAuthors = App\Models\User::whereHas('blogPosts', function ($query) {
+        $query->published();
+    })->get()->map(function ($user) {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+        ];
+    });
+
     return Inertia::render('Welcome', [
         'canRegister' => Features::enabled(Features::registration()),
         'posts' => $recent_posts,
         'featured_posts' => $featured_posts,
+        'filters' => [
+            'search' => $request->input('search'),
+            'tag' => $request->input('tag'),
+            'author' => $request->input('author'),
+        ],
+        'availableTags' => $allTags,
+        'availableAuthors' => $allAuthors,
     ]);
 })->name('home');
 
@@ -42,10 +87,29 @@ Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified', 'ensure.2fa'])->name('dashboard');
 
-Route::get('blog', function () {
-    $posts = App\Models\BlogPost::with('author')
-        ->published()
-        ->orderBy('published_at', 'desc')
+Route::get('blog', function (Illuminate\Http\Request $request) {
+    $query = App\Models\BlogPost::with('author')->published();
+
+    // Apply search filter
+    if ($search = $request->input('search')) {
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+              ->orWhere('excerpt', 'like', "%{$search}%")
+              ->orWhere('content', 'like', "%{$search}%");
+        });
+    }
+
+    // Apply tag filter
+    if ($tag = $request->input('tag')) {
+        $query->whereJsonContains('tags', $tag);
+    }
+
+    // Apply author filter
+    if ($authorId = $request->input('author')) {
+        $query->where('user_id', $authorId);
+    }
+
+    $posts = $query->orderBy('published_at', 'desc')
         ->get()
         ->map(function ($post) {
             return [
@@ -56,6 +120,7 @@ Route::get('blog', function () {
                 'slug' => $post->slug,
                 'featured_image' => $post->featured_image,
                 'author' => [
+                    'id' => $post->author->id,
                     'name' => $post->author->name,
                     'avatar' => null // You can add avatar support later
                 ],
@@ -69,9 +134,34 @@ Route::get('blog', function () {
     $featured_posts = $posts->where('is_featured', true)->values();
     $regular_posts = $posts->where('is_featured', false)->values();
 
+    // Get all available tags and authors for filters
+    $allTags = App\Models\BlogPost::published()
+        ->get()
+        ->pluck('tags')
+        ->flatten()
+        ->unique()
+        ->sort()
+        ->values();
+
+    $allAuthors = App\Models\User::whereHas('blogPosts', function ($query) {
+        $query->published();
+    })->get()->map(function ($user) {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+        ];
+    });
+
     return Inertia::render('BlogSimple', [
         'posts' => $regular_posts,
         'featured_posts' => $featured_posts,
+        'filters' => [
+            'search' => $request->input('search'),
+            'tag' => $request->input('tag'),
+            'author' => $request->input('author'),
+        ],
+        'availableTags' => $allTags,
+        'availableAuthors' => $allAuthors,
     ]);
 })->name('blog');
 

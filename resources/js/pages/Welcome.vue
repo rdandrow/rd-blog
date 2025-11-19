@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { dashboard, login, register } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import SearchSidebar from '@/components/SearchSidebar.vue';
 
 interface BlogPost {
     id: number;
@@ -9,6 +11,7 @@ interface BlogPost {
     slug: string;
     featured_image: string | null;
     author: {
+        id: number;
         name: string;
     };
     published_at: string;
@@ -17,16 +20,33 @@ interface BlogPost {
     is_featured: boolean;
 }
 
+interface Author {
+    id: number;
+    name: string;
+}
+
+interface Filters {
+    search?: string | null;
+    tag?: string | null;
+    author?: string | null;
+}
+
 withDefaults(
     defineProps<{
         canRegister: boolean;
         posts?: BlogPost[];
         featured_posts?: BlogPost[];
+        filters?: Filters;
+        availableTags?: string[];
+        availableAuthors?: Author[];
     }>(),
     {
         canRegister: true,
         posts: () => [],
         featured_posts: () => [],
+        filters: () => ({}),
+        availableTags: () => [],
+        availableAuthors: () => [],
     },
 );
 
@@ -36,6 +56,17 @@ const formatDate = (dateString: string) => {
         month: 'long',
         day: 'numeric',
     });
+};
+
+// Search sidebar state
+const isSearchOpen = ref(false);
+
+const openSearch = () => {
+    isSearchOpen.value = true;
+};
+
+const closeSearch = () => {
+    isSearchOpen.value = false;
 };
 </script>
 
@@ -56,6 +87,18 @@ const formatDate = (dateString: string) => {
                         </Link>
                     </div>
                     <div class="flex items-center gap-4">
+                        <!-- Search Icon Button -->
+                        <button
+                            @click="openSearch"
+                            class="inline-flex items-center gap-2 rounded-sm border border-transparent px-3 py-1.5 text-sm leading-normal hover:border-[#19140035] dark:hover:border-[#3E3E3A] transition-colors"
+                            aria-label="Open search"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <span class="hidden sm:inline">Search</span>
+                        </button>
+                        
                         <Link
                             v-if="$page.props.auth.user"
                             :href="dashboard()"
@@ -250,6 +293,16 @@ const formatDate = (dateString: string) => {
                 </p>
             </div>
         </footer>
+
+        <!-- Search Sidebar -->
+        <SearchSidebar
+            :is-open="isSearchOpen"
+            :filters="filters"
+            :available-tags="availableTags"
+            :available-authors="availableAuthors"
+            current-route="/"
+            @close="closeSearch"
+        />
     </div>
 </template>
 

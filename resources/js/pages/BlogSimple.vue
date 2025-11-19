@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { AppPageProps } from '@/types';
+import SearchSidebar from '@/components/SearchSidebar.vue';
 
 // Interface for blog post data
 interface BlogPost {
@@ -12,6 +13,7 @@ interface BlogPost {
   slug: string;
   featured_image?: string;
   author: {
+    id: number;
     name: string;
     avatar?: string;
   };
@@ -21,14 +23,28 @@ interface BlogPost {
   is_featured?: boolean;
 }
 
+interface Author {
+  id: number;
+  name: string;
+}
+
+interface Filters {
+  search?: string | null;
+  tag?: string | null;
+  author?: string | null;
+}
+
 interface BlogPageProps extends AppPageProps {
   posts: BlogPost[];
   featured_posts: BlogPost[];
+  filters?: Filters;
+  availableTags?: string[];
+  availableAuthors?: Author[];
 }
 
 // Get page props with type safety
 const page = usePage<BlogPageProps>();
-const { posts, featured_posts } = page.props;
+const { posts, featured_posts, filters = {}, availableTags = [], availableAuthors = [] } = page.props;
 
 // Computed properties
 const regularPosts = computed(() => 
@@ -44,6 +60,17 @@ const formatDate = (dateString: string) => {
     day: 'numeric'
   });
 };
+
+// Search sidebar state
+const isSearchOpen = ref(false);
+
+const openSearch = () => {
+  isSearchOpen.value = true;
+};
+
+const closeSearch = () => {
+  isSearchOpen.value = false;
+};
 </script>
 
 <template>
@@ -53,7 +80,21 @@ const formatDate = (dateString: string) => {
     <!-- Simple Header -->
     <header class="border-b border-border bg-background">
       <div class="container mx-auto px-4 py-4">
-        <h1 class="text-2xl font-bold text-foreground">Blog</h1>
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-foreground">Blog</h1>
+          
+          <!-- Search Icon Button -->
+          <button
+            @click="openSearch"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded border border-transparent hover:border-border transition-colors"
+            aria-label="Open search"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span class="hidden sm:inline">Search</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -63,7 +104,7 @@ const formatDate = (dateString: string) => {
         <h2 class="text-4xl font-bold text-foreground mb-4">
           Curiously Testing
         </h2>
-        <p class="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p class="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
           Discover insights, tutorials, and stories from my journey as a quality engineer.
         </p>
       </div>
@@ -178,6 +219,16 @@ const formatDate = (dateString: string) => {
         </form>
       </div>
     </section>
+
+    <!-- Search Sidebar -->
+    <SearchSidebar
+      :is-open="isSearchOpen"
+      :filters="filters"
+      :available-tags="availableTags"
+      :available-authors="availableAuthors"
+      current-route="/blog"
+      @close="closeSearch"
+    />
   </div>
 </template>
 

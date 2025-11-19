@@ -49,4 +49,12 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
+
+    /**
+     * Get the blog posts for the user.
+     */
+    public function blogPosts()
+    {
+        return $this->hasMany(BlogPost::class);
+    }
 }
