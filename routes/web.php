@@ -27,8 +27,11 @@ Route::get('/', function (Illuminate\Http\Request $request) {
         $query->where('user_id', $authorId);
     }
 
-    $posts = $query->orderBy('published_at', 'desc')
-        ->take(6) // Show latest 6 posts on landing page
+    // Get featured posts separately (up to 2)
+    $featured_posts = (clone $query)
+        ->where('is_featured', true)
+        ->orderBy('published_at', 'desc')
+        ->take(2)
         ->get()
         ->map(function ($post) {
             return [
@@ -48,8 +51,29 @@ Route::get('/', function (Illuminate\Http\Request $request) {
             ];
         });
 
-    $featured_posts = $posts->where('is_featured', true)->take(2);
-    $recent_posts = $posts->take(4);
+    // Get recent posts (non-featured, up to 6) - this will show posts from all authors
+    $recent_posts = (clone $query)
+        ->where('is_featured', false)
+        ->orderBy('published_at', 'desc')
+        ->take(6)
+        ->get()
+        ->map(function ($post) {
+            return [
+                'id' => $post->id,
+                'title' => $post->title,
+                'excerpt' => $post->excerpt,
+                'slug' => $post->slug,
+                'featured_image' => $post->featured_image,
+                'author' => [
+                    'id' => $post->author->id,
+                    'name' => $post->author->name,
+                ],
+                'published_at' => $post->published_at->toISOString(),
+                'reading_time' => $post->reading_time,
+                'tags' => $post->tags,
+                'is_featured' => $post->is_featured
+            ];
+        });
 
     // Get all available tags and authors for filters
     $allTags = App\Models\BlogPost::published()
@@ -131,7 +155,7 @@ Route::get('blog', function (Illuminate\Http\Request $request) {
             ];
         });
 
-    $featured_posts = $posts->where('is_featured', true)->values();
+    $featured_posts = $posts->where('is_featured', true)->take(4)->values();
     $regular_posts = $posts->where('is_featured', false)->values();
 
     // Get all available tags and authors for filters

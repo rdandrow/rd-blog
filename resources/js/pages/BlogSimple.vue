@@ -113,40 +113,58 @@ const closeSearch = () => {
     <!-- Featured Posts -->
     <section v-if="featured_posts.length > 0" class="py-16">
       <div class="container mx-auto px-4">
-        <h3 class="text-2xl font-bold text-foreground mb-8 text-center">
-          Featured Articles
+        <h3 class="text-2xl font-bold mb-8">
+          Featured Posts
         </h3>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid lg:grid-cols-2 gap-8">
           <article 
             v-for="post in featured_posts" 
             :key="post.id"
-            class="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow"
+            class="group cursor-pointer"
           >
-            <div class="mb-4">
-              <div class="flex flex-wrap gap-2 mb-3">
-                <span 
-                  v-for="tag in post.tags.slice(0, 2)" 
-                  :key="tag"
-                  class="px-2 py-1 bg-muted text-muted-foreground text-xs rounded"
-                >
-                  {{ tag }}
-                </span>
+            <a :href="`/blog/${post.slug}`" class="block">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
+                <div class="aspect-video relative overflow-hidden">
+                  <img 
+                    v-if="post.featured_image"
+                    :src="post.featured_image" 
+                    :alt="post.title"
+                    class="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    loading="lazy"
+                    @error="($event) => ($event.target as HTMLElement).style.display = 'none'"
+                  />
+                  <div 
+                    v-if="!post.featured_image"
+                    class="w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center"
+                  >
+                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="p-6">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
+                      Featured
+                    </span>
+                  </div>
+                  <h4 class="text-xl font-semibold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {{ post.title }}
+                  </h4>
+                  <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+                    {{ post.excerpt }}
+                  </p>
+                  <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                    <span>By {{ post.author.name }}</span>
+                    <div class="flex items-center gap-4">
+                      <span>{{ post.reading_time }} min read</span>
+                      <span>{{ formatDate(post.published_at) }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              <h4 class="text-xl font-semibold text-foreground mb-2 line-clamp-2">
-                {{ post.title }}
-              </h4>
-              
-              <p class="text-muted-foreground text-sm mb-4 line-clamp-3">
-                {{ post.excerpt }}
-              </p>
-              
-              <div class="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{{ post.author.name }}</span>
-                <span>{{ formatDate(post.published_at) }}</span>
-              </div>
-            </div>
+            </a>
           </article>
         </div>
       </div>
@@ -155,40 +173,63 @@ const closeSearch = () => {
     <!-- Latest Posts -->
     <section class="py-16">
       <div class="container mx-auto px-4">
-        <h3 class="text-2xl font-bold text-foreground mb-8 text-center">
-          Latest Articles
+        <h3 class="text-2xl font-bold mb-8">
+          Recent Posts
         </h3>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           <article 
             v-for="post in regularPosts" 
             :key="post.id"
-            class="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow"
+            class="group cursor-pointer"
           >
-            <div class="mb-4">
-              <div class="flex flex-wrap gap-2 mb-3">
-                <span 
-                  v-for="tag in post.tags.slice(0, 2)" 
-                  :key="tag"
-                  class="px-2 py-1 bg-muted text-muted-foreground text-xs rounded"
-                >
-                  {{ tag }}
-                </span>
+            <a :href="`/blog/${post.slug}`" class="block">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow">
+                <div class="aspect-video relative overflow-hidden">
+                  <img 
+                    v-if="post.featured_image"
+                    :src="post.featured_image" 
+                    :alt="post.title"
+                    class="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    loading="lazy"
+                    @error="($event) => ($event.target as HTMLElement).style.display = 'none'"
+                  />
+                  <div 
+                    v-if="!post.featured_image"
+                    class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-600 dark:to-gray-700 flex items-center justify-center"
+                  >
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="p-4">
+                  <h4 class="font-semibold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                    {{ post.title }}
+                  </h4>
+                  <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
+                    {{ post.excerpt }}
+                  </p>
+                  <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                    <span>{{ post.author.name }}</span>
+                    <div class="flex items-center gap-2">
+                      <span>{{ post.reading_time }} min</span>
+                      <span>{{ formatDate(post.published_at) }}</span>
+                    </div>
+                  </div>
+                  <!-- Tags -->
+                  <div v-if="post.tags && post.tags.length > 0" class="flex flex-wrap gap-1 mt-3">
+                    <span
+                      v-for="tag in post.tags.slice(0, 3)"
+                      :key="tag"
+                      class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
+                    >
+                      {{ tag }}
+                    </span>
+                  </div>
+                </div>
               </div>
-              
-              <h4 class="text-xl font-semibold text-foreground mb-2 line-clamp-2">
-                {{ post.title }}
-              </h4>
-              
-              <p class="text-muted-foreground text-sm mb-4 line-clamp-3">
-                {{ post.excerpt }}
-              </p>
-              
-              <div class="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{{ post.author.name }}</span>
-                <span>{{ formatDate(post.published_at) }}</span>
-              </div>
-            </div>
+            </a>
           </article>
         </div>
       </div>
