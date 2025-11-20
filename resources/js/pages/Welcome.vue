@@ -1,42 +1,17 @@
 <script setup lang="ts">
 import { dashboard, login, register } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
 import SearchSidebar from '@/components/SearchSidebar.vue';
-
-interface BlogPost {
-    id: number;
-    title: string;
-    excerpt: string;
-    slug: string;
-    featured_image: string | null;
-    author: {
-        id: number;
-        name: string;
-    };
-    published_at: string;
-    reading_time: number;
-    tags: string[];
-    is_featured: boolean;
-}
-
-interface Author {
-    id: number;
-    name: string;
-}
-
-interface Filters {
-    search?: string | null;
-    tag?: string | null;
-    author?: string | null;
-}
+import { formatDate } from '@/composables/useBlogUtils';
+import { useSearchState } from '@/composables/useSearchState';
+import type { BlogPost, Author, SearchFilters } from '@/types';
 
 withDefaults(
     defineProps<{
         canRegister: boolean;
         posts?: BlogPost[];
         featured_posts?: BlogPost[];
-        filters?: Filters;
+        filters?: SearchFilters;
         availableTags?: string[];
         availableAuthors?: Author[];
     }>(),
@@ -50,24 +25,8 @@ withDefaults(
     },
 );
 
-const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-};
-
-// Search sidebar state
-const isSearchOpen = ref(false);
-
-const openSearch = () => {
-    isSearchOpen.value = true;
-};
-
-const closeSearch = () => {
-    isSearchOpen.value = false;
-};
+// Use search state composable
+const { isSearchOpen, openSearch, closeSearch } = useSearchState();
 </script>
 
 <template>
@@ -145,6 +104,7 @@ const closeSearch = () => {
                         <article 
                             v-for="post in featured_posts" 
                             :key="post.id"
+                            v-memo="[post.id, post.title, post.featured_image]"
                             class="group cursor-pointer"
                         >
                             <Link :href="`/blog/${post.slug}`" class="block">
@@ -200,6 +160,7 @@ const closeSearch = () => {
                         <article 
                             v-for="post in posts" 
                             :key="post.id"
+                            v-memo="[post.id, post.title, post.featured_image]"
                             class="group cursor-pointer"
                         >
                             <Link :href="`/blog/${post.slug}`" class="block">

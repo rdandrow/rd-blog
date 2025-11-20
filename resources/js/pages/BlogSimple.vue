@@ -1,78 +1,39 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
-import type { AppPageProps } from '@/types';
+import { computed, toRefs } from 'vue';
+import type { AppPageProps, BlogPost, Author, SearchFilters } from '@/types';
 import SearchSidebar from '@/components/SearchSidebar.vue';
 import { dashboard, login, register } from '@/routes';
-
-// Interface for blog post data
-interface BlogPost {
-  id: number;
-  title: string;
-  excerpt: string;
-  content: string;
-  slug: string;
-  featured_image?: string;
-  author: {
-    id: number;
-    name: string;
-    avatar?: string;
-  };
-  published_at: string;
-  reading_time: number;
-  tags: string[];
-  is_featured?: boolean;
-}
-
-interface Author {
-  id: number;
-  name: string;
-}
-
-interface Filters {
-  search?: string | null;
-  tag?: string | null;
-  author?: string | null;
-}
+import { formatDate } from '@/composables/useBlogUtils';
+import { useSearchState } from '@/composables/useSearchState';
 
 interface BlogPageProps extends AppPageProps {
   posts: BlogPost[];
   featured_posts: BlogPost[];
-  filters?: Filters;
+  filters?: SearchFilters;
   availableTags?: string[];
   availableAuthors?: Author[];
   canRegister?: boolean;
 }
 
-// Get page props with type safety
+// Get page props with type safety and reactive destructuring
 const page = usePage<BlogPageProps>();
-const { posts, featured_posts, filters = {}, availableTags = [], availableAuthors = [], canRegister = true } = page.props;
+const { posts, featured_posts } = toRefs(page.props);
 
-// Computed properties
+// Computed properties with defaults for optional values
+const filters = computed(() => page.props.filters ?? {});
+const availableTags = computed(() => page.props.availableTags ?? []);
+const availableAuthors = computed(() => page.props.availableAuthors ?? []);
+const canRegister = computed(() => page.props.canRegister ?? true);
+
 const regularPosts = computed(() => 
-  posts.filter(post => !post.is_featured)
+  posts.value.filter(post => !post.is_featured)
 );
 
 const pageTitle = computed(() => 'Blog - Latest Articles & Insights');
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
-// Search sidebar state
-const isSearchOpen = ref(false);
-
-const openSearch = () => {
-  isSearchOpen.value = true;
-};
-
-const closeSearch = () => {
-  isSearchOpen.value = false;
-};
+// Use search state composable
+const { isSearchOpen, openSearch, closeSearch } = useSearchState();
 </script>
 
 <template>
@@ -152,6 +113,7 @@ const closeSearch = () => {
           <article 
             v-for="post in featured_posts" 
             :key="post.id"
+            v-memo="[post.id, post.title, post.featured_image]"
             class="group cursor-pointer"
           >
             <a :href="`/blog/${post.slug}`" class="block">
@@ -212,6 +174,7 @@ const closeSearch = () => {
           <article 
             v-for="post in regularPosts" 
             :key="post.id"
+            v-memo="[post.id, post.title, post.featured_image]"
             class="group cursor-pointer"
           >
             <a :href="`/blog/${post.slug}`" class="block">
@@ -308,6 +271,7 @@ const closeSearch = () => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -315,6 +279,7 @@ const closeSearch = () => {
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

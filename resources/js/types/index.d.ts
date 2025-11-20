@@ -36,4 +36,33 @@ export interface User {
     updated_at: string;
 }
 
+export interface BlogPost {
+    id: number;
+    title: string;
+    excerpt: string;
+    content?: string;
+    slug: string;
+    featured_image: string | null;
+    author: {
+        id: number;
+        name: string;
+        avatar?: string;
+    };
+    published_at: string;
+    reading_time: number;
+    tags: string[];
+    is_featured: boolean;
+}
+
+export interface Author {
+    id: number;
+    name: string;
+}
+
+export interface SearchFilters {
+    search?: string | null;
+    tag?: string | null;
+    author?: string | null;
+}
+
 export type BreadcrumbItemType = BreadcrumbItem;
