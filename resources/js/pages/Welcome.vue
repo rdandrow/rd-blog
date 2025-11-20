@@ -176,7 +176,7 @@ const closeSearch = () => {
                                         <h4 class="text-xl font-semibold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                             {{ post.title }}
                                         </h4>
-                                        <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+                                        <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2 min-h-[3rem]">
                                             {{ post.excerpt }}
                                         </p>
                                         <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
@@ -226,7 +226,7 @@ const closeSearch = () => {
                                         <h4 class="font-semibold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                                             {{ post.title }}
                                         </h4>
-                                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
+                                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2 min-h-[2.5rem]">
                                             {{ post.excerpt }}
                                         </p>
                                         <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">

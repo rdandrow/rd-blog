@@ -177,6 +177,7 @@ Route::get('blog', function (Illuminate\Http\Request $request) {
     });
 
     return Inertia::render('BlogSimple', [
+        'canRegister' => Features::enabled(Features::registration()),
         'posts' => $regular_posts,
         'featured_posts' => $featured_posts,
         'filters' => [

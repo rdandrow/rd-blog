@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import type { AppPageProps } from '@/types';
 import SearchSidebar from '@/components/SearchSidebar.vue';
+import { dashboard, login, register } from '@/routes';
 
 // Interface for blog post data
 interface BlogPost {
@@ -40,11 +41,12 @@ interface BlogPageProps extends AppPageProps {
   filters?: Filters;
   availableTags?: string[];
   availableAuthors?: Author[];
+  canRegister?: boolean;
 }
 
 // Get page props with type safety
 const page = usePage<BlogPageProps>();
-const { posts, featured_posts, filters = {}, availableTags = [], availableAuthors = [] } = page.props;
+const { posts, featured_posts, filters = {}, availableTags = [], availableAuthors = [], canRegister = true } = page.props;
 
 // Computed properties
 const regularPosts = computed(() => 
@@ -77,24 +79,53 @@ const closeSearch = () => {
   <Head :title="pageTitle" />
   
   <div class="min-h-screen bg-background">
-    <!-- Simple Header -->
-    <header class="border-b border-border bg-background">
-      <div class="container mx-auto px-4 py-4">
-        <div class="flex items-center justify-between">
-          <h1 class="text-2xl font-bold text-foreground">Blog</h1>
-          
-          <!-- Search Icon Button -->
-          <button
-            @click="openSearch"
-            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded border border-transparent hover:border-border transition-colors"
-            aria-label="Open search"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <span class="hidden sm:inline">Search</span>
-          </button>
-        </div>
+    <!-- Header -->
+    <header class="border-b border-[#19140035] dark:border-[#3E3E3A]">
+      <div class="max-w-7xl mx-auto px-6 py-4">
+        <nav class="flex items-center justify-between">
+          <div class="flex items-center gap-8">
+            <h1 class="text-2xl font-bold">Blog</h1>
+            <Link href="/" class="text-sm hover:text-gray-600 dark:hover:text-gray-300">
+              Home
+            </Link>
+          </div>
+          <div class="flex items-center gap-4">
+            <!-- Search Icon Button -->
+            <button
+              @click="openSearch"
+              class="inline-flex items-center gap-2 rounded-sm border border-transparent px-3 py-1.5 text-sm leading-normal hover:border-[#19140035] dark:hover:border-[#3E3E3A] transition-colors"
+              aria-label="Open search"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span class="hidden sm:inline">Search</span>
+            </button>
+            
+            <Link
+              v-if="$page.props.auth.user"
+              :href="dashboard()"
+              class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal hover:border-[#1915014a] dark:border-[#3E3E3A] dark:hover:border-[#62605b]"
+            >
+              Dashboard
+            </Link>
+            <template v-else>
+              <Link
+                :href="login()"
+                class="inline-block rounded-sm border border-transparent px-5 py-1.5 text-sm leading-normal hover:border-[#19140035] dark:hover:border-[#3E3E3A]"
+              >
+                Log in
+              </Link>
+              <Link
+                v-if="canRegister"
+                :href="register()"
+                class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal hover:border-[#1915014a] dark:border-[#3E3E3A] dark:hover:border-[#62605b]"
+              >
+                Register
+              </Link>
+            </template>
+          </div>
+        </nav>
       </div>
     </header>
 
@@ -152,7 +183,7 @@ const closeSearch = () => {
                   <h4 class="text-xl font-semibold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {{ post.title }}
                   </h4>
-                  <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+                  <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2 min-h-[3rem]">
                     {{ post.excerpt }}
                   </p>
                   <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
@@ -207,7 +238,7 @@ const closeSearch = () => {
                   <h4 class="font-semibold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                     {{ post.title }}
                   </h4>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
+                  <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2 min-h-[2.5rem]">
                     {{ post.excerpt }}
                   </p>
                   <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
