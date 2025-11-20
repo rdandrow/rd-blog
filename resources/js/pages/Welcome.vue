@@ -267,12 +267,4 @@ const { isSearchOpen, openSearch, closeSearch } = useSearchState();
     </div>
 </template>
 
-<style scoped>
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-</style>
+<!-- Line clamp utilities moved to global app.css for reusability -->

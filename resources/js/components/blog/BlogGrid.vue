@@ -201,10 +201,9 @@ const allTags = computed(() => {
 </template>
 
 <style scoped>
-/* Grid animations */
+/* Staggered animation delays - using shared fadeInUp from app.css */
 .grid > * {
-  animation: fadeInUp 0.6s ease-out;
-  animation-fill-mode: both;
+  animation: fadeInUp 0.6s ease-out both;
 }
 
 .grid > *:nth-child(1) { animation-delay: 0.1s; }
@@ -213,39 +212,4 @@ const allTags = computed(() => {
 .grid > *:nth-child(4) { animation-delay: 0.4s; }
 .grid > *:nth-child(5) { animation-delay: 0.5s; }
 .grid > *:nth-child(6) { animation-delay: 0.6s; }
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Loading animation */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Smooth transitions */
-button {
-  transition: all 0.2s ease-in-out;
-}
-
-/* Focus states */
-button:focus {
-  outline-offset: 2px;
-}
 </style>

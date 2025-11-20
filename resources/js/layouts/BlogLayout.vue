@@ -186,11 +186,4 @@ const currentYear = computed(() => new Date().getFullYear());
   </div>
 </template>
 
-<style scoped>
-/* Ensure smooth transitions */
-* {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-</style>
+<!-- Removed universal transition (*) for better performance - use Tailwind transition utilities instead -->
