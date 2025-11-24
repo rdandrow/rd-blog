@@ -4,208 +4,34 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
+use App\Http\Controllers\PublicBlogController;
+use App\Http\Controllers\BlogPostController;
+use App\Http\Controllers\Auth\RegisterController;
 
-Route::get('/', function (Illuminate\Http\Request $request) {
-    $query = App\Models\BlogPost::with('author')->published();
-
-    // Apply search filter
-    if ($search = $request->input('search')) {
-        $query->where(function ($q) use ($search) {
-            $q->where('title', 'like', "%{$search}%")
-              ->orWhere('excerpt', 'like', "%{$search}%")
-              ->orWhere('content', 'like', "%{$search}%");
-        });
-    }
-
-    // Apply tag filter
-    if ($tag = $request->input('tag')) {
-        $query->whereJsonContains('tags', $tag);
-    }
-
-    // Apply author filter
-    if ($authorId = $request->input('author')) {
-        $query->where('user_id', $authorId);
-    }
-
-    // Get featured posts separately (up to 2)
-    $featured_posts = (clone $query)
-        ->where('is_featured', true)
-        ->orderBy('published_at', 'desc')
-        ->take(2)
-        ->get()
-        ->map(function ($post) {
-            return [
-                'id' => $post->id,
-                'title' => $post->title,
-                'excerpt' => $post->excerpt,
-                'slug' => $post->slug,
-                'featured_image' => $post->featured_image,
-                'author' => [
-                    'id' => $post->author->id,
-                    'name' => $post->author->name,
-                ],
-                'published_at' => $post->published_at->toISOString(),
-                'reading_time' => $post->reading_time,
-                'tags' => $post->tags,
-                'is_featured' => $post->is_featured
-            ];
-        });
-
-    // Get recent posts (non-featured, up to 6) - this will show posts from all authors
-    $recent_posts = (clone $query)
-        ->where('is_featured', false)
-        ->orderBy('published_at', 'desc')
-        ->take(6)
-        ->get()
-        ->map(function ($post) {
-            return [
-                'id' => $post->id,
-                'title' => $post->title,
-                'excerpt' => $post->excerpt,
-                'slug' => $post->slug,
-                'featured_image' => $post->featured_image,
-                'author' => [
-                    'id' => $post->author->id,
-                    'name' => $post->author->name,
-                ],
-                'published_at' => $post->published_at->toISOString(),
-                'reading_time' => $post->reading_time,
-                'tags' => $post->tags,
-                'is_featured' => $post->is_featured
-            ];
-        });
-
-    // Get all available tags and authors for filters
-    $allTags = App\Models\BlogPost::published()
-        ->get()
-        ->pluck('tags')
-        ->flatten()
-        ->unique()
-        ->sort()
-        ->values();
-
-    $allAuthors = App\Models\User::whereHas('blogPosts', function ($query) {
-        $query->published();
-    })->get()->map(function ($user) {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-        ];
-    });
-
-    return Inertia::render('Welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-        'posts' => $recent_posts,
-        'featured_posts' => $featured_posts,
-        'filters' => [
-            'search' => $request->input('search'),
-            'tag' => $request->input('tag'),
-            'author' => $request->input('author'),
-        ],
-        'availableTags' => $allTags,
-        'availableAuthors' => $allAuthors,
-    ]);
-})->name('home');
+Route::get('/', [PublicBlogController::class, 'index'])->name('home');
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified', 'ensure.2fa'])->name('dashboard');
 
-Route::get('blog', function (Illuminate\Http\Request $request) {
-    $query = App\Models\BlogPost::with('author')->published();
-
-    // Apply search filter
-    if ($search = $request->input('search')) {
-        $query->where(function ($q) use ($search) {
-            $q->where('title', 'like', "%{$search}%")
-              ->orWhere('excerpt', 'like', "%{$search}%")
-              ->orWhere('content', 'like', "%{$search}%");
-        });
-    }
-
-    // Apply tag filter
-    if ($tag = $request->input('tag')) {
-        $query->whereJsonContains('tags', $tag);
-    }
-
-    // Apply author filter
-    if ($authorId = $request->input('author')) {
-        $query->where('user_id', $authorId);
-    }
-
-    $posts = $query->orderBy('published_at', 'desc')
-        ->get()
-        ->map(function ($post) {
-            return [
-                'id' => $post->id,
-                'title' => $post->title,
-                'excerpt' => $post->excerpt,
-                'content' => $post->content,
-                'slug' => $post->slug,
-                'featured_image' => $post->featured_image,
-                'author' => [
-                    'id' => $post->author->id,
-                    'name' => $post->author->name,
-                    'avatar' => null // You can add avatar support later
-                ],
-                'published_at' => $post->published_at->toISOString(),
-                'reading_time' => $post->reading_time,
-                'tags' => $post->tags,
-                'is_featured' => $post->is_featured
-            ];
-        });
-
-    $featured_posts = $posts->where('is_featured', true)->take(4)->values();
-    $regular_posts = $posts->where('is_featured', false)->values();
-
-    // Get all available tags and authors for filters
-    $allTags = App\Models\BlogPost::published()
-        ->get()
-        ->pluck('tags')
-        ->flatten()
-        ->unique()
-        ->sort()
-        ->values();
-
-    $allAuthors = App\Models\User::whereHas('blogPosts', function ($query) {
-        $query->published();
-    })->get()->map(function ($user) {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-        ];
-    });
-
-    return Inertia::render('BlogSimple', [
-        'canRegister' => Features::enabled(Features::registration()),
-        'posts' => $regular_posts,
-        'featured_posts' => $featured_posts,
-        'filters' => [
-            'search' => $request->input('search'),
-            'tag' => $request->input('tag'),
-            'author' => $request->input('author'),
-        ],
-        'availableTags' => $allTags,
-        'availableAuthors' => $allAuthors,
-    ]);
-})->name('blog');
+Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 
 // Blog Post Management Routes (Admin)
 Route::middleware(['auth', 'verified', 'ensure.2fa'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('blog-posts', App\Http\Controllers\BlogPostController::class);
+    Route::resource('blog-posts', BlogPostController::class);
 });
 
 // Public blog post route (individual post viewing by slug)
-Route::get('blog/{slug}', [App\Http\Controllers\BlogPostController::class, 'showBySlug'])->name('blog.show');
+Route::get('blog/{slug}', [PublicBlogController::class, 'show'])->name('blog.show');
 
 // Two-factor authentication setup routes (for new users during registration)
 Route::middleware(['auth'])->group(function () {
     Route::get('/register/setup-two-factor', function () {
-        $registerController = new App\Http\Controllers\Auth\RegisterController();
+        $registerController = new RegisterController();
         return $registerController->setupTwoFactorAuthentication(Auth::user());
     })->name('register.setup-two-factor');
     
-    Route::post('/two-factor-challenge/confirm', [App\Http\Controllers\Auth\RegisterController::class, 'confirmTwoFactorAuthentication']);
+    Route::post('/two-factor-challenge/confirm', [RegisterController::class, 'confirmTwoFactorAuthentication']);
 });
 
 require __DIR__.'/settings.php';

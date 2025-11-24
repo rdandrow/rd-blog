@@ -3,20 +3,24 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Inertia\Inertia;
+use App\Http\Requests\StoreBlogPostRequest;
+use App\Http\Requests\UpdateBlogPostRequest;
+use App\Services\BlogImageService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
+use Illuminate\Http\RedirectResponse;
 
 class BlogPostController extends Controller
 {
+    public function __construct(
+        private readonly BlogImageService $imageService
+    ) {}
+
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(): Response
     {
         $posts = BlogPost::with('author')
             ->orderBy('created_at', 'desc')
@@ -30,7 +34,7 @@ class BlogPostController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(): Response
     {
         return Inertia::render('Admin/BlogPosts/Create');
     }
@@ -38,48 +42,22 @@ class BlogPostController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreBlogPostRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'excerpt' => 'required|string|max:500',
-            'content' => 'required|string',
-            'featured_image' => 'nullable|string',
-            'featured_image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:50',
-            'is_featured' => 'boolean',
-            'is_published' => 'boolean',
-            'published_at' => 'nullable|date',
-        ]);
+        $validated = $request->validated();
 
-        // Handle file upload - file takes priority over URL
-        if ($request->hasFile('featured_image_file')) {
-            $file = $request->file('featured_image_file');
-            $extension = $file->getClientOriginalExtension();
-            $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $extension;
-            $path = $file->storeAs('blog-images', $filename, 'public');
-            $validated['featured_image'] = '/storage/' . $path;
-        } elseif (empty($validated['featured_image'])) {
-            // If no file and no URL, set to null
-            $validated['featured_image'] = null;
-        }
-
-        // Generate unique slug
-        $slug = Str::slug($validated['title']);
-        $originalSlug = $slug;
-        $counter = 1;
-        
-        while (BlogPost::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
-            $counter++;
-        }
+        // Handle featured image upload or URL using service
+        $validated['featured_image'] = $this->imageService->handleCreate(
+            $request->file('featured_image_file'),
+            $validated['featured_image'] ?? null
+        );
 
         $post = BlogPost::create([
             ...$validated,
-            'slug' => $slug,
             'user_id' => Auth::id(),
-            'published_at' => $validated['is_published'] ? ($validated['published_at'] ?? now()) : null,
+            'published_at' => $validated['is_published'] 
+                ? ($validated['published_at'] ?? now()) 
+                : null,
         ]);
 
         return redirect()
@@ -90,7 +68,7 @@ class BlogPostController extends Controller
     /**
      * Display the specified resource (Admin).
      */
-    public function show(BlogPost $blogPost)
+    public function show(BlogPost $blogPost): Response
     {
         $blogPost->load('author');
 
@@ -102,7 +80,7 @@ class BlogPostController extends Controller
     /**
      * Display a blog post by slug (Public).
      */
-    public function showBySlug(string $slug)
+    public function showBySlug(string $slug): Response
     {
         $post = BlogPost::with('author')
             ->where('slug', $slug)
@@ -117,7 +95,7 @@ class BlogPostController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(BlogPost $blogPost)
+    public function edit(BlogPost $blogPost): Response
     {
         $this->authorize('update', $blogPost);
         
@@ -129,120 +107,26 @@ class BlogPostController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, BlogPost $blogPost)
+    public function update(UpdateBlogPostRequest $request, BlogPost $blogPost): RedirectResponse
     {
-        // Debug logging - only in development
-        if (config('app.debug')) {
-            \Log::info('BlogPost update started', [
-                'post_id' => $blogPost->id,
-                'request_data' => $request->all(),
-                'user_id' => auth()->id(),
-                'content_type' => $request->header('Content-Type'),
-                'has_file' => $request->hasFile('featured_image_file'),
-                'specific_fields' => [
-                    'title' => $request->input('title'),
-                    'title_type' => gettype($request->input('title')),
-                    'title_length' => strlen($request->input('title', '')),
-                    'excerpt' => $request->input('excerpt'),
-                    'excerpt_type' => gettype($request->input('excerpt')),
-                    'excerpt_length' => strlen($request->input('excerpt', '')),
-                    'content' => $request->input('content'),
-                    'content_type' => gettype($request->input('content')),
-                    'content_length' => strlen($request->input('content', '')),
-                ]
-            ]);
-        }
+        $validated = $request->validated();
 
-        $this->authorize('update', $blogPost);
-
-        if (config('app.debug')) {
-            \Log::info('Authorization passed for BlogPost update', [
-                'post_id' => $blogPost->id
-            ]);
-        }
-
-        try {
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'excerpt' => 'required|string|max:500',
-                'content' => 'required|string',
-                'featured_image' => 'nullable|string',
-                'featured_image_file' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-                'remove_current_image' => 'boolean',
-                'tags' => 'nullable|array',
-                'tags.*' => 'string|max:50',
-                'is_featured' => 'boolean',
-                'is_published' => 'boolean',
-                'published_at' => 'nullable|date',
-            ]);
-
-            if (config('app.debug')) {
-                \Log::info('Validation passed for BlogPost update', [
-                    'post_id' => $blogPost->id,
-                    'validated_data' => $validated
-                ]);
-            }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Validation failed for BlogPost update', [
-                'post_id' => $blogPost->id,
-                'errors' => $e->errors(),
-                'request_data' => $request->all()
-            ]);
-            throw $e;
-        }
-
-        // Handle image updates based on user actions
-        if ($request->hasFile('featured_image_file')) {
-            // New file uploaded - delete old image if it exists and is stored locally
-            if ($blogPost->featured_image && str_starts_with($blogPost->featured_image, '/storage/')) {
-                $oldImagePath = str_replace('/storage/', '', $blogPost->featured_image);
-                \Storage::disk('public')->delete($oldImagePath);
-            }
-            
-            $file = $request->file('featured_image_file');
-            $extension = $file->getClientOriginalExtension();
-            $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $extension;
-            $path = $file->storeAs('blog-images', $filename, 'public');
-            $validated['featured_image'] = '/storage/' . $path;
-        } elseif ($validated['remove_current_image'] ?? false) {
-            // User explicitly requested to remove current image
-            if ($blogPost->featured_image && str_starts_with($blogPost->featured_image, '/storage/')) {
-                $oldImagePath = str_replace('/storage/', '', $blogPost->featured_image);
-                \Storage::disk('public')->delete($oldImagePath);
-            }
-            $validated['featured_image'] = null;
-        } elseif (!empty($validated['featured_image']) && $validated['featured_image'] !== $blogPost->featured_image) {
-            // User provided a new URL - remove old local file if exists
-            if ($blogPost->featured_image && str_starts_with($blogPost->featured_image, '/storage/')) {
-                $oldImagePath = str_replace('/storage/', '', $blogPost->featured_image);
-                \Storage::disk('public')->delete($oldImagePath);
-            }
-            // Use the new URL
-        } elseif (str_starts_with($validated['featured_image'] ?? '', '/storage/')) {
-            // Keep existing local file unchanged
-            $validated['featured_image'] = $blogPost->featured_image;
-        }
+        // Handle image updates
+        $validated['featured_image'] = $this->imageService->handleUpdate(
+            newFile: $request->file('featured_image_file'),
+            newUrl: $validated['featured_image'] ?? null,
+            removeCurrentImage: $validated['remove_current_image'] ?? false,
+            currentImagePath: $blogPost->featured_image
+        );
         
-        // Remove the flag from the data to be saved
+        // Remove the flag from data to be saved
         unset($validated['remove_current_image']);
-
-        // Handle slug update if title changed
-        if ($validated['title'] !== $blogPost->title) {
-            $slug = Str::slug($validated['title']);
-            $originalSlug = $slug;
-            $counter = 1;
-            
-            while (BlogPost::where('slug', $slug)->where('id', '!=', $blogPost->id)->exists()) {
-                $slug = $originalSlug . '-' . $counter;
-                $counter++;
-            }
-            
-            $validated['slug'] = $slug;
-        }
 
         $blogPost->update([
             ...$validated,
-            'published_at' => $validated['is_published'] ? ($validated['published_at'] ?? $blogPost->published_at ?? now()) : null,
+            'published_at' => $validated['is_published'] 
+                ? ($validated['published_at'] ?? $blogPost->published_at ?? now()) 
+                : null,
         ]);
 
         return redirect()
@@ -253,9 +137,12 @@ class BlogPostController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(BlogPost $blogPost)
+    public function destroy(BlogPost $blogPost): RedirectResponse
     {
         $this->authorize('delete', $blogPost);
+        
+        // Delete associated image if it exists
+        $this->imageService->delete($blogPost->featured_image);
         
         $blogPost->delete();
 
