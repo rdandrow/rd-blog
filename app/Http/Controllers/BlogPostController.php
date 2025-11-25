@@ -23,11 +23,29 @@ class BlogPostController extends Controller
     public function index(): Response
     {
         $posts = BlogPost::with('author')
+            ->where('user_id', Auth::id())
+            ->published()
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return Inertia::render('Admin/BlogPosts/Index', [
             'posts' => $posts
+        ]);
+    }
+
+    /**
+     * Display a listing of draft posts (unpublished) for the authenticated user.
+     */
+    public function drafts(): Response
+    {
+        $drafts = BlogPost::with('author')
+            ->where('user_id', Auth::id())
+            ->where('is_published', false)
+            ->orderBy('updated_at', 'desc')
+            ->paginate(10);
+
+        return Inertia::render('Admin/BlogPosts/Drafts', [
+            'posts' => $drafts
         ]);
     }
 

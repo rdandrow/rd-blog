@@ -18,6 +18,7 @@ Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 
 // Blog Post Management Routes (Admin)
 Route::middleware(['auth', 'verified', 'ensure.2fa'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
     Route::resource('blog-posts', BlogPostController::class);
 });
 
