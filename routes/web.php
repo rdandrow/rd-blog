@@ -7,17 +7,28 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\BlogPostController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\AdminAuthController;
 
 Route::get('/', [PublicBlogController::class, 'index'])->name('home');
 
+// Admin Authentication Routes
+Route::middleware('guest')->group(function () {
+    Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
+    Route::post('/admin/login', [AdminAuthController::class, 'login']);
+    Route::get('/admin/register', [AdminAuthController::class, 'showRegisterForm'])->name('admin.register');
+    Route::post('/admin/register', [AdminAuthController::class, 'register']);
+});
+
+Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->middleware('auth')->name('admin.logout');
+
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified', 'ensure.2fa'])->name('dashboard');
+})->middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->name('dashboard');
 
 Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 
 // Blog Post Management Routes (Admin)
-Route::middleware(['auth', 'verified', 'ensure.2fa'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
     Route::resource('blog-posts', BlogPostController::class);
 });
