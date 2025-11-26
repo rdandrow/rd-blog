@@ -93,19 +93,6 @@ const heroStyles = computed(() => {
 
 <style scoped>
 /* Custom gradient animation */
-@keyframes gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-.bg-gradient-to-br {
-  background-size: 200% 200%;
-  animation: gradient-shift 8s ease-in-out infinite;
-}
 
 /* Smooth scroll behavior */
 html {

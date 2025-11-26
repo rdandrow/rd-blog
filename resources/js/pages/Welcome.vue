@@ -1,42 +1,32 @@
 <script setup lang="ts">
 import { dashboard, login, register } from '@/routes';
 import { Head, Link } from '@inertiajs/vue3';
-
-interface BlogPost {
-    id: number;
-    title: string;
-    excerpt: string;
-    slug: string;
-    featured_image: string | null;
-    author: {
-        name: string;
-    };
-    published_at: string;
-    reading_time: number;
-    tags: string[];
-    is_featured: boolean;
-}
+import SearchSidebar from '@/components/SearchSidebar.vue';
+import { formatDate } from '@/composables/useBlogUtils';
+import { useSearchState } from '@/composables/useSearchState';
+import type { BlogPost, Author, SearchFilters } from '@/types';
 
 withDefaults(
     defineProps<{
         canRegister: boolean;
         posts?: BlogPost[];
         featured_posts?: BlogPost[];
+        filters?: SearchFilters;
+        availableTags?: string[];
+        availableAuthors?: Author[];
     }>(),
     {
         canRegister: true,
         posts: () => [],
         featured_posts: () => [],
+        filters: () => ({}),
+        availableTags: () => [],
+        availableAuthors: () => [],
     },
 );
 
-const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-};
+// Use search state composable
+const { isSearchOpen, openSearch, closeSearch } = useSearchState();
 </script>
 
 <template>
@@ -56,6 +46,18 @@ const formatDate = (dateString: string) => {
                         </Link>
                     </div>
                     <div class="flex items-center gap-4">
+                        <!-- Search Icon Button -->
+                        <button
+                            @click="openSearch"
+                            class="inline-flex items-center gap-2 rounded-sm border border-transparent px-3 py-1.5 text-sm leading-normal hover:border-[#19140035] dark:hover:border-[#3E3E3A] transition-colors"
+                            aria-label="Open search"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <span class="hidden sm:inline">Search</span>
+                        </button>
+                        
                         <Link
                             v-if="$page.props.auth.user"
                             :href="dashboard()"
@@ -102,6 +104,7 @@ const formatDate = (dateString: string) => {
                         <article 
                             v-for="post in featured_posts" 
                             :key="post.id"
+                            v-memo="[post.id, post.title, post.featured_image]"
                             class="group cursor-pointer"
                         >
                             <Link :href="`/blog/${post.slug}`" class="block">
@@ -133,7 +136,7 @@ const formatDate = (dateString: string) => {
                                         <h4 class="text-xl font-semibold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                             {{ post.title }}
                                         </h4>
-                                        <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
+                                        <p class="text-gray-600 dark:text-gray-300 mb-4 line-clamp-2 min-h-[3rem]">
                                             {{ post.excerpt }}
                                         </p>
                                         <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
@@ -157,6 +160,7 @@ const formatDate = (dateString: string) => {
                         <article 
                             v-for="post in posts" 
                             :key="post.id"
+                            v-memo="[post.id, post.title, post.featured_image]"
                             class="group cursor-pointer"
                         >
                             <Link :href="`/blog/${post.slug}`" class="block">
@@ -183,7 +187,7 @@ const formatDate = (dateString: string) => {
                                         <h4 class="font-semibold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
                                             {{ post.title }}
                                         </h4>
-                                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
+                                        <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2 min-h-[2.5rem]">
                                             {{ post.excerpt }}
                                         </p>
                                         <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -250,15 +254,17 @@ const formatDate = (dateString: string) => {
                 </p>
             </div>
         </footer>
+
+        <!-- Search Sidebar -->
+        <SearchSidebar
+            :is-open="isSearchOpen"
+            :filters="filters"
+            :available-tags="availableTags"
+            :available-authors="availableAuthors"
+            current-route="/"
+            @close="closeSearch"
+        />
     </div>
 </template>
 
-<style scoped>
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-</style>
+<!-- Line clamp utilities moved to global app.css for reusability -->

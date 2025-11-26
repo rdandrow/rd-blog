@@ -169,20 +169,7 @@ const getInitials = (name: string) => {
 </template>
 
 <style scoped>
-/* Line clamp utilities */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+/* Line clamp utilities are defined in global app.css */
 
 /* Smooth hover animations */
 article {

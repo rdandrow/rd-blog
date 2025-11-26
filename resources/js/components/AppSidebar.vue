@@ -14,7 +14,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, FileText } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, FileText, FilePenLine } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -27,6 +27,11 @@ const mainNavItems: NavItem[] = [
         title: 'Blog Posts',
         href: '/admin/blog-posts',
         icon: FileText,
+    },
+    {
+        title: 'My Drafts',
+        href: '/admin/blog-posts/drafts',
+        icon: FilePenLine,
     },
 ];
 
