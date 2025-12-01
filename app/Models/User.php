@@ -61,9 +61,25 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the user is an admin.
+     * Check if the user is a master admin.
+     */
+    public function isMasterAdmin(): bool
+    {
+        return $this->role === 'master_admin';
+    }
+
+    /**
+     * Check if the user is an admin (including master admin).
      */
     public function isAdmin(): bool
+    {
+        return in_array($this->role, ['master_admin', 'admin']);
+    }
+
+    /**
+     * Check if the user is a regular admin (not master admin).
+     */
+    public function isRegularAdmin(): bool
     {
         return $this->role === 'admin';
     }

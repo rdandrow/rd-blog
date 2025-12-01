@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'ensure.2fa' => \App\Http\Middleware\EnsureTwoFactorEnabled::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'master.admin' => \App\Http\Middleware\EnsureUserIsMasterAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

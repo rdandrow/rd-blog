@@ -8,6 +8,7 @@ use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\BlogPostController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\AdminAuthController;
+use App\Http\Controllers\Admin\UserManagementController;
 
 Route::get('/', [PublicBlogController::class, 'index'])->name('home');
 
@@ -31,6 +32,15 @@ Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
     Route::resource('blog-posts', BlogPostController::class);
+});
+
+// User Management Routes (Master Admin Only)
+Route::middleware(['auth', 'verified', 'ensure.2fa', 'master.admin'])->prefix('admin/users')->name('admin.users.')->group(function () {
+    Route::get('admins', [UserManagementController::class, 'indexAdmins'])->name('admins');
+    Route::get('members', [UserManagementController::class, 'indexMembers'])->name('members');
+    Route::post('/', [UserManagementController::class, 'store'])->name('store');
+    Route::patch('{user}/role', [UserManagementController::class, 'updateRole'])->name('updateRole');
+    Route::delete('{user}', [UserManagementController::class, 'destroy'])->name('destroy');
 });
 
 // Public blog post route (individual post viewing by slug)
