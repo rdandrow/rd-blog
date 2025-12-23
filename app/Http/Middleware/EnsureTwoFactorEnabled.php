@@ -10,6 +10,28 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureTwoFactorEnabled
 {
     /**
+     * Routes that should be excluded from 2FA enforcement.
+     */
+    protected array $except = [
+        'login',
+        'logout',
+        'register',
+        'register/*',
+        'password/*',
+        'email/*',
+        'two-factor-challenge',
+        'two-factor-challenge/*',
+        'user/two-factor-authentication',
+        'user/two-factor-qr-code',
+        'user/two-factor-secret-key',
+        'user/two-factor-recovery-codes',
+        'user/confirmed-two-factor-authentication',
+        'admin/login',
+        'admin/register',
+        'admin/logout',
+    ];
+
+    /**
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
@@ -18,13 +40,22 @@ class EnsureTwoFactorEnabled
     {
         $user = Auth::user();
 
-        // If user is authenticated but doesn't have 2FA enabled
-        if ($user && !$user->hasEnabledTwoFactorAuthentication()) {
-            // Check if they're already on the 2FA setup page
-            if (!$request->is('two-factor-challenge/*') && !$request->routeIs('auth.setup-two-factor')) {
-                // Redirect to 2FA setup route
-                return redirect()->route('register.setup-two-factor');
+        // Skip if user is not authenticated
+        if (!$user) {
+            return $next($request);
+        }
+
+        // Skip if route is in the exception list
+        foreach ($this->except as $pattern) {
+            if ($request->is($pattern) || $request->routeIs($pattern)) {
+                return $next($request);
             }
+        }
+
+        // If user is authenticated but doesn't have 2FA enabled
+        if (!$user->hasEnabledTwoFactorAuthentication()) {
+            // Redirect to 2FA setup route
+            return redirect()->route('register.setup-two-factor');
         }
 
         return $next($request);

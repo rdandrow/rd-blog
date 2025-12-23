@@ -126,6 +126,7 @@ class UserManagementController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
+            'email_verified_at' => now(), // Mark email as verified for admin-created users
         ]);
 
         return back()->with('success', 'User created successfully.');

@@ -102,7 +102,12 @@ class RegisterController extends Controller
             'two_factor_confirmed_at' => now(),
         ])->save();
 
-        return redirect('/dashboard')->with('status', 'Two-factor authentication has been enabled successfully!');
+        // Redirect based on user role
+        $redirectUrl = ($user->isMasterAdmin() || $user->isRegularAdmin()) 
+            ? '/admin/dashboard' 
+            : '/';
+
+        return redirect($redirectUrl)->with('status', 'Two-factor authentication has been enabled successfully!');
     }
 
     /**

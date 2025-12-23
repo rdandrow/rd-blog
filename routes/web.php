@@ -22,7 +22,8 @@ Route::middleware('guest')->group(function () {
 
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->middleware('auth')->name('admin.logout');
 
-Route::get('dashboard', function () {
+// Admin Dashboard
+Route::get('admin/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->name('dashboard');
 

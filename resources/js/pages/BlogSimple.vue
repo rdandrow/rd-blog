@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, toRefs } from 'vue';
 import type { AppPageProps, BlogPost, Author, SearchFilters } from '@/types';
 import SearchSidebar from '@/components/SearchSidebar.vue';
+import UserDropdown from '@/components/UserDropdown.vue';
 import { dashboard, login, register } from '@/routes';
 import { formatDate } from '@/composables/useBlogUtils';
 import { useSearchState } from '@/composables/useSearchState';
@@ -34,6 +35,15 @@ const pageTitle = computed(() => 'Blog - Latest Articles & Insights');
 
 // Use search state composable
 const { isSearchOpen, openSearch, closeSearch } = useSearchState();
+
+// Auth state
+const user = computed(() => page.props.auth?.user as any);
+const isMember = computed(() => user.value?.role === 'member');
+
+// Sign out function
+const signOut = () => {
+  router.post('/logout');
+};
 </script>
 
 <template>
@@ -63,13 +73,33 @@ const { isSearchOpen, openSearch, closeSearch } = useSearchState();
               <span class="hidden sm:inline">Search</span>
             </button>
             
-            <Link
-              v-if="$page.props.auth.user"
-              :href="dashboard()"
-              class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal hover:border-[#1915014a] dark:border-[#3E3E3A] dark:hover:border-[#62605b]"
-            >
-              Dashboard
-            </Link>
+            <template v-if="$page.props.auth.user">
+              <!-- Dashboard link for admins -->
+              <Link
+                v-if="!isMember"
+                :href="dashboard()"
+                class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal hover:border-[#1915014a] dark:border-[#3E3E3A] dark:hover:border-[#62605b]"
+              >
+                Dashboard
+              </Link>
+              
+              <!-- User dropdown for members -->
+              <UserDropdown
+                v-if="isMember"
+                :userName="user.name"
+                :userRole="user.role"
+              />
+              
+              <!-- Sign out button for admins -->
+              <button
+                v-if="!isMember"
+                @click="signOut"
+                class="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal hover:border-[#1915014a] dark:border-[#3E3E3A] dark:hover:border-[#62605b]"
+              >
+                Sign out
+              </button>
+            </template>
+            
             <template v-else>
               <Link
                 :href="login()"
