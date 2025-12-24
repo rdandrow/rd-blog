@@ -59,7 +59,9 @@ class PublicBlogController extends Controller
      */
     public function show(string $slug, Request $request): Response
     {
-        $post = BlogPost::with('author')
+        $post = BlogPost::with(['author', 'comments' => function ($query) {
+                $query->whereNull('parent_id')->with(['user', 'replies.user']);
+            }])
             ->published()
             ->where('slug', $slug)
             ->firstOrFail();
@@ -81,6 +83,28 @@ class PublicBlogController extends Controller
                 'reading_time' => $post->reading_time,
                 'tags' => $post->tags ?? [],
                 'is_featured' => $post->is_featured,
+                'comments' => $post->comments->map(function ($comment) {
+                    return [
+                        'id' => $comment->id,
+                        'content' => $comment->content,
+                        'created_at' => $comment->created_at->toISOString(),
+                        'user' => [
+                            'id' => $comment->user->id,
+                            'name' => $comment->user->name,
+                        ],
+                        'replies' => $comment->replies->map(function ($reply) {
+                            return [
+                                'id' => $reply->id,
+                                'content' => $reply->content,
+                                'created_at' => $reply->created_at->toISOString(),
+                                'user' => [
+                                    'id' => $reply->user->id,
+                                    'name' => $reply->user->name,
+                                ],
+                            ];
+                        }),
+                    ];
+                }),
             ],
         ]);
     }

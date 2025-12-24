@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\BlogPostController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -46,6 +47,12 @@ Route::middleware(['auth', 'verified', 'ensure.2fa', 'master.admin'])->prefix('a
 
 // Public blog post route (individual post viewing by slug)
 Route::get('blog/{slug}', [PublicBlogController::class, 'show'])->name('blog.show');
+
+// Comment routes (requires authentication)
+Route::middleware(['auth'])->group(function () {
+    Route::post('blog/{slug}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+});
 
 // Two-factor authentication setup routes (for new users during registration)
 Route::middleware(['auth'])->group(function () {
