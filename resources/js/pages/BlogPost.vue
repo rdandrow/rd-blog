@@ -55,7 +55,7 @@
           </div>
           
           <time :datetime="post.published_at">
-            {{ formatDate(post.published_at) }}
+            {{ formatPostDate(post.published_at) }}
           </time>
           
           <span v-if="post.reading_time">
@@ -188,7 +188,7 @@
                     {{ comment.user.name }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    {{ formatDate(comment.created_at) }}
+                    {{ formatCommentDate(comment.created_at) }}
                   </p>
                 </div>
               </div>
@@ -267,7 +267,7 @@
                         {{ reply.user.name }}
                       </p>
                       <p class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ formatDate(reply.created_at) }}
+                        {{ formatCommentDate(reply.created_at) }}
                       </p>
                     </div>
                   </div>
@@ -406,13 +406,28 @@ const canDeleteComment = (comment: Comment) => {
   return comment.user.id === user.id || user.role === 'admin' || user.role === 'master_admin';
 };
 
-const formatDate = (dateString: string): string => {
+const formatPostDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
+};
+
+const formatCommentDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const dateStr = date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const timeStr = date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+  return `${dateStr} at ${timeStr}`;
 };
 
 // Markdown is rendered via <MarkdownRender />

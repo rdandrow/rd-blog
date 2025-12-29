@@ -77,6 +77,20 @@ const user = page.props.auth.user;
                         <InputError class="mt-2" :message="errors.email" />
                     </div>
 
+                    <div class="grid gap-2">
+                        <Label for="website">Website</Label>
+                        <Input
+                            id="website"
+                            type="url"
+                            class="mt-1 block w-full"
+                            name="website"
+                            :default-value="user.website"
+                            autocomplete="url"
+                            placeholder="https://example.com"
+                        />
+                        <InputError class="mt-2" :message="errors.website" />
+                    </div>
+
                     <div v-if="mustVerifyEmail && !user.email_verified_at">
                         <p class="-mt-4 text-sm text-muted-foreground">
                             Your email address is unverified.
