@@ -106,6 +106,11 @@ class BlogPost extends Model
         return $this->hasMany(Comment::class)->orderBy('created_at', 'desc');
     }
 
+    public function likes(): HasMany
+    {
+        return $this->hasMany(BlogPostLike::class);
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('is_published', true)

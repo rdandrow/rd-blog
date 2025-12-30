@@ -61,10 +61,17 @@ class PublicBlogController extends Controller
     {
         $post = BlogPost::with(['author', 'comments' => function ($query) {
                 $query->whereNull('parent_id')->with(['user', 'replies.user']);
-            }])
+            }, 'likes'])
             ->published()
             ->where('slug', $slug)
             ->firstOrFail();
+
+        $user = $request->user();
+        $userHasLiked = false;
+        
+        if ($user) {
+            $userHasLiked = $post->likes()->where('user_id', $user->id)->exists();
+        }
 
         return Inertia::render('BlogPost', [
             'post' => [
@@ -83,6 +90,8 @@ class PublicBlogController extends Controller
                 'reading_time' => $post->reading_time,
                 'tags' => $post->tags ?? [],
                 'is_featured' => $post->is_featured,
+                'likes_count' => $post->likes->count(),
+                'user_has_liked' => $userHasLiked,
                 'comments' => $post->comments->map(function ($comment) {
                     return [
                         'id' => $comment->id,

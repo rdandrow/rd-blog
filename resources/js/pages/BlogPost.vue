@@ -98,6 +98,47 @@
         <MarkdownRender :content="post.content" />
       </div>
 
+      <!-- Like Section -->
+      <div v-if="$page.props.auth.user" class="mt-8 flex items-center gap-4">
+        <button
+          @click="toggleLike"
+          class="flex items-center gap-2 rounded-lg px-4 py-2 transition-colors"
+          :class="post.user_has_liked 
+            ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30' 
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'"
+        >
+          <svg 
+            class="w-6 h-6" 
+            :fill="post.user_has_liked ? 'currentColor' : 'none'" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </svg>
+          <span class="font-medium">{{ post.likes_count }} {{ post.likes_count === 1 ? 'Like' : 'Likes' }}</span>
+        </button>
+      </div>
+      
+      <!-- Like count for guests -->
+      <div v-else-if="post.likes_count > 0" class="mt-8">
+        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            />
+          </svg>
+          <span>{{ post.likes_count }} {{ post.likes_count === 1 ? 'Like' : 'Likes' }}</span>
+        </div>
+      </div>
+
       <!-- Footer -->
       <footer class="mt-12 border-t border-gray-200 dark:border-gray-700 pt-8">
         <div class="flex items-center justify-between">
@@ -332,6 +373,8 @@ interface BlogPost {
   reading_time: number | null;
   author: Author | null;
   comments?: Comment[];
+  likes_count: number;
+  user_has_liked: boolean;
 }
 
 interface Props {
@@ -349,6 +392,12 @@ const form = useForm({
 
 const replyingTo = ref<number | null>(null);
 const replyContent = ref('');
+
+const toggleLike = () => {
+  router.post(`/blog/${props.post.slug}/like`, {}, {
+    preserveScroll: true,
+  });
+};
 
 const submitMainComment = () => {
   // Ensure parent_id is null for main comments

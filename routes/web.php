@@ -7,6 +7,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\BlogPostController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\BlogPostLikeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -52,6 +53,9 @@ Route::get('blog/{slug}', [PublicBlogController::class, 'show'])->name('blog.sho
 Route::middleware(['auth'])->group(function () {
     Route::post('blog/{slug}/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+    
+    // Like routes
+    Route::post('blog/{slug}/like', [BlogPostLikeController::class, 'toggle'])->name('blog.like.toggle');
 });
 
 // Two-factor authentication setup routes (for new users during registration)
