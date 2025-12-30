@@ -68,9 +68,11 @@ class PublicBlogController extends Controller
 
         $user = $request->user();
         $userHasLiked = false;
+        $isFollowingAuthor = false;
         
         if ($user) {
             $userHasLiked = $post->likes()->where('user_id', $user->id)->exists();
+            $isFollowingAuthor = $user->following()->where('following_id', $post->author->id)->exists();
         }
 
         return Inertia::render('BlogPost', [
@@ -92,6 +94,7 @@ class PublicBlogController extends Controller
                 'is_featured' => $post->is_featured,
                 'likes_count' => $post->likes->count(),
                 'user_has_liked' => $userHasLiked,
+                'is_following_author' => $isFollowingAuthor,
                 'comments' => $post->comments->map(function ($comment) {
                     return [
                         'id' => $comment->id,

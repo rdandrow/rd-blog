@@ -142,10 +142,30 @@
       <!-- Footer -->
       <footer class="mt-12 border-t border-gray-200 dark:border-gray-700 pt-8">
         <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">
-              Written by {{ post.author?.name || 'Anonymous' }}
-            </h3>
+          <div class="flex items-center gap-4">
+            <div>
+              <Link
+                v-if="post.author"
+                :href="`/author/${post.author.id}`"
+                class="text-lg font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+              >
+                {{ post.author.name }}
+              </Link>
+              <h3 v-else class="text-lg font-medium text-gray-900 dark:text-white">
+                Anonymous
+              </h3>
+            </div>
+            
+            <button
+              v-if="$page.props.auth.user && post.author"
+              @click="toggleFollow"
+              class="rounded-full px-4 py-2 text-sm font-medium transition-colors"
+              :class="post.is_following_author 
+                ? 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600' 
+                : 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'"
+            >
+              {{ post.is_following_author ? 'Following' : 'Follow' }}
+            </button>
           </div>
           
           <div class="flex space-x-4">
@@ -375,6 +395,7 @@ interface BlogPost {
   comments?: Comment[];
   likes_count: number;
   user_has_liked: boolean;
+  is_following_author: boolean;
 }
 
 interface Props {
@@ -395,6 +416,13 @@ const replyContent = ref('');
 
 const toggleLike = () => {
   router.post(`/blog/${props.post.slug}/like`, {}, {
+    preserveScroll: true,
+  });
+};
+
+const toggleFollow = () => {
+  if (!props.post.author) return;
+  router.post(`/user/${props.post.author.id}/follow`, {}, {
     preserveScroll: true,
   });
 };

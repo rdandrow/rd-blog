@@ -8,6 +8,8 @@ use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\BlogPostController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\BlogPostLikeController;
+use App\Http\Controllers\UserFollowController;
+use App\Http\Controllers\AuthorProfileController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Admin\UserManagementController;
@@ -49,6 +51,9 @@ Route::middleware(['auth', 'verified', 'ensure.2fa', 'master.admin'])->prefix('a
 // Public blog post route (individual post viewing by slug)
 Route::get('blog/{slug}', [PublicBlogController::class, 'show'])->name('blog.show');
 
+// Author profile route
+Route::get('author/{id}', [AuthorProfileController::class, 'show'])->name('author.profile');
+
 // Comment routes (requires authentication)
 Route::middleware(['auth'])->group(function () {
     Route::post('blog/{slug}/comments', [CommentController::class, 'store'])->name('comments.store');
@@ -56,6 +61,9 @@ Route::middleware(['auth'])->group(function () {
     
     // Like routes
     Route::post('blog/{slug}/like', [BlogPostLikeController::class, 'toggle'])->name('blog.like.toggle');
+    
+    // Follow routes
+    Route::post('user/{userId}/follow', [UserFollowController::class, 'toggle'])->name('user.follow.toggle');
 });
 
 // Two-factor authentication setup routes (for new users during registration)
