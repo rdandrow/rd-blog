@@ -26,6 +26,7 @@ class EnsureTwoFactorEnabled
         'user/two-factor-secret-key',
         'user/two-factor-recovery-codes',
         'user/confirmed-two-factor-authentication',
+        'settings/two-factor',
         'admin/login',
         'admin/register',
         'admin/logout',

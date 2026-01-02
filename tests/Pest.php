@@ -12,7 +12,7 @@
 */
 
 pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->use(Illuminate\Foundation\Testing\LazilyRefreshDatabase::class)
     ->in('Feature');
 
 /*
@@ -41,7 +41,86 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * Create a test admin user.
+ */
+function createTestAdmin(array $attributes = []): App\Models\User
 {
-    // ..
+    return App\Models\User::factory()->admin()->create($attributes);
 }
+
+/**
+ * Create a test master admin user.
+ */
+function createTestMasterAdmin(array $attributes = []): App\Models\User
+{
+    return App\Models\User::factory()->masterAdmin()->create($attributes);
+}
+
+/**
+ * Create a test member user.
+ */
+function createTestMember(array $attributes = []): App\Models\User
+{
+    return App\Models\User::factory()->create($attributes);
+}
+
+/**
+ * Create a published blog post with an admin author.
+ */
+function createPublishedPost(array $attributes = []): App\Models\BlogPost
+{
+    if (!isset($attributes['user_id'])) {
+        $attributes['user_id'] = createTestAdmin()->id;
+    }
+    
+    return App\Models\BlogPost::factory()->published()->create($attributes);
+}
+
+/**
+ * Create a draft blog post with an admin author.
+ */
+function createDraftPost(array $attributes = []): App\Models\BlogPost
+{
+    if (!isset($attributes['user_id'])) {
+        $attributes['user_id'] = createTestAdmin()->id;
+    }
+    
+    return App\Models\BlogPost::factory()->draft()->create($attributes);
+}
+
+/**
+ * Create a comment on a blog post.
+ */
+function createComment(App\Models\BlogPost $post, ?App\Models\User $user = null, array $attributes = []): App\Models\Comment
+{
+    $attributes['blog_post_id'] = $post->id;
+    $attributes['user_id'] = $user?->id ?? createTestMember()->id;
+    
+    return App\Models\Comment::factory()->create($attributes);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Datasets
+|--------------------------------------------------------------------------
+|
+| Datasets allow you to run the same test with different data inputs,
+| reducing code duplication and improving test coverage.
+|
+*/
+
+dataset('user_roles', [
+    'admin' => [fn() => createTestAdmin()],
+    'master_admin' => [fn() => createTestMasterAdmin()],
+    'member' => [fn() => createTestMember()],
+]);
+
+dataset('admin_roles', [
+    'admin' => [fn() => createTestAdmin()],
+    'master_admin' => [fn() => createTestMasterAdmin()],
+]);
+
+dataset('non_admin_roles', [
+    'member' => [fn() => createTestMember()],
+]);
