@@ -58,7 +58,15 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "vendor/bin/pest --parallel"
+        ],
+        "test:sequential": [
+            "@php artisan config:clear --ansi",
+            "vendor/bin/pest"
+        ],
+        "test:coverage": [
+            "@php artisan config:clear --ansi",
+            "vendor/bin/pest --parallel --coverage --min=80"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
