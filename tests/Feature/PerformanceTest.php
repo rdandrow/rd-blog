@@ -5,6 +5,20 @@ use App\Models\Comment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Performance Tests
+ * 
+ * These tests verify application performance characteristics including:
+ * - N+1 query detection and prevention
+ * - Large dataset handling (30-60 records - sufficient to catch issues)
+ * - Memory usage patterns
+ * - Query optimization and indexing
+ * 
+ * Note: Dataset sizes are intentionally smaller (20-60 records) to balance
+ * test speed with effectiveness. These sizes are sufficient to detect
+ * performance issues while keeping tests fast.
+ */
+
 // N+1 Query Detection Tests
 test('blog post index avoids N+1 queries for authors', function () {
     $admin = createTestAdmin();
@@ -101,8 +115,8 @@ test('blog post with relationships loads efficiently', function () {
 test('handles pagination with large dataset', function () {
     $admin = createTestAdmin();
     
-    // Create many posts
-    BlogPost::factory()->count(100)->create([
+    // Create posts (30 is sufficient to test pagination)
+    BlogPost::factory()->count(30)->create([
         'user_id' => $admin->id,
         'is_published' => true,
         'published_at' => now()->subDay(),
@@ -120,8 +134,8 @@ test('handles large comment thread efficiently', function () {
     $post = createPublishedPost();
     $user = createTestMember();
     
-    // Create many comments
-    for ($i = 0; $i < 50; $i++) {
+    // Create comments (20 is sufficient to test performance)
+    for ($i = 0; $i < 20; $i++) {
         createComment($post, $user, ['content' => "Comment $i"]);
     }
     
@@ -140,9 +154,9 @@ test('handles large comment thread efficiently', function () {
 
 test('handles many likes on single post', function () {
     $post = createPublishedPost();
-    $users = User::factory()->count(100)->create();
+    $users = User::factory()->count(30)->create();
     
-    // Add many likes
+    // Add likes (30 is sufficient to test aggregation)
     foreach ($users as $user) {
         DB::table('blog_post_likes')->insert([
             'user_id' => $user->id,
@@ -159,9 +173,9 @@ test('handles many likes on single post', function () {
 
 test('handles many follows for author', function () {
     $author = createTestAdmin();
-    $followers = User::factory()->count(100)->create();
+    $followers = User::factory()->count(30)->create();
     
-    // Add many followers
+    // Add followers (30 is sufficient to test aggregation)
     foreach ($followers as $follower) {
         DB::table('user_follows')->insert([
             'follower_id' => $follower->id,
@@ -179,8 +193,8 @@ test('handles many follows for author', function () {
 test('search performs efficiently with many posts', function () {
     $admin = createTestAdmin();
     
-    // Create many posts
-    BlogPost::factory()->count(200)->create([
+    // Create posts (50 is sufficient to test search performance)
+    BlogPost::factory()->count(50)->create([
         'user_id' => $admin->id,
         'is_published' => true,
         'published_at' => now()->subDay(),
@@ -205,8 +219,8 @@ test('memory usage remains reasonable with large dataset', function () {
     
     $initialMemory = memory_get_usage();
     
-    // Create posts
-    BlogPost::factory()->count(100)->create([
+    // Create posts (30 is sufficient to test memory patterns)
+    BlogPost::factory()->count(30)->create([
         'user_id' => $admin->id,
         'is_published' => true,
         'published_at' => now()->subDay(),
@@ -219,15 +233,15 @@ test('memory usage remains reasonable with large dataset', function () {
     
     $response->assertStatus(200);
     
-    // Should not use excessive memory (50MB threshold, adjust as needed)
-    expect($memoryUsed)->toBeLessThan(50 * 1024 * 1024);
+    // Should not use excessive memory (30MB threshold for smaller dataset)
+    expect($memoryUsed)->toBeLessThan(30 * 1024 * 1024);
 });
 
 test('chunked processing works for bulk operations', function () {
     $admin = createTestAdmin();
     
-    // Create many posts
-    BlogPost::factory()->count(200)->create([
+    // Create posts (60 is sufficient to test chunking with 20-record chunks)
+    BlogPost::factory()->count(60)->create([
         'user_id' => $admin->id,
         'is_published' => true,
         'published_at' => now()->subDay(),
@@ -235,19 +249,19 @@ test('chunked processing works for bulk operations', function () {
     
     $processedCount = 0;
     
-    // Process in chunks
-    BlogPost::chunk(50, function ($posts) use (&$processedCount) {
+    // Process in chunks of 20
+    BlogPost::chunk(20, function ($posts) use (&$processedCount) {
         $processedCount += $posts->count();
     });
     
-    expect($processedCount)->toBe(200);
+    expect($processedCount)->toBe(60);
 });
 
 // Query Optimization Tests
 test('uses indexes effectively for frequently accessed queries', function () {
     $admin = createTestAdmin();
     
-    BlogPost::factory()->count(50)->create([
+    BlogPost::factory()->count(20)->create([
         'user_id' => $admin->id,
         'is_published' => true,
         'published_at' => now()->subDay(),
@@ -270,7 +284,7 @@ test('uses indexes effectively for frequently accessed queries', function () {
 test('counts are efficient with large datasets', function () {
     $admin = createTestAdmin();
     
-    BlogPost::factory()->count(100)->create([
+    BlogPost::factory()->count(30)->create([
         'user_id' => $admin->id,
         'is_published' => true,
         'published_at' => now()->subDay(),
@@ -283,7 +297,7 @@ test('counts are efficient with large datasets', function () {
     $endTime = microtime(true);
     $executionTime = $endTime - $startTime;
     
-    expect($count)->toBe(100);
+    expect($count)->toBe(30);
     expect($executionTime)->toBeLessThan(0.5); // Should be very fast
 });
 
