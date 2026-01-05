@@ -1,5 +1,33 @@
 <?php
 
+/**
+ * Middleware Test Suite
+ *
+ * Tests all custom and Laravel middleware execution, ordering, and functionality.
+ * Verifies middleware behavior across different routes and user roles.
+ *
+ * Test Categories:
+ * - Middleware Execution Order: Tests authentication before authorization
+ * - Role-Based Middleware: Admin and master admin access controls
+ * - Two-Factor Authentication: 2FA middleware behavior
+ * - Request Transformation: TrimStrings and ConvertEmptyStringsToNull
+ * - Authorization Middleware: Resource ownership validation
+ *
+ * Middleware Tested:
+ * - Authenticate: Ensures user authentication
+ * - EnsureTwoFactorEnabled: 2FA enforcement
+ * - EnsureUserIsAdmin: Admin-only access
+ * - EnsureUserIsMasterAdmin: Master admin-only access
+ * - TrimStrings: Whitespace trimming
+ * - ConvertEmptyStringsToNull: Empty string to null conversion
+ *
+ * Key Validations:
+ * - Proper middleware execution order
+ * - Redirect behavior for unauthenticated users
+ * - Access denial for insufficient permissions
+ * - Request data transformation
+ */
+
 use App\Models\BlogPost;
 use App\Models\User;
 
@@ -31,7 +59,7 @@ test('role authorization middleware executes after authentication', function () 
     // Member trying to access admin-only route
     $response = $this->actingAs($member)->get(route('admin.blog-posts.index'));
     
-    // Should get 403 (authorized but forbidden), not redirect to login
+    // Should get 403 (authenticated but forbidden), not 302 redirect to login
     $response->assertStatus(403);
 });
 
@@ -68,7 +96,7 @@ test('request passes through multiple middleware correctly', function () {
 
 test('middleware chain stops at first failure', function () {
     // Unauthenticated request to admin route
-    // Should stop at auth middleware, not reach role check
+    // Should stop at auth middleware (redirect to login), never reach role check
     $response = $this->get(route('admin.blog-posts.index'));
     
     $response->assertRedirect(route('login'));

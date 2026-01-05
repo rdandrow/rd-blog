@@ -1,5 +1,29 @@
 <?php
 
+/**
+ * Blog Post Like Test Suite
+ *
+ * Tests the like/unlike functionality for blog posts including toggle behavior,
+ * like counting, and access control.
+ *
+ * Test Categories:
+ * - Liking Blog Posts: Creating likes on posts
+ * - Unliking Blog Posts: Removing existing likes
+ * - Toggle Behavior: Like/unlike in single action
+ * - Like Counts: Accurate counting and display
+ * - Access Control: Authentication requirements
+ * - Multiple Users: Multiple users liking same post
+ *
+ * Features Tested:
+ * - Authenticated user can like posts
+ * - Toggle behavior (like/unlike same endpoint)
+ * - Like count tracking
+ * - Duplicate prevention (one like per user per post)
+ * - Guest access prevention
+ * - Success/error message display
+ * - Database integrity
+ */
+
 use App\Models\BlogPost;
 use App\Models\BlogPostLike;
 use App\Models\User;
@@ -34,7 +58,7 @@ test('cannot like non-existent blog posts', function () {
 
     $response = $this->actingAs($user)->post(route('blog.like.toggle', 'non-existent-slug'));
 
-    $response->assertNotFound();
+    $response->assertNotFound(); // 404 - blog post doesn't exist
 });
 
 test('users can like their own blog posts', function () {
@@ -62,7 +86,7 @@ test('multiple users can like the same blog post', function () {
     $this->actingAs($user2)->post(route('blog.like.toggle', $post->slug));
     $this->actingAs($user3)->post(route('blog.like.toggle', $post->slug));
 
-    $this->assertDatabaseCount('blog_post_likes', 3);
+    $this->assertDatabaseCount('blog_post_likes', 3); // All 3 likes should persist
     expect(BlogPostLike::where('blog_post_id', $post->id)->count())->toBe(3);
 });
 

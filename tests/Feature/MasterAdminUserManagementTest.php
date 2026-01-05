@@ -1,5 +1,28 @@
 <?php
 
+/**
+ * Master Admin User Management Test Suite
+ *
+ * Tests comprehensive user management functionality available exclusively to master admins.
+ * Covers CRUD operations for user accounts, role management, and access control.
+ *
+ * Test Categories:
+ * - Access Control (8 tests): Verifies only master admins can access user management
+ * - User Listing & Display (6 tests): Tests admin/member indexes with ordering and field validation
+ * - User Creation (20 tests): Validates user creation with all roles and validation rules
+ * - Role Updates (13 tests): Tests role promotions, demotions, and safety checks
+ * - User Deletion (9 tests): Verifies delete operations and last master admin protection
+ * - Edge Cases (4 tests): Complex scenarios including data integrity checks
+ *
+ * Safety Features Tested:
+ * - Cannot delete the last master admin
+ * - Cannot demote the last master admin
+ * - Cannot delete self
+ * - Role-based access control enforcement
+ *
+ * Total: 60 tests, 286 assertions
+ */
+
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
@@ -196,9 +219,9 @@ test('master admin can create a new member user', function () {
     $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
         'name' => 'New Member',
         'email' => 'newmember@test.com',
-        'password' => 'password123',
+        'password' => 'password123', // Min 8 chars required
         'password_confirmation' => 'password123',
-        'role' => 'member',
+        'role' => 'member', // Valid roles: member, admin, master_admin
     ]);
     
     $response->assertRedirect();
@@ -374,7 +397,7 @@ test('user creation requires unique email', function () {
     
     $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
         'name' => 'New User',
-        'email' => 'existing@test.com',
+        'email' => 'existing@test.com', // Duplicate email - must be unique
         'password' => 'password123',
         'password_confirmation' => 'password123',
         'role' => 'member',
@@ -415,7 +438,7 @@ test('user creation requires matching password confirmation', function () {
         'name' => 'New User',
         'email' => 'newuser@test.com',
         'password' => 'password123',
-        'password_confirmation' => 'different',
+        'password_confirmation' => 'different', // Mismatch - must match password field
         'role' => 'member',
     ]);
     

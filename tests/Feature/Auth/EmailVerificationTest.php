@@ -1,5 +1,28 @@
 <?php
 
+/**
+ * Email Verification Test Suite
+ *
+ * Tests email verification functionality including verification notice,
+ * verification link handling, and verified user state.
+ *
+ * Test Categories:
+ * - Verification Notice: Email verification prompt page
+ * - Email Verification: Verification link processing
+ * - Verified State: Already verified user handling
+ * - URL Validation: Signed URL and tampering prevention
+ *
+ * Features Tested:
+ * - Verification notice page rendering
+ * - Email verification with valid link
+ * - Already verified email handling
+ * - Invalid verification link rejection
+ * - Signed URL validation
+ * - Verification event firing
+ * - Redirect after verification
+ * - Authenticated user requirement
+ */
+
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;

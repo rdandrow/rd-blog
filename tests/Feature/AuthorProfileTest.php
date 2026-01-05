@@ -1,5 +1,29 @@
 <?php
 
+/**
+ * Author Profile Test Suite
+ *
+ * Tests public and authenticated viewing of author profile pages including
+ * blog posts, statistics, and social features.
+ *
+ * Test Categories:
+ * - Viewing Author Profiles: Public and authenticated access
+ * - Author Statistics: Post counts, follower counts, engagement metrics
+ * - Author Blog Posts: Published posts listing and pagination
+ * - Following Status: Follower/following relationships
+ * - Social Features: Follow counts and follow status display
+ *
+ * Features Tested:
+ * - Public profile access for guests
+ * - Authenticated user profile viewing
+ * - Published posts listing (excludes drafts)
+ * - Author statistics display
+ * - Following/follower counts
+ * - Current user's follow status
+ * - Profile data validation
+ * - 404 errors for non-existent authors
+ */
+
 use App\Models\BlogPost;
 use App\Models\User;
 

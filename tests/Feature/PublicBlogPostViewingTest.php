@@ -1,5 +1,35 @@
 <?php
 
+/**
+ * Public Blog Post Viewing Test Suite
+ *
+ * Tests all public-facing blog functionality including landing page, blog index,
+ * individual post viewing, search, filtering, and pagination.
+ *
+ * Test Categories:
+ * - Landing Page (Home): Homepage with featured posts
+ * - Blog Index: Main blog listing with pagination
+ * - Individual Post Viewing: Single post pages with comments
+ * - Search Functionality: Blog post search
+ * - Filtering: Tag filtering and sorting
+ * - Pagination: Large dataset handling
+ * - Published vs Draft: Visibility controls
+ * - Comments Display: Comment loading and threading
+ *
+ * Features Tested:
+ * - Guest and authenticated access
+ * - Featured posts display
+ * - Published post visibility
+ * - Draft post hiding from public
+ * - Search by title and content
+ * - Tag-based filtering
+ * - Chronological ordering
+ * - Like counts display
+ * - Comment counts and display
+ * - Author information display
+ * - Reading time calculation
+ */
+
 use App\Models\BlogPost;
 use App\Models\Comment;
 use App\Models\User;

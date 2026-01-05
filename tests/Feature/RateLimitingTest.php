@@ -1,5 +1,31 @@
 <?php
 
+/**
+ * Rate Limiting Test Suite
+ *
+ * Tests rate limiting functionality across different endpoints to prevent
+ * abuse and ensure system stability.
+ *
+ * Test Categories:
+ * - Failed Login Attempts: Throttling for incorrect passwords
+ * - Like Toggling: Spam prevention for post likes
+ * - Follow Actions: Rate limiting for user follows
+ *
+ * Features Tested:
+ * - Login attempt throttling (5 attempts limit)
+ * - Rate limit reset after successful login
+ * - Like toggle rate limiting (prevents rapid spam)
+ * - Follow/unfollow rate limiting
+ * - 429 Too Many Requests response
+ *
+ * Rate Limit Configurations:
+ * - Login attempts: 5 attempts per minute per email
+ * - Like toggles: 20 per minute per user
+ * - Follow actions: 10 per minute per user
+ *
+ * Note: Comment creation rate limiting not yet implemented (TODO)
+ */
+
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -7,7 +33,7 @@ use Illuminate\Support\Facades\RateLimiter;
 test('rate limits failed login attempts', function () {
     $user = createTestMember(['email' => 'test@example.com', 'password' => bcrypt('correct-password')]);
     
-    // Attempt multiple failed logins
+    // Attempt multiple failed logins (5 is the limit)
     for ($i = 0; $i < 5; $i++) {
         $response = $this->post(route('login'), [
             'email' => 'test@example.com',
@@ -21,7 +47,7 @@ test('rate limits failed login attempts', function () {
         'password' => 'wrong-password',
     ]);
     
-    $response->assertStatus(429); // Too Many Requests
+    $response->assertStatus(429); // Too Many Requests - throttled after 5 attempts
 });
 
 test('rate limit resets after successful login', function () {
@@ -32,7 +58,7 @@ test('rate limit resets after successful login', function () {
         'two_factor_confirmed_at' => null,
     ]);
     
-    // Make a few failed attempts
+    // Make a few failed attempts (under the 5 attempt limit)
     for ($i = 0; $i < 3; $i++) {
         $this->post(route('login'), [
             'email' => 'test@example.com',
@@ -40,7 +66,7 @@ test('rate limit resets after successful login', function () {
         ]);
     }
     
-    // Successful login
+    // Successful login should reset the rate limiter
     $response = $this->post(route('login'), [
         'email' => 'test@example.com',
         'password' => 'correct-password',
@@ -58,7 +84,7 @@ test('rate limits are per email address', function () {
         'two_factor_confirmed_at' => null,
     ]);
     
-    // Max out rate limit for user1
+    // Max out rate limit for user1 (5 failed attempts)
     for ($i = 0; $i < 5; $i++) {
         $this->post(route('login'), [
             'email' => 'user1@example.com',
@@ -66,7 +92,7 @@ test('rate limits are per email address', function () {
         ]);
     }
     
-    // user2 should still be able to attempt login
+    // user2 should still be able to attempt login (separate rate limit key)
     $response = $this->post(route('login'), [
         'email' => 'user2@example.com',
         'password' => 'password',
@@ -79,7 +105,7 @@ test('rate limits like toggling to prevent spam', function () {
     $user = createTestMember();
     $post = createPublishedPost();
     
-    // Rapidly toggle likes
+    // Rapidly toggle likes (20 per minute allowed)
     $successfulToggles = 0;
     for ($i = 0; $i < 20; $i++) {
         $response = $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
@@ -87,11 +113,11 @@ test('rate limits like toggling to prevent spam', function () {
         if ($response->status() === 200 || $response->status() === 302) {
             $successfulToggles++;
         } else if ($response->status() === 429) {
-            break;
+            break; // Hit rate limit
         }
     }
     
-    // Should allow reasonable number of toggles
+    // Should allow reasonable number of toggles (up to 20/min)
     expect($successfulToggles)->toBeGreaterThan(0);
 });
 
@@ -99,7 +125,7 @@ test('rate limits follow/unfollow actions', function () {
     $user = createTestMember();
     $author = createTestAdmin();
     
-    // Rapidly toggle follow
+    // Rapidly toggle follow (10 per minute allowed)
     $successfulToggles = 0;
     for ($i = 0; $i < 20; $i++) {
         $response = $this->actingAs($user)->post(route('user.follow.toggle', $author->id));
@@ -107,11 +133,11 @@ test('rate limits follow/unfollow actions', function () {
         if ($response->status() === 200 || $response->status() === 302) {
             $successfulToggles++;
         } else if ($response->status() === 429) {
-            break;
+            break; // Hit rate limit
         }
     }
     
-    // Should allow reasonable number of toggles
+    // Should allow reasonable number of toggles (up to 10/min)
     expect($successfulToggles)->toBeGreaterThan(0);
 });
 

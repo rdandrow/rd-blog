@@ -46,7 +46,7 @@ test('blog post index avoids N+1 queries for authors', function () {
 test('author profile avoids N+1 queries for posts', function () {
     $admin = createTestAdmin();
     
-    // Create multiple posts
+    // Create multiple posts with same author
     BlogPost::factory()->count(10)->create([
         'user_id' => $admin->id,
         'is_published' => true,
@@ -60,7 +60,7 @@ test('author profile avoids N+1 queries for posts', function () {
     $queries = DB::getQueryLog();
     DB::disableQueryLog();
     
-    // Should load posts efficiently
+    // Should load posts efficiently with eager loading (< 15 queries for 10 posts)
     expect(count($queries))->toBeLessThan(15);
 });
 
@@ -68,7 +68,7 @@ test('comment listing avoids N+1 queries for users', function () {
     $post = createPublishedPost();
     $users = User::factory()->count(10)->create();
     
-    // Create comments from different users
+    // Create comments from different users (10 authors = potential N+1 issue)
     foreach ($users as $user) {
         createComment($post, $user);
     }
@@ -80,7 +80,7 @@ test('comment listing avoids N+1 queries for users', function () {
     $queries = DB::getQueryLog();
     DB::disableQueryLog();
     
-    // Should eagerly load comment authors
+    // Should eagerly load comment authors (< 20 queries for 10 comments)
     expect(count($queries))->toBeLessThan(20);
 });
 

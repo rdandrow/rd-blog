@@ -1,5 +1,31 @@
 <?php
 
+/**
+ * Role-Based Access Control Test Suite
+ *
+ * Tests comprehensive role-based access controls across all user roles
+ * (master_admin, admin, member) and verifies proper authorization enforcement.
+ *
+ * Test Categories:
+ * - Role Detection: User model role identification methods
+ * - Dashboard Access: Role-based dashboard routing
+ * - Blog Post Management: Create, edit, delete authorization
+ * - User Management: Master admin exclusive features
+ * - Settings Access: Admin settings panel authorization
+ * - Mixed Scenarios: Complex authorization combinations
+ *
+ * Roles Tested:
+ * - master_admin: Full system access including user management
+ * - admin: Content management and blog post operations
+ * - member: Read-only access with commenting/liking abilities
+ *
+ * Authorization Rules:
+ * - Admins can only edit their own posts
+ * - Master admins can edit any post
+ * - Members cannot access admin features
+ * - Guests redirected to login for protected routes
+ */
+
 use App\Models\BlogPost;
 use App\Models\User;
 
@@ -14,9 +40,9 @@ test('user model correctly identifies master admin role', function () {
     
     expect($masterAdmin->isMasterAdmin())->toBeTrue();
     expect($masterAdmin->isAdmin())->toBeTrue(); // Master admin is also admin
-    expect($masterAdmin->isRegularAdmin())->toBeFalse();
+    expect($masterAdmin->isRegularAdmin())->toBeFalse(); // Regular admin excludes master_admin
     expect($masterAdmin->isMember())->toBeFalse();
-    expect($masterAdmin->role)->toBe('master_admin');
+    expect($masterAdmin->role)->toBe('master_admin'); // Enum value in database
 });
 
 test('user model correctly identifies admin role', function () {
@@ -63,7 +89,7 @@ test('member users cannot access dashboard', function () {
     
     $response = $this->actingAs($member)->get(route('dashboard'));
     
-    $response->assertStatus(403);
+    $response->assertStatus(403); // Forbidden - members don't have dashboard access
 });
 
 test('guests cannot access dashboard', function () {

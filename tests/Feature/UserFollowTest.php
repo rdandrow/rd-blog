@@ -1,5 +1,30 @@
 <?php
 
+/**
+ * User Follow Test Suite
+ *
+ * Tests the follow/unfollow functionality between users (readers following authors)
+ * including toggle behavior, follower counting, and relationship management.
+ *
+ * Test Categories:
+ * - Following Authors: Creating follow relationships
+ * - Unfollowing Authors: Removing follow relationships
+ * - Toggle Behavior: Follow/unfollow in single action
+ * - Follower Counts: Tracking followers and following
+ * - Access Control: Authentication requirements
+ * - Self-Follow Prevention: Users cannot follow themselves
+ *
+ * Features Tested:
+ * - Authenticated users can follow admins (authors)
+ * - Toggle behavior (follow/unfollow same endpoint)
+ * - Follower/following counts
+ * - Duplicate prevention
+ * - Self-follow prevention
+ * - Guest access prevention
+ * - Non-existent user handling
+ * - Success/error messages
+ */
+
 use App\Models\User;
 
 // Following Authors Tests
@@ -28,7 +53,7 @@ test('users cannot follow non-existent users', function () {
 
     $response = $this->actingAs($member)->post(route('user.follow.toggle', 99999));
 
-    $response->assertNotFound();
+    $response->assertNotFound(); // 404 - user doesn't exist
 });
 
 test('users cannot follow themselves', function () {
@@ -37,7 +62,7 @@ test('users cannot follow themselves', function () {
     $response = $this->actingAs($author)->post(route('user.follow.toggle', $author->id));
 
     $response->assertRedirect();
-    $response->assertSessionHas('error', 'You cannot follow yourself');
+    $response->assertSessionHas('error', 'You cannot follow yourself'); // Business rule: self-follow prevention
     
     expect($author->following()->where('following_id', $author->id)->exists())->toBeFalse();
 });
@@ -49,7 +74,7 @@ test('users cannot follow member users (non-authors)', function () {
     $response = $this->actingAs($member1)->post(route('user.follow.toggle', $member2->id));
 
     $response->assertRedirect();
-    $response->assertSessionHas('error', 'You can only follow authors');
+    $response->assertSessionHas('error', 'You can only follow authors'); // Only admin/master_admin can be followed
     
     expect($member1->following()->where('following_id', $member2->id)->exists())->toBeFalse();
 });
@@ -61,7 +86,7 @@ test('users can follow master admin users', function () {
     $response = $this->actingAs($member)->post(route('user.follow.toggle', $masterAdmin->id));
 
     $response->assertRedirect();
-    $response->assertSessionHas('success', 'Following successfully');
+    $response->assertSessionHas('success', 'Following successfully'); // Master admins are authors too
     
     expect($member->following()->where('following_id', $masterAdmin->id)->exists())->toBeTrue();
 });

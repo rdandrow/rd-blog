@@ -1,5 +1,29 @@
 <?php
 
+/**
+ * Password Reset Test Suite
+ *
+ * Tests password reset functionality including reset link generation,
+ * token validation, and password update process.
+ *
+ * Test Categories:
+ * - Reset Link Request: Password reset email generation
+ * - Reset Screen: Password reset page rendering
+ * - Password Update: New password validation and update
+ * - Token Validation: Reset token verification
+ *
+ * Features Tested:
+ * - Reset link request page accessibility
+ * - Password reset email sending
+ * - Reset token generation
+ * - Reset page rendering with valid token
+ * - Password update with valid token
+ * - Invalid token rejection
+ * - Password confirmation validation
+ * - Email validation
+ * - Redirect after successful reset
+ */
+
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;

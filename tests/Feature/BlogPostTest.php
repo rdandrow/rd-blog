@@ -1,5 +1,31 @@
 <?php
 
+/**
+ * Blog Post Management Test Suite
+ *
+ * Tests all CRUD operations for blog posts including creation, editing, publishing,
+ * and deletion. Verifies admin and master admin access controls.
+ *
+ * Test Categories:
+ * - List/Index Tests: Blog post listing and filtering
+ * - Create Tests: Post creation with validation and file uploads
+ * - Edit Tests: Post editing and update operations
+ * - Delete Tests: Post deletion and authorization
+ * - Publishing Tests: Draft/publish workflow
+ * - Featured Image Tests: Image upload and validation
+ * - Slug Generation Tests: Automatic slug creation
+ * - Validation Tests: Input validation and error handling
+ *
+ * Features Tested:
+ * - Role-based access (admin/master admin)
+ * - Featured image upload with validation
+ * - Automatic slug generation
+ * - Reading time calculation
+ * - Tag management
+ * - Draft and published states
+ * - Author ownership validation
+ */
+
 use App\Models\BlogPost;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -90,9 +116,9 @@ test('admin users can create a published blog post', function () {
         'title' => 'Test Blog Post',
         'excerpt' => 'This is a test excerpt',
         'content' => 'This is the test content for the blog post.',
-        'tags' => ['Laravel', 'Testing'],
-        'is_featured' => true,
-        'is_published' => true,
+        'tags' => ['Laravel', 'Testing'], // Array of strings
+        'is_featured' => true, // Featured posts appear on landing page
+        'is_published' => true, // Published immediately with published_at timestamp
     ];
 
     $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), $postData);
@@ -120,7 +146,7 @@ test('admin users can create a draft blog post', function () {
         'excerpt' => 'This is a draft excerpt',
         'content' => 'This is the draft content.',
         'is_featured' => false,
-        'is_published' => false,
+        'is_published' => false, // Draft - no published_at timestamp
     ];
 
     $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), $postData);
@@ -137,7 +163,7 @@ test('blog post slug is automatically generated from title', function () {
     $admin = createTestAdmin();
 
     $postData = [
-        'title' => 'My Awesome Blog Post!',
+        'title' => 'My Awesome Blog Post!', // Special chars removed, converted to kebab-case
         'excerpt' => 'Test excerpt',
         'content' => 'Test content',
         'is_published' => false,
@@ -205,7 +231,7 @@ test('member users cannot create blog posts', function () {
 
     $response = $this->actingAs($member)->post(route('admin.blog-posts.store'), $postData);
 
-    $response->assertStatus(403);
+    $response->assertStatus(403); // Forbidden - only admin/master_admin can create posts
 });
 
 // Edit/Update Tests

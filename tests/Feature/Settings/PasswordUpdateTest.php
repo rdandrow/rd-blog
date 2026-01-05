@@ -1,5 +1,27 @@
 <?php
 
+/**
+ * Password Update Test Suite
+ *
+ * Tests password change functionality including current password validation,
+ * new password requirements, and security checks.
+ *
+ * Test Categories:
+ * - Password Update Page: Password change form rendering
+ * - Password Change: New password validation and update
+ * - Current Password: Current password verification
+ * - Password Requirements: Strength and confirmation validation
+ *
+ * Features Tested:
+ * - Password update page accessibility
+ * - Successful password change
+ * - Current password verification
+ * - New password confirmation matching
+ * - Password strength requirements
+ * - Wrong current password rejection
+ * - Authentication requirement
+ */
+
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 

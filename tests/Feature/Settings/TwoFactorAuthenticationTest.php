@@ -1,5 +1,29 @@
 <?php
 
+/**
+ * Two-Factor Authentication Settings Test Suite
+ *
+ * Tests two-factor authentication management including enabling, disabling,
+ * QR code generation, and recovery codes.
+ *
+ * Test Categories:
+ * - 2FA Settings Page: Two-factor settings interface
+ * - Enable 2FA: Activation process and confirmation
+ * - Disable 2FA: Deactivation with password confirmation
+ * - QR Code: QR code generation and display
+ * - Recovery Codes: Backup code generation and regeneration
+ *
+ * Features Tested:
+ * - 2FA settings page rendering
+ * - Two-factor authentication enabling
+ * - QR code SVG generation
+ * - Recovery codes generation
+ * - Two-factor authentication disabling
+ * - Password confirmation requirement
+ * - Code confirmation during setup
+ * - Recovery code regeneration
+ */
+
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;

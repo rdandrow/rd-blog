@@ -1,5 +1,30 @@
 <?php
 
+/**
+ * Error Handling Test Suite
+ *
+ * Tests application error handling, graceful degradation, and proper
+ * error responses across various failure scenarios.
+ *
+ * Test Categories:
+ * - Database Connection Failures: Connection and query errors
+ * - Transaction Rollback: Data integrity on errors
+ * - File System Errors: Storage and upload failures
+ * - Invalid Input: Malformed data handling
+ * - 404 Errors: Missing resource responses
+ * - 500 Errors: Internal server error handling
+ *
+ * Features Tested:
+ * - Graceful database failure handling
+ * - Transaction rollback on errors
+ * - File upload error handling
+ * - Missing resource (404) responses
+ * - Invalid input validation
+ * - Error message sanitization (no sensitive data exposure)
+ * - Proper HTTP status codes
+ * - Exception handling
+ */
+
 use App\Models\BlogPost;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;

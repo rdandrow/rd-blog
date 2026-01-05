@@ -1,5 +1,29 @@
 <?php
 
+/**
+ * Comment System Test Suite
+ *
+ * Tests the complete comment functionality including creating, replying to,
+ * editing, and deleting comments on blog posts.
+ *
+ * Test Categories:
+ * - Adding Comments: Basic comment creation and validation
+ * - Reply Comments: Nested comment replies and threading
+ * - Comment Validation: Input validation and error handling
+ * - Comment Deletion: Soft deletion and authorization
+ * - Comment Display: Comment retrieval and ordering
+ * - Access Control: Authentication and ownership checks
+ *
+ * Features Tested:
+ * - Authenticated user comment creation
+ * - Nested replies (parent-child relationships)
+ * - Comment content validation (required, max length)
+ * - Author-only deletion rights
+ * - Soft delete functionality
+ * - Guest access prevention
+ * - Invalid parent comment handling
+ */
+
 use App\Models\BlogPost;
 use App\Models\Comment;
 use App\Models\User;
@@ -57,7 +81,7 @@ test('comment content cannot exceed maximum length', function () {
     $post = $this->post;
 
     $response = $this->actingAs($user)->post(route('comments.store', $post->slug), [
-        'content' => str_repeat('a', 1001), // Exceeds 1000 char limit
+        'content' => str_repeat('a', 1001), // 1001 chars - exceeds 1000 char limit
     ]);
 
     $response->assertSessionHasErrors('content');
@@ -68,7 +92,7 @@ test('comment content can be at maximum length', function () {
     $user = $this->user;
     $post = $this->post;
 
-    $content = str_repeat('a', 1000); // Exactly 1000 chars
+    $content = str_repeat('a', 1000); // Exactly 1000 chars - at boundary limit
 
     $response = $this->actingAs($user)->post(route('comments.store', $post->slug), [
         'content' => $content,
@@ -140,7 +164,7 @@ test('authenticated users can reply to comments', function () {
 
     $response = $this->actingAs($user)->post(route('comments.store', $post->slug), [
         'content' => 'This is a reply.',
-        'parent_id' => $comment->id,
+        'parent_id' => $comment->id, // Creates nested comment thread
     ]);
 
     $response->assertRedirect();
@@ -160,7 +184,7 @@ test('reply must have valid parent comment id', function () {
 
     $response = $this->actingAs($user)->post(route('comments.store', $post->slug), [
         'content' => 'This is a reply.',
-        'parent_id' => 99999, // Non-existent comment ID
+        'parent_id' => 99999, // Non-existent comment ID - must exist in database
     ]);
 
     $response->assertSessionHasErrors('parent_id');
@@ -172,7 +196,7 @@ test('reply must belong to the same blog post as parent comment', function () {
     $post2 = createPublishedPost();
     
     $commentOnPost2 = Comment::factory()->create([
-        'blog_post_id' => $post2->id,
+        'blog_post_id' => $post2->id, // Parent comment is on a different post
     ]);
 
     $response = $this->actingAs($user)->post(route('comments.store', $post->slug), [

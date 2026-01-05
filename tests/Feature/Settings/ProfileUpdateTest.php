@@ -1,5 +1,28 @@
 <?php
 
+/**
+ * Profile Update Test Suite
+ *
+ * Tests user profile management including viewing and updating
+ * profile information with validation.
+ *
+ * Test Categories:
+ * - Profile Display: Profile edit page rendering
+ * - Profile Update: Name and email modification
+ * - Email Validation: Email uniqueness and format
+ * - Email Verification: Re-verification on email change
+ *
+ * Features Tested:
+ * - Profile page accessibility
+ * - Name update functionality
+ * - Email update functionality
+ * - Email uniqueness validation
+ * - Email format validation
+ * - Email verification reset on change
+ * - Authentication requirement
+ * - Form validation errors
+ */
+
 use App\Models\User;
 
 test('profile page is displayed', function () {

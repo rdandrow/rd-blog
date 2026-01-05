@@ -1,5 +1,21 @@
 <?php
 
+/**
+ * Dashboard Test Suite
+ *
+ * Tests dashboard access control and functionality for authenticated users.
+ * Verifies proper authentication enforcement and dashboard content display.
+ *
+ * Test Categories:
+ * - Authentication: Guest redirect behavior
+ * - Dashboard Access: Authenticated user access
+ *
+ * Features Tested:
+ * - Guest users redirected to login
+ * - Authenticated users can access dashboard
+ * - Proper status codes and redirects
+ */
+
 use App\Models\User;
 
 test('guests are redirected to the login page', function () {

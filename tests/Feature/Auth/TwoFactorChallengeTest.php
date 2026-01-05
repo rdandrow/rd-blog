@@ -1,5 +1,27 @@
 <?php
 
+/**
+ * Two-Factor Authentication Challenge Test Suite
+ *
+ * Tests two-factor authentication challenge process including
+ * code validation, recovery codes, and security enforcement.
+ *
+ * Test Categories:
+ * - Challenge Screen: 2FA challenge page rendering
+ * - Code Validation: Authentication code verification
+ * - Recovery Codes: Backup authentication method
+ * - Authentication State: Session and state management
+ *
+ * Features Tested:
+ * - 2FA challenge page accessibility
+ * - Valid authentication code acceptance
+ * - Invalid code rejection
+ * - Recovery code authentication
+ * - Challenge screen protection (authenticated only)
+ * - Redirect after successful 2FA
+ * - Rate limiting on failed attempts
+ */
+
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;

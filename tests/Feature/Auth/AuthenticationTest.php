@@ -1,5 +1,30 @@
 <?php
 
+/**
+ * Authentication Test Suite
+ *
+ * Tests user authentication functionality including login, logout,
+ * and authentication state management.
+ *
+ * Test Categories:
+ * - Login Screen: Login page rendering
+ * - Login Process: Credential validation and authentication
+ * - Logout: Session termination and cleanup
+ * - Rate Limiting: Brute force prevention
+ * - 2FA Integration: Two-factor authentication flow
+ *
+ * Features Tested:
+ * - Login page accessibility
+ * - Valid credential authentication
+ * - Invalid credential rejection
+ * - Remember me functionality
+ * - Logout process
+ * - Session management
+ * - Rate limiting on failed attempts
+ * - Redirect after login
+ * - 2FA challenge redirection
+ */
+
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
