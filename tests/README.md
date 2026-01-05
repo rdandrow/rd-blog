@@ -79,9 +79,9 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Groups**: `auth`, `email-verification`
 - **Key Features**: Duplicate prevention, rate limiting
 
-#### User & Role Management
+#### User & Role Management (`tests/Feature/Admin/`)
 
-##### `MasterAdminUserManagementTest.php` ⭐
+##### `Admin/MasterAdminUserManagementTest.php` ⭐
 - **Purpose**: Comprehensive user management (master admin exclusive)
 - **Structure**: 6 describe blocks
   - Access Control (8 tests)
@@ -95,7 +95,7 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Safety Features**: Cannot delete/demote last master admin, cannot delete self
 - **Custom Expectations**: `toBeSuccessfulInertiaResponse()`, `toBeForbidden()`, `toRedirectToLogin()`
 
-##### `RoleBasedAccessTest.php`
+##### `Admin/RoleBasedAccessTest.php`
 - **Purpose**: Role-based access control across all routes
 - **Structure**: 8 describe blocks covering different access patterns
 - **Tests**: 56 tests covering three roles (master_admin, admin, member)
@@ -106,9 +106,9 @@ Feature tests verify complete user-facing functionality including HTTP requests,
   - Master admins: Edit any post, access user management
   - Members: Read-only with commenting/liking
 
-#### Blog Post Management
+#### Blog Post Management (`tests/Feature/Admin/`)
 
-##### `BlogPostTest.php`
+##### `Admin/BlogPostTest.php`
 - **Purpose**: Complete blog post CRUD operations
 - **Structure**: 10 describe blocks
   - Blog Post Listing (3 tests)
@@ -126,7 +126,9 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Features**: Role-based access, file uploads, reading time calculation, tag management, slug generation
 - **Custom Expectations**: `toBeSuccessfulInertiaResponse()`, `toHaveSuccessMessage()`, `toHaveValidationError()`
 
-##### `PublicBlogPostViewingTest.php`
+#### Public Features (`tests/Feature/Public/`)
+
+##### `Public/PublicBlogPostViewingTest.php`
 - **Purpose**: Public-facing blog functionality
 - **Structure**: 7 describe blocks
   - Landing Page (Home) - 12 tests
@@ -140,7 +142,9 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Groups**: `public`, `guest`, `authenticated`, `blog-list`, `blog-post`, `search`, `filtering`
 - **Features**: Guest/authenticated access, search, tags, likes, comments, featured posts
 
-##### `BlogPostLikeTest.php`
+#### Social Features (`tests/Feature/Social/`)
+
+##### `Social/BlogPostLikeTest.php`
 - **Purpose**: Like/unlike functionality for posts
 - **Structure**: 7 describe blocks
   - Liking Blog Posts (8 tests)
@@ -155,9 +159,7 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Features**: Toggle endpoint, duplicate prevention, like counting, cascade deletion
 - **Custom Expectations**: `toHaveSuccessMessage()`, `toRedirectToLogin()`, `toBeNotFound()`
 
-#### Comments
-
-##### `CommentTest.php`
+##### `Social/CommentTest.php`
 - **Purpose**: Complete comment system functionality
 - **Structure**: 5 describe blocks
   - Comment Creation (5 tests)
@@ -170,9 +172,7 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Features**: Nested replies, content validation (max 1000 chars), author-only deletion, soft deletes
 - **Custom Expectations**: `toHaveSuccessMessage()`, `toRedirectToLogin()`, `toHaveValidationError()`
 
-#### Social Features
-
-##### `UserFollowTest.php`
+##### `Social/UserFollowTest.php`
 - **Purpose**: Follow/unfollow functionality between users
 - **Structure**: 8 describe blocks
   - Following Authors (9 tests)
@@ -187,7 +187,7 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Features**: Follow admins (authors), self-follow prevention, follower/following counts, cascade deletion
 - **Custom Expectations**: `toHaveSuccessMessage()`, `toRedirectToLogin()`, `toBeNotFound()`, `toHaveErrorMessage()`
 
-##### `AuthorProfileTest.php`
+##### `Public/AuthorProfileTest.php`
 - **Purpose**: Author profile pages with posts and statistics
 - **Structure**: 6 describe blocks
   - Viewing Author Profiles (2 tests)
@@ -201,9 +201,9 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Features**: Public access, published posts listing, follower counts, follow status
 - **Custom Expectations**: `toBeSuccessfulInertiaResponse()`, `toBeNotFound()`
 
-#### System & Infrastructure
+#### System Tests (`tests/Feature/System/`)
 
-##### `MiddlewareTest.php`
+##### `System/MiddlewareTest.php`
 - **Purpose**: Middleware execution and functionality
 - **Structure**: 5 describe blocks
   - Middleware Execution Order (7 tests)
@@ -222,7 +222,7 @@ Feature tests verify complete user-facing functionality including HTTP requests,
   - ConvertEmptyStringsToNull: Empty string conversion
 - **Custom Expectations**: `toRedirectToLogin()`, `toBeForbidden()`
 
-##### `RateLimitingTest.php`
+##### `System/RateLimitingTest.php`
 - **Purpose**: Rate limiting across endpoints
 - **Structure**: 9 describe blocks
   - Login Rate Limiting (3 tests)
@@ -241,7 +241,7 @@ Feature tests verify complete user-facing functionality including HTTP requests,
   - Follow actions: 10 per minute per user
 - **Custom Expectations**: `toBeRateLimited()`
 
-##### `PerformanceTest.php`
+##### `System/PerformanceTest.php`
 - **Purpose**: Application performance characteristics
 - **Structure**: 13 describe blocks (nested)
   - N+1 Query Detection
@@ -261,7 +261,7 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Groups**: `performance`, `n+1`, `queries`, `optimization`, `memory`
 - **Note**: Dataset sizes (20-60 records) balanced for speed vs effectiveness
 
-##### `ErrorHandlingTest.php`
+##### `System/ErrorHandlingTest.php`
 - **Purpose**: Error handling and graceful degradation
 - **Structure**: 6 describe blocks
   - Database Connection Failures (2 tests)
@@ -274,11 +274,11 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 - **Custom Expectations**: `toBeNotFound()`
 - **Features**: Graceful failures, error message sanitization
 
-##### `DashboardTest.php`
+##### `Admin/DashboardTest.php`
 - **Purpose**: Dashboard access control
 - **Structure**: 1 describe block (Dashboard Access)
 - **Tests**: 2 tests
-- **Groups**: `dashboard`, `authenticated`, `guest`
+- **Groups**: `dashboard`, `authenticated`, `guest`, `admin`
 - **Custom Expectations**: `toRedirectToLogin()`
 
 #### Settings

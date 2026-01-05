@@ -13,6 +13,15 @@ This document outlines best practices for improving our Pest PHP test suite base
 - Scoped `beforeEach()` within describe blocks
 - Datasets created and applied for repetitive tests
 - Clear test hierarchy and organization
+- **✨ Directory structure reorganized to mirror functional areas**
+
+**Directory Organization:**
+- `tests/Feature/Admin/` - Administrative operations (4 files)
+- `tests/Feature/Auth/` - Authentication flows (7 files)
+- `tests/Feature/Public/` - Public-facing features (2 files)
+- `tests/Feature/Social/` - Social interactions (3 files)
+- `tests/Feature/Settings/` - User settings (3 files)
+- `tests/Feature/System/` - System-level tests (4 files)
 
 **Already Following:**
 - Clear, descriptive test names
@@ -43,6 +52,229 @@ it('allows admins to perform action', function ($userFactory) {
     expect($response)->toBeSuccessful();
 })->with('admin_roles');
 ```
+
+---
+
+## Directory Structure & Organization Best Practices
+
+### Pest Framework Principle: Mirror Your Application Structure
+
+Following Pest best practices, **test directories should mirror your application structure** for easy navigation and maintenance. This creates a 1:1 mapping that makes it intuitive to find tests for any given class or feature.
+
+### Feature Tests Structure (Current)
+
+Our feature tests now follow a logical grouping structure that mirrors the application's functional areas:
+
+```
+tests/Feature/
+├── Admin/                             # Administrative functions (authenticated admins)
+│   ├── BlogPostTest.php               # → app/Http/Controllers/BlogPostController (CRUD)
+│   ├── DashboardTest.php              # → Dashboard access control
+│   ├── MasterAdminUserManagementTest.php # → Master admin user operations
+│   └── RoleBasedAccessTest.php        # → Authorization & permissions
+├── Auth/                              # Authentication flows
+│   ├── LoginTest.php                  # → Authentication flow
+│   ├── RegistrationTest.php           # → User registration
+│   ├── PasswordResetTest.php          # → Password reset flow
+│   ├── EmailVerificationTest.php      # → Email verification
+│   ├── PasswordConfirmationTest.php   # → Password confirmation
+│   ├── TwoFactorAuthenticationTest.php # → 2FA setup/usage
+│   └── LogoutTest.php                 # → Logout flow
+├── Public/                            # Public-facing features (no auth required)
+│   ├── PublicBlogPostViewingTest.php  # → app/Http/Controllers/PublicBlogController
+│   └── AuthorProfileTest.php          # → app/Http/Controllers/AuthorProfileController
+├── Social/                            # Social interaction features
+│   ├── BlogPostLikeTest.php           # → app/Http/Controllers/BlogPostLikeController
+│   ├── CommentTest.php                # → app/Http/Controllers/CommentController
+│   └── UserFollowTest.php             # → app/Http/Controllers/UserFollowController
+├── Settings/                          # User settings & preferences
+│   ├── ProfileUpdateTest.php          # → Profile management
+│   ├── PasswordUpdateTest.php         # → Password changes
+│   └── TwoFactorAuthenticationTest.php # → 2FA settings
+└── System/                            # System-level functionality
+    ├── MiddlewareTest.php             # → app/Http/Middleware
+    ├── RateLimitingTest.php           # → Rate limiting across endpoints
+    ├── PerformanceTest.php            # → Performance & optimization
+    └── ErrorHandlingTest.php          # → Error handling patterns
+```
+
+### Naming Convention Rules
+
+**Pest Best Practice**: Test files should be named after the class they test with `Test` suffix.
+
+| Application File | Test File | Test Type |
+|-----------------|-----------|-----------|
+| `app/Models/BlogPost.php` | `tests/Unit/Models/BlogPostTest.php` | Unit |
+| `app/Services/BlogPostService.php` | `tests/Unit/Services/BlogPostServiceTest.php` | Unit |
+| `app/Http/Controllers/BlogPostController.php` | `tests/Feature/BlogPostTest.php` | Feature |
+| `app/Policies/BlogPostPolicy.php` | `tests/Unit/Policies/BlogPostPolicyTest.php` | Unit |
+| `app/Actions/Fortify/CreateNewUser.php` | `tests/Unit/Actions/Fortify/CreateNewUserTest.php` | Unit |
+
+### Benefits of This Structure
+
+1. **Intuitive Navigation**: Developers can find tests by logical feature area (Admin, Public, Social, etc.)
+2. **Clear Separation**: 
+   - **Admin/** = Authenticated admin operations
+   - **Auth/** = Authentication flows
+   - **Public/** = Guest-accessible features
+   - **Social/** = User interaction features
+   - **Settings/** = User preferences
+   - **System/** = Infrastructure & cross-cutting concerns
+3. **Easy Maintenance**: Related tests are grouped together for easier updates
+4. **Test Organization**: Logical grouping complements test groups/tags
+5. **New Developer Onboarding**: Structure clearly communicates application architecture
+6. **Scalability**: Easy to add new feature areas as the application grows
+
+### Directory Organization Philosophy
+
+Our structure uses **functional grouping** for feature tests rather than strict controller mirroring:
+
+**Feature Tests** (Integration/Workflow):
+- Grouped by **functional area** (Admin, Public, Social, System)
+- Tests complete user workflows and feature behavior
+- May span multiple controllers/services
+
+**Unit Tests** (Isolation):
+- Mirror **application structure** exactly (Models, Services, Policies)
+- Test individual classes in isolation
+- 1:1 mapping with application files
+
+### Pest Configuration for Path Mapping
+
+In `Pest.php`, you can configure base paths:
+
+```php
+uses(Tests\TestCase::class)->in('Feature');
+uses(Tests\TestCase::class)->in('Unit');
+
+// Feature tests can use database
+uses(Illuminate\Foundation\Testing\LazilyRefreshDatabase::class)->in('Feature');
+
+// Unit tests should NOT use database
+// No database trait in Unit folder
+```
+
+### Finding Tests for a Class
+
+**Feature Tests** (Functional Grouping):
+
+```
+Need to test:     Blog post creation by admin
+Find:             tests/Feature/Admin/BlogPostTest.php
+
+Need to test:     Public blog viewing
+Find:             tests/Feature/Public/PublicBlogPostViewingTest.php
+
+Need to test:     User following features
+Find:             tests/Feature/Social/UserFollowTest.php
+
+Need to test:     Middleware execution
+Find:             tests/Feature/System/MiddlewareTest.php
+```
+
+**Unit Tests** (Structure Mirroring):
+
+```
+Given:    app/Services/BlogPostService.php
+Find:     tests/Unit/Services/BlogPostServiceTest.php
+
+Given:    app/Models/BlogPost.php
+Find:     tests/Unit/Models/BlogPostTest.php
+
+Given:    app/Policies/BlogPostPolicy.php
+Find:     tests/Unit/Policies/BlogPostPolicyTest.php
+```
+
+### When to Create Subdirectories
+
+Create subdirectories in **Feature tests** when:
+- You have multiple tests for a logical feature area (Admin, Social, Public, etc.)
+- The grouping clarifies the application's functional domains
+- Tests share common setup or context (e.g., all admin tests need admin users)
+
+Create subdirectories in **Unit tests** when:
+- The application has a corresponding directory (e.g., `app/Services/` → `tests/Unit/Services/`)
+- You're testing a complete layer (Models, Services, Policies, etc.)
+- You want 1:1 structural mapping with application code
+
+Avoid subdirectories when:
+- You have only 1-2 test files (keep them flat)
+- The grouping is forced or doesn't add clarity
+- It adds unnecessary nesting (max 2-3 levels deep)
+
+### Cross-Reference: Pest Groups vs Directories
+
+While directories organize files by **functional area** (Feature) or **structure** (Unit), **groups** organize tests logically across directories:
+
+```php
+// tests/Feature/Admin/BlogPostTest.php
+it('creates blog posts', function () {
+    // test code
+})->group('blog-posts', 'crud', 'authenticated', 'admin');
+
+// tests/Feature/Public/PublicBlogPostViewingTest.php
+it('displays published posts', function () {
+    // test code
+})->group('blog-posts', 'public', 'guest');
+
+// tests/Unit/Services/BlogPostServiceTest.php  
+it('filters posts by tag', function () {
+    // test code
+})->group('blog-posts', 'services', 'filtering');
+```
+
+Run all blog-post tests (across all directories):
+```bash
+./vendor/bin/pest --group=blog-posts
+```
+
+Run only admin tests:
+```bash
+./vendor/bin/pest tests/Feature/Admin
+```
+
+Run service unit tests:
+```bash
+./vendor/bin/pest tests/Unit/Services
+```
+
+This dual organization gives you:
+- **Physical structure** for file organization (directories)
+- **Logical structure** for test execution (groups)
+
+### Example: Adding a New Feature with Tests
+
+When adding a new `NotificationService`:
+
+1. **Create the service:**
+   ```
+   app/Services/NotificationService.php
+   ```
+
+2. **Create unit tests (mirrored structure):**
+   ```
+   tests/Unit/Services/NotificationServiceTest.php
+   ```
+
+3. **Create feature tests if needed:**
+   ```
+   tests/Feature/NotificationTest.php
+   ```
+
+4. **Use groups for logical organization:**
+   ```php
+   // tests/Unit/Services/NotificationServiceTest.php
+   it('sends email notifications', function () {
+       // test
+   })->group('notifications', 'services', 'email');
+   
+   // tests/Feature/NotificationTest.php
+   it('sends notifications on user registration', function () {
+       // test
+   })->group('notifications', 'authentication', 'integration');
+   ```
+
+This approach combines **structural organization** (directories) with **logical organization** (groups) for maximum flexibility and maintainability.
 
 ---
 
@@ -110,20 +342,7 @@ Profile and optimize slow tests to improve overall suite execution time.
 
 ---
 
-### 5. Test Coverage Improvements
-
-**Opportunity:**
-Add `todo()` tests for planned features or edge cases not yet covered.
-
-**Example:**
-```php
-it('handles concurrent comment submissions')->todo();
-it('rate limits excessive API calls')->todo('pending rate limiter implementation');
-```
-
----
-
-### 6. Snapshot Testing
+### 5. Snapshot Testing
 
 **Opportunity:**
 Use Pest's snapshot testing for complex API responses or UI components.
@@ -330,6 +549,5 @@ composer test
 - [ ] Implement `beforeAll()` for expensive setup operations
 - [ ] Add more domain-specific custom expectations
 - [ ] Profile and optimize slow tests
-- [ ] Add `todo()` tests for planned features
 - [ ] Explore mutation testing with Infection
 - [ ] Add test coverage reporting
