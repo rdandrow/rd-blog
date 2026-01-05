@@ -5,24 +5,6 @@
  *
  * Tests application error handling, graceful degradation, and proper
  * error responses across various failure scenarios.
- *
- * Test Categories:
- * - Database Connection Failures: Connection and query errors
- * - Transaction Rollback: Data integrity on errors
- * - File System Errors: Storage and upload failures
- * - Invalid Input: Malformed data handling
- * - 404 Errors: Missing resource responses
- * - 500 Errors: Internal server error handling
- *
- * Features Tested:
- * - Graceful database failure handling
- * - Transaction rollback on errors
- * - File upload error handling
- * - Missing resource (404) responses
- * - Invalid input validation
- * - Error message sanitization (no sensitive data exposure)
- * - Proper HTTP status codes
- * - Exception handling
  */
 
 use App\Models\BlogPost;
@@ -30,199 +12,209 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-// Database Connection Failure Tests
-test('handles database connection failures gracefully', function () {
-    config(['database.connections.sqlite.database' => '/invalid/path/database.sqlite']);
-    
-    $response = $this->get(route('home'));
-    
-    // Should handle error gracefully without exposing internal details
-    $response->assertStatus(500);
+describe('Database Connection Failures', function () {
+    it('handles database connection failures gracefully', function () {
+        config(['database.connections.sqlite.database' => '/invalid/path/database.sqlite']);
+        
+        $response = $this->get(route('home'));
+        
+        // Should handle error gracefully without exposing internal details
+        $response->assertStatus(500);
+    })->group('error-handling', 'database', '500');
+
+    it('handles database query failures during user creation', function () {
+        DB::shouldReceive('connection')->andThrow(new \PDOException('Database error'));
+        
+        expect(function () {
+            User::factory()->create();
+        })->toThrow(\PDOException::class);
+    })->group('error-handling', 'database');
 });
 
-test('handles database query failures during user creation', function () {
-    DB::shouldReceive('connection')->andThrow(new \PDOException('Database error'));
-    
-    expect(function () {
-        User::factory()->create();
-    })->toThrow(\PDOException::class);
+describe('Transaction Rollback', function () {
+    it('handles transaction rollback on error', function () {
+        $admin = createTestAdmin();
+        $initialCount = BlogPost::count();
+        
+        try {
+            DB::transaction(function () use ($admin) {
+                BlogPost::factory()->create(['user_id' => $admin->id]);
+                throw new \Exception('Force rollback');
+            });
+        } catch (\Exception $e) {
+            // Expected
+        }
+        
+        expect(BlogPost::count())->toBe($initialCount);
+    })->group('error-handling', 'database');
 });
 
-test('handles transaction rollback on error', function () {
-    $admin = createTestAdmin();
-    $initialCount = BlogPost::count();
-    
-    try {
-        DB::transaction(function () use ($admin) {
-            BlogPost::factory()->create(['user_id' => $admin->id]);
-            throw new \Exception('Force rollback');
-        });
-    } catch (\Exception $e) {
-        // Expected
-    }
-    
-    expect(BlogPost::count())->toBe($initialCount);
+describe('File System Errors', function () {
+    it('handles missing file upload gracefully', function () {
+        $admin = createTestAdmin();
+        
+        $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
+            'title' => 'Test Post',
+            'excerpt' => 'Test excerpt',
+            'content' => 'Test content',
+            'is_published' => true,
+            // No file attached
+        ]);
+        
+        // Should succeed without file (file is optional)
+        $response->assertRedirect();
+    })->group('error-handling', 'filesystem');
+
+    it('handles invalid file type upload', function () {
+        Storage::fake('public');
+        $admin = createTestAdmin();
+        
+        // This would need actual file upload handling in your app
+        // Placeholder for when you add file upload functionality
+        expect(true)->toBeTrue();
+    })->group('error-handling', 'filesystem');
+
+    it('handles oversized file upload', function () {
+        Storage::fake('public');
+        $admin = createTestAdmin();
+        
+        // This would need actual file upload handling in your app
+        // Placeholder for when you add file upload functionality
+        expect(true)->toBeTrue();
+    })->group('error-handling', 'filesystem');
+
+    it('handles mail service failures during registration', function () {
+        \Illuminate\Support\Facades\Mail::fake();
+        \Illuminate\Support\Facades\Mail::shouldReceive('send')->andThrow(new \Exception('Mail service down'));
+        
+        // Registration should still work even if email fails
+        $response = $this->post(route('register'), [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        
+        // User should be created even if email fails
+        $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
+    })->group('error-handling', 'filesystem');
+
+    it('handles cache service unavailability', function () {
+        // Test that app continues to work without cache
+        \Illuminate\Support\Facades\Cache::shouldReceive('get')->andReturn(null);
+        \Illuminate\Support\Facades\Cache::shouldReceive('put')->andReturn(false);
+        
+        $response = $this->get(route('home'));
+        
+        $response->assertStatus(200);
+    })->group('error-handling', 'filesystem');
 });
 
-// File Upload Error Tests
-test('handles missing file upload gracefully', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
-        'title' => 'Test Post',
-        'excerpt' => 'Test excerpt',
-        'content' => 'Test content',
-        'is_published' => true,
-        // No file attached
-    ]);
-    
-    // Should succeed without file (file is optional)
-    $response->assertRedirect();
+describe('Invalid Input', function () {
+    it('handles malformed request data gracefully', function () {
+        $admin = createTestAdmin();
+        
+        $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
+            'title' => ['invalid' => 'array'],
+            'excerpt' => null,
+            'content' => 123,
+        ]);
+        
+        $response->assertSessionHasErrors(['title', 'excerpt', 'content']);
+    })->group('error-handling', 'validation');
+
+    it('handles SQL injection attempts safely', function () {
+        $admin = createTestAdmin();
+        
+        $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
+            'title' => "'; DROP TABLE blog_posts; --",
+            'excerpt' => 'Test excerpt',
+            'content' => 'Test content',
+            'is_published' => true,
+        ]);
+        
+        // Should be safely escaped
+        $response->assertRedirect();
+        
+        expect(BlogPost::count())->toBeGreaterThan(0);
+    })->group('error-handling', 'validation');
+
+    it('handles XSS attempts in content', function () {
+        $admin = createTestAdmin();
+        
+        $xssContent = '<script>alert("XSS")</script>';
+        
+        $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
+            'title' => 'Test Post',
+            'excerpt' => 'Test excerpt',
+            'content' => $xssContent,
+            'is_published' => true,
+        ]);
+        
+        $response->assertRedirect();
+        
+        $post = BlogPost::latest()->first();
+        
+        expect($post->content)->toBe($xssContent); // Should be stored as-is, escaped on output
+    })->group('error-handling', 'validation');
+
+    it('handles concurrent like requests on same post', function () {
+        $user = createTestMember();
+        $post = createPublishedPost();
+        
+        // Simulate concurrent requests
+        $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
+        $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
+        
+        // Should handle gracefully without duplicate entries
+        $likeCount = DB::table('blog_post_likes')
+            ->where('user_id', $user->id)
+            ->where('blog_post_id', $post->id)
+            ->count();
+        
+        expect($likeCount)->toBe(0); // Should be toggled back to unliked
+    })->group('error-handling', 'validation');
+
+    it('handles concurrent comment creation', function () {
+        $user = createTestMember();
+        $post = createPublishedPost();
+        
+        $response1 = $this->actingAs($user)->post(route('comments.store', $post->slug), [
+            'content' => 'First comment',
+        ]);
+        
+        $response2 = $this->actingAs($user)->post(route('comments.store', $post->slug), [
+            'content' => 'Second comment',
+        ]);
+        
+        $response1->assertRedirect();
+        $response2->assertRedirect();
+        
+        expect($post->comments()->count())->toBe(2);
+    })->group('error-handling', 'validation');
 });
 
-test('handles invalid file type upload', function () {
-    Storage::fake('public');
-    $admin = createTestAdmin();
-    
-    // This would need actual file upload handling in your app
-    // Placeholder for when you add file upload functionality
-    expect(true)->toBeTrue();
-});
+describe('404 Errors', function () {
+    it('handles missing blog post gracefully', function () {
+        $response = $this->get(route('blog.show', 'non-existent-slug'));
+        
+        expect($response)->toBeNotFound();
+    })->group('error-handling', '404');
 
-test('handles oversized file upload', function () {
-    Storage::fake('public');
-    $admin = createTestAdmin();
-    
-    // This would need actual file upload handling in your app
-    // Placeholder for when you add file upload functionality
-    expect(true)->toBeTrue();
-});
+    it('handles missing user profile gracefully', function () {
+        $response = $this->get(route('author.profile', 99999));
+        
+        expect($response)->toBeNotFound();
+    })->group('error-handling', '404');
 
-// External Service Failure Tests
-test('handles mail service failures during registration', function () {
-    \Illuminate\Support\Facades\Mail::fake();
-    \Illuminate\Support\Facades\Mail::shouldReceive('send')->andThrow(new \Exception('Mail service down'));
-    
-    // Registration should still work even if email fails
-    $response = $this->post(route('register'), [
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
-    ]);
-    
-    // User should be created even if email fails
-    $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
-});
-
-test('handles cache service unavailability', function () {
-    // Test that app continues to work without cache
-    \Illuminate\Support\Facades\Cache::shouldReceive('get')->andReturn(null);
-    \Illuminate\Support\Facades\Cache::shouldReceive('put')->andReturn(false);
-    
-    $response = $this->get(route('home'));
-    $response->assertStatus(200);
-});
-
-// Validation Error Handling
-test('handles malformed request data gracefully', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
-        'title' => ['invalid' => 'array'],
-        'excerpt' => null,
-        'content' => 123,
-    ]);
-    
-    $response->assertSessionHasErrors(['title', 'excerpt', 'content']);
-});
-
-test('handles SQL injection attempts safely', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
-        'title' => "'; DROP TABLE blog_posts; --",
-        'excerpt' => 'Test excerpt',
-        'content' => 'Test content',
-        'is_published' => true,
-    ]);
-    
-    // Should be safely escaped
-    $response->assertRedirect();
-    expect(BlogPost::count())->toBeGreaterThan(0);
-});
-
-test('handles XSS attempts in content', function () {
-    $admin = createTestAdmin();
-    
-    $xssContent = '<script>alert("XSS")</script>';
-    
-    $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
-        'title' => 'Test Post',
-        'excerpt' => 'Test excerpt',
-        'content' => $xssContent,
-        'is_published' => true,
-    ]);
-    
-    $response->assertRedirect();
-    
-    $post = BlogPost::latest()->first();
-    expect($post->content)->toBe($xssContent); // Should be stored as-is, escaped on output
-});
-
-// Concurrent Request Handling
-test('handles concurrent like requests on same post', function () {
-    $user = createTestMember();
-    $post = createPublishedPost();
-    
-    // Simulate concurrent requests
-    $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
-    $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
-    
-    // Should handle gracefully without duplicate entries
-    $likeCount = DB::table('blog_post_likes')
-        ->where('user_id', $user->id)
-        ->where('blog_post_id', $post->id)
-        ->count();
-    
-    expect($likeCount)->toBe(0); // Should be toggled back to unliked
-});
-
-test('handles concurrent comment creation', function () {
-    $user = createTestMember();
-    $post = createPublishedPost();
-    
-    $response1 = $this->actingAs($user)->post(route('comments.store', $post->slug), [
-        'content' => 'First comment',
-    ]);
-    
-    $response2 = $this->actingAs($user)->post(route('comments.store', $post->slug), [
-        'content' => 'Second comment',
-    ]);
-    
-    $response1->assertRedirect();
-    $response2->assertRedirect();
-    
-    expect($post->comments()->count())->toBe(2);
-});
-
-// Resource Not Found Handling
-test('handles missing blog post gracefully', function () {
-    $response = $this->get(route('blog.show', 'non-existent-slug'));
-    $response->assertStatus(404);
-});
-
-test('handles missing user profile gracefully', function () {
-    $response = $this->get(route('author.profile', 99999));
-    $response->assertStatus(404);
-});
-
-test('handles deleted resource access', function () {
-    $post = createPublishedPost();
-    $slug = $post->slug;
-    
-    $post->delete();
-    
-    $response = $this->get(route('blog.show', $slug));
-    $response->assertStatus(404);
+    it('handles deleted resource access', function () {
+        $post = createPublishedPost();
+        $slug = $post->slug;
+        
+        $post->delete();
+        
+        $response = $this->get(route('blog.show', $slug));
+        
+        expect($response)->toBeNotFound();
+    })->group('error-handling', '404');
 });

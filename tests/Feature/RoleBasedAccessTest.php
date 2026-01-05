@@ -5,25 +5,6 @@
  *
  * Tests comprehensive role-based access controls across all user roles
  * (master_admin, admin, member) and verifies proper authorization enforcement.
- *
- * Test Categories:
- * - Role Detection: User model role identification methods
- * - Dashboard Access: Role-based dashboard routing
- * - Blog Post Management: Create, edit, delete authorization
- * - User Management: Master admin exclusive features
- * - Settings Access: Admin settings panel authorization
- * - Mixed Scenarios: Complex authorization combinations
- *
- * Roles Tested:
- * - master_admin: Full system access including user management
- * - admin: Content management and blog post operations
- * - member: Read-only access with commenting/liking abilities
- *
- * Authorization Rules:
- * - Admins can only edit their own posts
- * - Master admins can edit any post
- * - Members cannot access admin features
- * - Guests redirected to login for protected routes
  */
 
 use App\Models\BlogPost;
@@ -34,570 +15,507 @@ beforeEach(function () {
     $this->withoutMiddleware(\App\Http\Middleware\EnsureTwoFactorEnabled::class);
 });
 
-// Role Detection Tests
-test('user model correctly identifies master admin role', function () {
-    $masterAdmin = createTestMasterAdmin();
-    
-    expect($masterAdmin->isMasterAdmin())->toBeTrue();
-    expect($masterAdmin->isAdmin())->toBeTrue(); // Master admin is also admin
-    expect($masterAdmin->isRegularAdmin())->toBeFalse(); // Regular admin excludes master_admin
-    expect($masterAdmin->isMember())->toBeFalse();
-    expect($masterAdmin->role)->toBe('master_admin'); // Enum value in database
+describe('User Role Identification', function () {
+    it('correctly identifies master admin role', function () {
+        $masterAdmin = createTestMasterAdmin();
+        
+        expect($masterAdmin)
+            ->isMasterAdmin()->toBeTrue()
+            ->isAdmin()->toBeTrue() // Master admin is also admin
+            ->isRegularAdmin()->toBeFalse() // Regular admin excludes master_admin
+            ->isMember()->toBeFalse()
+            ->role->toBe('master_admin'); // Enum value in database
+    })->group('roles', 'identification');
+
+    it('correctly identifies admin role', function () {
+        $admin = createTestAdmin();
+        
+        expect($admin)
+            ->isMasterAdmin()->toBeFalse()
+            ->isAdmin()->toBeTrue()
+            ->isRegularAdmin()->toBeTrue()
+            ->isMember()->toBeFalse()
+            ->role->toBe('admin');
+    })->group('roles', 'identification');
+
+    it('correctly identifies member role', function () {
+        $member = createTestMember();
+        
+        expect($member)
+            ->isMasterAdmin()->toBeFalse()
+            ->isAdmin()->toBeFalse()
+            ->isRegularAdmin()->toBeFalse()
+            ->isMember()->toBeTrue()
+            ->role->toBe('member');
+    })->group('roles', 'identification');
 });
 
-test('user model correctly identifies admin role', function () {
-    $admin = createTestAdmin();
-    
-    expect($admin->isMasterAdmin())->toBeFalse();
-    expect($admin->isAdmin())->toBeTrue();
-    expect($admin->isRegularAdmin())->toBeTrue();
-    expect($admin->isMember())->toBeFalse();
-    expect($admin->role)->toBe('admin');
+describe('Dashboard Access', function () {
+    it('allows admin roles to access dashboard', function ($userFactory) {
+        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $response = $this->actingAs($user)->get(route('dashboard'));
+        
+        expect($response)->toBeSuccessfulInertiaResponse('Dashboard');
+    })->with('admin_roles')
+      ->group('dashboard', 'access-control', 'authorized');
+
+    it('denies member access to dashboard', function () {
+        $response = $this->actingAs(createTestMember())->get(route('dashboard'));
+        
+        expect($response)->toBeForbidden(); // Forbidden - members don't have dashboard access
+    })->group('dashboard', 'access-control', 'unauthorized');
+
+    it('redirects guests from dashboard', function () {
+        expect($this->get(route('dashboard')))->toRedirectToLogin();
+    })->group('dashboard', 'access-control', 'guest');
 });
 
-test('user model correctly identifies member role', function () {
-    $member = createTestMember();
-    
-    expect($member->isMasterAdmin())->toBeFalse();
-    expect($member->isAdmin())->toBeFalse();
-    expect($member->isRegularAdmin())->toBeFalse();
-    expect($member->isMember())->toBeTrue();
-    expect($member->role)->toBe('member');
+describe('Blog Post Management Access', function () {
+    it('allows admin roles to access blog post index', function ($userFactory) {
+        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $response = $this->actingAs($user)->get(route('admin.blog-posts.index'));
+        
+        $response->assertStatus(200);
+    })->with('admin_roles')
+      ->group('blog-posts', 'access-control', 'authorized');
+
+    it('allows admin roles to access create page', function ($userFactory) {
+        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $response = $this->actingAs($user)->get(route('admin.blog-posts.create'));
+        
+        $response->assertStatus(200);
+    })->with('admin_roles')
+      ->group('blog-posts', 'access-control', 'authorized');
+
+    it('allows admin roles to create blog posts', function ($userFactory) {
+        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
+        
+        $response = $this->actingAs($user)->post(route('admin.blog-posts.store'), [
+            'title' => 'Test Post',
+            'excerpt' => 'Test excerpt',
+            'content' => 'Test content',
+            'is_published' => true,
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('blog_posts', [
+            'title' => 'Test Post',
+            'user_id' => $user->id,
+        ]);
+    })->with('admin_roles')
+      ->group('blog-posts', 'crud', 'authorized');
+
+    it('denies members from accessing blog post index', function () {
+        $response = $this->actingAs(createTestMember())
+            ->get(route('admin.blog-posts.index'));
+        
+        expect($response)->toBeForbidden();
+    })->group('blog-posts', 'access-control', 'unauthorized');
+
+    it('denies members from accessing create page', function () {
+        $response = $this->actingAs(createTestMember())
+            ->get(route('admin.blog-posts.create'));
+        
+        expect($response)->toBeForbidden();
+    })->group('blog-posts', 'access-control', 'unauthorized');
+
+    it('denies members from creating blog posts', function () {
+        $member = createTestMember();
+        
+        $response = $this->actingAs($member)->post(route('admin.blog-posts.store'), [
+            'title' => 'Test Post',
+            'excerpt' => 'Test excerpt',
+            'content' => 'Test content',
+            'is_published' => true,
+        ]);
+
+        expect($response)->toBeForbidden();
+        $this->assertDatabaseMissing('blog_posts', [
+            'title' => 'Test Post',
+            'user_id' => $member->id,
+        ]);
+    })->group('blog-posts', 'crud', 'unauthorized');
+
+    it('redirects guests from blog post management', function () {
+        expect($this->get(route('admin.blog-posts.index')))->toRedirectToLogin();
+    })->group('blog-posts', 'access-control', 'guest');
 });
 
-// Dashboard Access Tests
-test('admin users can access dashboard', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->get(route('dashboard'));
-    
-    $response->assertStatus(200);
-    $response->assertInertia(fn ($page) => $page->component('Dashboard'));
+describe('Blog Post Editing Authorization', function () {
+    it('allows admins to edit only their own posts', function () {
+        $admin1 = createTestAdmin();
+        $admin2 = createTestAdmin();
+        $post = BlogPost::factory()->create(['user_id' => $admin2->id]);
+        
+        $response = $this->actingAs($admin1)
+            ->get(route('admin.blog-posts.edit', $post));
+        
+        expect($response)->toBeForbidden();
+    })->group('blog-posts', 'authorization', 'own-content');
+
+    it('allows master admin to edit only their own posts', function () {
+        $masterAdmin = createTestMasterAdmin();
+        $admin = createTestAdmin();
+        $post = BlogPost::factory()->create(['user_id' => $admin->id]);
+        
+        $response = $this->actingAs($masterAdmin)
+            ->get(route('admin.blog-posts.edit', $post));
+        
+        expect($response)->toBeForbidden();
+    })->group('blog-posts', 'authorization', 'master-admin');
 });
 
-test('master admin users can access dashboard', function () {
-    $masterAdmin = createTestMasterAdmin();
-    
-    $response = $this->actingAs($masterAdmin)->get(route('dashboard'));
-    
-    $response->assertStatus(200);
-    $response->assertInertia(fn ($page) => $page->component('Dashboard'));
+describe('User Management Access (Master Admin Only)', function () {
+    it('allows master admin to access admin users list', function () {
+        $response = $this->actingAs(createTestMasterAdmin())
+            ->get(route('admin.users.admins'));
+        
+        expect($response)->toBeSuccessfulInertiaResponse('Admin/Users/AdminUsers');
+    })->group('user-management', 'access-control', 'authorized');
+
+    it('allows master admin to access member users list', function () {
+        $response = $this->actingAs(createTestMasterAdmin())
+            ->get(route('admin.users.members'));
+        
+        expect($response)->toBeSuccessfulInertiaResponse('Admin/Users/MemberUsers');
+    })->group('user-management', 'access-control', 'authorized');
+
+    it('allows master admin to create new users', function () {
+        $response = $this->actingAs(createTestMasterAdmin())
+            ->post(route('admin.users.store'), [
+                'name' => 'New User',
+                'email' => 'newuser@example.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'role' => 'admin',
+            ]);
+        
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', [
+            'email' => 'newuser@example.com',
+            'role' => 'admin',
+        ]);
+    })->group('user-management', 'crud', 'authorized');
+
+    it('allows master admin to update user roles', function () {
+        $user = createTestMember(['role' => 'member']);
+        
+        $response = $this->actingAs(createTestMasterAdmin())
+            ->patch(route('admin.users.updateRole', $user), [
+                'role' => 'admin',
+            ]);
+        
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'role' => 'admin',
+        ]);
+    })->group('user-management', 'crud', 'authorized');
+
+    it('allows master admin to delete users', function () {
+        $user = createTestMember();
+        
+        $response = $this->actingAs(createTestMasterAdmin())
+            ->delete(route('admin.users.destroy', $user));
+        
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('users', [
+            'id' => $user->id,
+        ]);
+    })->group('user-management', 'crud', 'authorized');
+
+    it('denies non-master-admin roles from accessing user management', function ($userFactory) {
+        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $response = $this->actingAs($user)->get(route('admin.users.admins'));
+        
+        expect($response)->toBeForbidden();
+    })->with('unauthorized_for_master_admin')
+      ->group('user-management', 'access-control', 'unauthorized');
+
+    it('denies non-master-admin roles from creating users', function ($userFactory) {
+        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
+        
+        $response = $this->actingAs($user)->post(route('admin.users.store'), [
+            'name' => 'New User',
+            'email' => 'newuser@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'role' => 'admin',
+        ]);
+
+        expect($response)->toBeForbidden();
+        $this->assertDatabaseMissing('users', [
+            'email' => 'newuser@example.com',
+        ]);
+    })->with('unauthorized_for_master_admin')
+      ->group('user-management', 'crud', 'unauthorized');
+
+    it('denies non-master-admin roles from updating user roles', function ($userFactory) {
+        $actor = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $targetUser = createTestMember(['role' => 'member']);
+        
+        $response = $this->actingAs($actor)
+            ->patch(route('admin.users.updateRole', $targetUser), [
+                'role' => 'admin',
+            ]);
+
+        expect($response)->toBeForbidden();
+        $this->assertDatabaseHas('users', [
+            'id' => $targetUser->id,
+            'role' => 'member', // Role unchanged
+        ]);
+    })->with('unauthorized_for_master_admin')
+      ->group('user-management', 'crud', 'unauthorized');
+
+    it('denies non-master-admin roles from deleting users', function ($userFactory) {
+        $actor = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $targetUser = createTestMember();
+        
+        $response = $this->actingAs($actor)
+            ->delete(route('admin.users.destroy', $targetUser));
+
+        expect($response)->toBeForbidden();
+        $this->assertDatabaseHas('users', [
+            'id' => $targetUser->id,
+        ]);
+    })->with('unauthorized_for_master_admin')
+      ->group('user-management', 'crud', 'unauthorized');
+
+    it('redirects guests from user management', function () {
+        expect($this->get(route('admin.users.admins')))->toRedirectToLogin();
+    })->group('user-management', 'access-control', 'guest');
 });
 
-test('member users cannot access dashboard', function () {
-    $member = createTestMember();
-    
-    $response = $this->actingAs($member)->get(route('dashboard'));
-    
-    $response->assertStatus(403); // Forbidden - members don't have dashboard access
+describe('Public Access', function () {
+    it('allows guests to view public blog list', function () {
+        $response = $this->get(route('blog'));
+        
+        $response->assertStatus(200);
+    })->group('public', 'guest');
+
+    it('allows guests to view individual blog posts', function () {
+        $post = createPublishedPost();
+        
+        $response = $this->get(route('blog.show', $post->slug));
+        
+        $response->assertStatus(200);
+    })->group('public', 'guest');
+
+    it('allows guests to view author profiles', function () {
+        $author = createTestAdmin();
+        
+        $response = $this->get(route('author.profile', $author->id));
+        
+        $response->assertStatus(200);
+    })->group('public', 'guest');
+
+    it('allows all user roles to view public blog list', function ($userFactory) {
+        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $response = $this->actingAs($user)->get(route('blog'));
+        
+        $response->assertStatus(200);
+    })->with('user_roles')
+      ->group('public', 'authenticated');
 });
 
-test('guests cannot access dashboard', function () {
-    $response = $this->get(route('dashboard'));
-    
-    $response->assertRedirect(route('login'));
+describe('Comment Permissions', function () {
+    it('allows authenticated users to create comments', function () {
+        $member = createTestMember();
+        $post = createPublishedPost();
+        
+        $response = $this->actingAs($member)->post(route('comments.store', $post->slug), [
+            'content' => 'Test comment',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('comments', [
+            'user_id' => $member->id,
+            'content' => 'Test comment',
+        ]);
+    })->group('comments', 'permissions', 'authorized');
+
+    it('allows admin roles to delete any comment', function ($userFactory) {
+        $admin = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $member = createTestMember();
+        $post = createPublishedPost();
+        
+        $comment = \App\Models\Comment::factory()->create([
+            'blog_post_id' => $post->id,
+            'user_id' => $member->id,
+        ]);
+
+        $response = $this->actingAs($admin)->delete(route('comments.destroy', $comment));
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('comments', [
+            'id' => $comment->id,
+        ]);
+    })->with('admin_roles')
+      ->group('comments', 'permissions', 'admin');
+
+    it('denies members from deleting other users comments', function () {
+        $member1 = createTestMember();
+        $member2 = createTestMember();
+        $post = createPublishedPost();
+        
+        $comment = \App\Models\Comment::factory()->create([
+            'blog_post_id' => $post->id,
+            'user_id' => $member2->id,
+        ]);
+
+        $response = $this->actingAs($member1)->delete(route('comments.destroy', $comment));
+
+        expect($response)->toBeForbidden();
+        $this->assertDatabaseHas('comments', [
+            'id' => $comment->id,
+        ]);
+    })->group('comments', 'permissions', 'unauthorized');
 });
 
-// Blog Post Management Access Tests
-test('admin users can access blog post index', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->get(route('admin.blog-posts.index'));
-    
-    $response->assertStatus(200);
+describe('Like Permissions', function () {
+    it('allows all authenticated users to like blog posts', function ($userFactory) {
+        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
+        $post = createPublishedPost();
+        
+        $response = $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('blog_post_likes', [
+            'user_id' => $user->id,
+            'blog_post_id' => $post->id,
+        ]);
+    })->with('user_roles')
+      ->group('likes', 'permissions', 'authorized');
+
+    it('redirects guests when attempting to like blog posts', function () {
+        $post = createPublishedPost();
+        
+        expect($this->post(route('blog.like.toggle', $post->slug)))->toRedirectToLogin();
+    })->group('likes', 'permissions', 'guest');
 });
 
-test('admin users can access blog post create page', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->get(route('admin.blog-posts.create'));
-    
-    $response->assertStatus(200);
+describe('Follow Permissions', function () {
+    it('allows all authenticated users to follow authors', function () {
+        $member = createTestMember();
+        $author = createTestAdmin();
+        
+        $response = $this->actingAs($member)->post(route('user.follow.toggle', $author->id));
+
+        $response->assertRedirect();
+        expect($member->following()->where('following_id', $author->id)->exists())->toBeTrue();
+    })->group('follows', 'permissions', 'authorized');
+
+    it('allows admin users to follow other admin users', function () {
+        $admin1 = createTestAdmin();
+        $admin2 = createTestAdmin();
+        
+        $response = $this->actingAs($admin1)->post(route('user.follow.toggle', $admin2->id));
+
+        $response->assertRedirect();
+        expect($admin1->following()->where('following_id', $admin2->id)->exists())->toBeTrue();
+    })->group('follows', 'permissions', 'authorized');
+
+    it('redirects guests when attempting to follow authors', function () {
+        $author = createTestAdmin();
+        
+        expect($this->post(route('user.follow.toggle', $author->id)))->toRedirectToLogin();
+    })->group('follows', 'permissions', 'guest');
 });
 
-test('admin users can create blog posts', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
-        'title' => 'Test Post',
-        'excerpt' => 'Test excerpt',
-        'content' => 'Test content',
-        'is_published' => true,
-    ]);
-    
-    $response->assertRedirect();
-    $this->assertDatabaseHas('blog_posts', [
-        'title' => 'Test Post',
-        'user_id' => $admin->id,
-    ]);
-});
+describe('Edge Cases and Mixed Scenarios', function () {
+    it('persists role permissions across multiple requests', function () {
+        $admin = createTestAdmin();
+        
+        // First request
+        $response1 = $this->actingAs($admin)->get(route('dashboard'));
+        $response1->assertStatus(200);
+        
+        // Second request
+        $response2 = $this->actingAs($admin)->get(route('admin.blog-posts.index'));
+        $response2->assertStatus(200);
+    })->group('roles', 'edge-cases');
 
-test('master admin users can access blog post management', function () {
-    $masterAdmin = createTestMasterAdmin();
-    
-    $response = $this->actingAs($masterAdmin)->get(route('admin.blog-posts.index'));
-    
-    $response->assertStatus(200);
-});
+    it('immediately reflects role changes in permissions', function () {
+        $user = createTestMember(['role' => 'member']);
+        
+        // Member cannot access dashboard
+        $response1 = $this->actingAs($user)->get(route('dashboard'));
+        expect($response1)->toBeForbidden();
+        
+        // Change role to admin
+        $user->update(['role' => 'admin']);
+        $user->refresh();
+        
+        // Now can access dashboard
+        $response2 = $this->actingAs($user)->get(route('dashboard'));
+        $response2->assertStatus(200);
+    })->group('roles', 'edge-cases');
 
-test('master admin users can create blog posts', function () {
-    $masterAdmin = createTestMasterAdmin();
-    
-    $response = $this->actingAs($masterAdmin)->post(route('admin.blog-posts.store'), [
-        'title' => 'Master Admin Post',
-        'excerpt' => 'Test excerpt',
-        'content' => 'Test content',
-        'is_published' => true,
-    ]);
-    
-    $response->assertRedirect();
-    $this->assertDatabaseHas('blog_posts', [
-        'title' => 'Master Admin Post',
-        'user_id' => $masterAdmin->id,
-    ]);
-});
+    it('verifies master admin retains all admin permissions', function () {
+        $masterAdmin = createTestMasterAdmin();
+        
+        // Can access dashboard
+        $response1 = $this->actingAs($masterAdmin)->get(route('dashboard'));
+        $response1->assertStatus(200);
+        
+        // Can access blog posts
+        $response2 = $this->actingAs($masterAdmin)->get(route('admin.blog-posts.index'));
+        $response2->assertStatus(200);
+        
+        // Can access user management
+        $response3 = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
+        $response3->assertStatus(200);
+    })->group('roles', 'edge-cases', 'master-admin');
 
-test('member users cannot access blog post index', function () {
-    $member = createTestMember();
-    
-    $response = $this->actingAs($member)->get(route('admin.blog-posts.index'));
-    
-    $response->assertStatus(403);
-});
+    it('allows multiple admins to work independently', function () {
+        $admin1 = createTestAdmin();
+        $admin2 = createTestAdmin();
+        
+        // Both can access dashboard
+        $this->actingAs($admin1)->get(route('dashboard'))->assertStatus(200);
+        $this->actingAs($admin2)->get(route('dashboard'))->assertStatus(200);
+        
+        // Both can create posts
+        $this->actingAs($admin1)->post(route('admin.blog-posts.store'), [
+            'title' => 'Admin 1 Post',
+            'excerpt' => 'Excerpt',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
+        
+        $this->actingAs($admin2)->post(route('admin.blog-posts.store'), [
+            'title' => 'Admin 2 Post',
+            'excerpt' => 'Excerpt',
+            'content' => 'Content',
+            'is_published' => true,
+        ]);
 
-test('member users cannot access blog post create page', function () {
-    $member = createTestMember();
-    
-    $response = $this->actingAs($member)->get(route('admin.blog-posts.create'));
-    
-    $response->assertStatus(403);
-});
+        $this->assertDatabaseHas('blog_posts', ['title' => 'Admin 1 Post', 'user_id' => $admin1->id]);
+        $this->assertDatabaseHas('blog_posts', ['title' => 'Admin 2 Post', 'user_id' => $admin2->id]);
+    })->group('roles', 'edge-cases');
 
-test('member users cannot create blog posts', function () {
-    $member = createTestMember();
-    
-    $response = $this->actingAs($member)->post(route('admin.blog-posts.store'), [
-        'title' => 'Test Post',
-        'excerpt' => 'Test excerpt',
-        'content' => 'Test content',
-        'is_published' => true,
-    ]);
-    
-    $response->assertStatus(403);
-    $this->assertDatabaseMissing('blog_posts', [
-        'title' => 'Test Post',
-        'user_id' => $member->id,
-    ]);
-});
+    it('verifies role-based access works with 2FA enabled', function () {
+        // Test that users with 2FA confirmed can access protected routes
+        // Note: EnsureTwoFactorEnabled middleware is disabled for role-based access tests
+        $admin = createTestAdmin(); // Has 2FA by default
+        
+        expect($admin->two_factor_confirmed_at)->not->toBeNull();
+        
+        // Admin with 2FA should be able to access dashboard (2FA middleware disabled in these tests)
+        $response = $this->actingAs($admin)->get(route('dashboard'));
+        $response->assertStatus(200);
+    })->group('roles', 'edge-cases', '2fa');
 
-test('guests cannot access blog post management', function () {
-    $response = $this->get(route('admin.blog-posts.index'));
-    
-    $response->assertRedirect(route('login'));
-});
-
-// Blog Post Editing Authorization Tests
-test('admin users can only edit their own blog posts', function () {
-    $admin1 = createTestAdmin();
-    $admin2 = createTestAdmin();
-    
-    $post = BlogPost::factory()->create(['user_id' => $admin2->id]);
-    
-    $response = $this->actingAs($admin1)->get(route('admin.blog-posts.edit', $post));
-    
-    $response->assertStatus(403);
-});
-
-test('master admin users can only edit their own blog posts', function () {
-    $masterAdmin = createTestMasterAdmin();
-    $admin = createTestAdmin();
-    
-    $post = BlogPost::factory()->create(['user_id' => $admin->id]);
-    
-    $response = $this->actingAs($masterAdmin)->get(route('admin.blog-posts.edit', $post));
-    
-    $response->assertStatus(403);
-});
-
-// User Management Access Tests (Master Admin Only)
-test('master admin can access admin users list', function () {
-    $masterAdmin = createTestMasterAdmin();
-    
-    $response = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
-    
-    $response->assertStatus(200);
-});
-
-test('master admin can access member users list', function () {
-    $masterAdmin = createTestMasterAdmin();
-    
-    $response = $this->actingAs($masterAdmin)->get(route('admin.users.members'));
-    
-    $response->assertStatus(200);
-});
-
-test('master admin can create new users', function () {
-    $masterAdmin = createTestMasterAdmin();
-    
-    $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
-        'name' => 'New User',
-        'email' => 'newuser@example.com',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
-        'role' => 'admin',
-    ]);
-    
-    $response->assertRedirect();
-    $this->assertDatabaseHas('users', [
-        'email' => 'newuser@example.com',
-        'role' => 'admin',
-    ]);
-});
-
-test('master admin can update user roles', function () {
-    $masterAdmin = createTestMasterAdmin();
-    $user = createTestMember(['role' => 'member']);
-    
-    $response = $this->actingAs($masterAdmin)->patch(route('admin.users.updateRole', $user), [
-        'role' => 'admin',
-    ]);
-    
-    $response->assertRedirect();
-    $this->assertDatabaseHas('users', [
-        'id' => $user->id,
-        'role' => 'admin',
-    ]);
-});
-
-test('master admin can delete users', function () {
-    $masterAdmin = createTestMasterAdmin();
-    $user = createTestMember();
-    
-    $response = $this->actingAs($masterAdmin)->delete(route('admin.users.destroy', $user));
-    
-    $response->assertRedirect();
-    $this->assertDatabaseMissing('users', [
-        'id' => $user->id,
-    ]);
-});
-
-test('regular admin cannot access user management', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->get(route('admin.users.admins'));
-    
-    $response->assertStatus(403);
-});
-
-test('regular admin cannot create users', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->post(route('admin.users.store'), [
-        'name' => 'New User',
-        'email' => 'newuser@example.com',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
-        'role' => 'admin',
-    ]);
-    
-    $response->assertStatus(403);
-    $this->assertDatabaseMissing('users', [
-        'email' => 'newuser@example.com',
-    ]);
-});
-
-test('regular admin cannot update user roles', function () {
-    $admin = createTestAdmin();
-    $user = createTestMember(['role' => 'member']);
-    
-    $response = $this->actingAs($admin)->patch(route('admin.users.updateRole', $user), [
-        'role' => 'admin',
-    ]);
-    
-    $response->assertStatus(403);
-    $this->assertDatabaseHas('users', [
-        'id' => $user->id,
-        'role' => 'member', // Role unchanged
-    ]);
-});
-
-test('regular admin cannot delete users', function () {
-    $admin = createTestAdmin();
-    $user = createTestMember();
-    
-    $response = $this->actingAs($admin)->delete(route('admin.users.destroy', $user));
-    
-    $response->assertStatus(403);
-    $this->assertDatabaseHas('users', [
-        'id' => $user->id,
-    ]);
-});
-
-test('member users cannot access user management', function () {
-    $member = createTestMember();
-    
-    $response = $this->actingAs($member)->get(route('admin.users.admins'));
-    
-    $response->assertStatus(403);
-});
-
-test('guests cannot access user management', function () {
-    $response = $this->get(route('admin.users.admins'));
-    
-    $response->assertRedirect(route('login'));
-});
-
-// Public Access Tests (should be accessible to all)
-test('guests can view public blog list', function () {
-    $response = $this->get(route('blog'));
-    
-    $response->assertStatus(200);
-});
-
-test('guests can view individual blog posts', function () {
-    $post = createPublishedPost();
-    
-    $response = $this->get(route('blog.show', $post->slug));
-    
-    $response->assertStatus(200);
-});
-
-test('guests can view author profiles', function () {
-    $author = createTestAdmin();
-    
-    $response = $this->get(route('author.profile', $author->id));
-    
-    $response->assertStatus(200);
-});
-
-test('member users can view public blog list', function () {
-    $member = createTestMember();
-    
-    $response = $this->actingAs($member)->get(route('blog'));
-    
-    $response->assertStatus(200);
-});
-
-test('admin users can view public blog list', function () {
-    $admin = createTestAdmin();
-    
-    $response = $this->actingAs($admin)->get(route('blog'));
-    
-    $response->assertStatus(200);
-});
-
-// Comment Permissions Tests
-test('authenticated users can create comments', function () {
-    $member = createTestMember();
-    $post = createPublishedPost();
-    
-    $response = $this->actingAs($member)->post(route('comments.store', $post->slug), [
-        'content' => 'Test comment',
-    ]);
-    
-    $response->assertRedirect();
-    $this->assertDatabaseHas('comments', [
-        'user_id' => $member->id,
-        'content' => 'Test comment',
-    ]);
-});
-
-test('admin users can delete any comment', function () {
-    $admin = createTestAdmin();
-    $member = createTestMember();
-    $post = createPublishedPost();
-    
-    $comment = \App\Models\Comment::factory()->create([
-        'blog_post_id' => $post->id,
-        'user_id' => $member->id,
-    ]);
-    
-    $response = $this->actingAs($admin)->delete(route('comments.destroy', $comment));
-    
-    $response->assertRedirect();
-    $this->assertDatabaseMissing('comments', [
-        'id' => $comment->id,
-    ]);
-});
-
-test('member users can only delete their own comments', function () {
-    $member1 = createTestMember();
-    $member2 = createTestMember();
-    $post = createPublishedPost();
-    
-    $comment = \App\Models\Comment::factory()->create([
-        'blog_post_id' => $post->id,
-        'user_id' => $member2->id,
-    ]);
-    
-    $response = $this->actingAs($member1)->delete(route('comments.destroy', $comment));
-    
-    $response->assertStatus(403);
-    $this->assertDatabaseHas('comments', [
-        'id' => $comment->id,
-    ]);
-});
-
-// Like Permissions Tests
-test('authenticated users can like blog posts', function () {
-    $member = createTestMember();
-    $post = createPublishedPost();
-    $response = $this->actingAs($member)->post(route('blog.like.toggle', $post->slug));
-    
-    $response->assertRedirect();
-    $this->assertDatabaseHas('blog_post_likes', [
-        'user_id' => $member->id,
-        'blog_post_id' => $post->id,
-    ]);
-});
-
-test('admin users can view blog posts', function () {
-    $admin = createTestAdmin();
-    $post = createPublishedPost();
-    
-    $response = $this->actingAs($admin)->post(route('blog.like.toggle', $post->slug));
-    
-    $response->assertRedirect();
-    $this->assertDatabaseHas('blog_post_likes', [
-        'user_id' => $admin->id,
-        'blog_post_id' => $post->id,
-    ]);
-});
-
-test('guests cannot like blog posts', function () {
-    $post = createPublishedPost();
-    
-    $response = $this->post(route('blog.like.toggle', $post->slug));
-    
-    $response->assertRedirect(route('login'));
-});
-
-// Follow Permission Tests
-test('all authenticated users can follow authors', function () {
-    $member = createTestMember();
-    $author = createTestAdmin();
-    
-    $response = $this->actingAs($member)->post(route('user.follow.toggle', $author->id));
-    
-    $response->assertRedirect();
-    expect($member->following()->where('following_id', $author->id)->exists())->toBeTrue();
-});
-
-test('admin users can follow other admin users', function () {
-    $admin1 = createTestAdmin();
-    $admin2 = createTestAdmin();
-    
-    $response = $this->actingAs($admin1)->post(route('user.follow.toggle', $admin2->id));
-    
-    $response->assertRedirect();
-    expect($admin1->following()->where('following_id', $admin2->id)->exists())->toBeTrue();
-});
-
-test('guests cannot follow authors', function () {
-    $author = createTestAdmin();
-    
-    $response = $this->post(route('user.follow.toggle', $author->id));
-    
-    $response->assertRedirect(route('login'));
-});
-
-// Edge Cases and Mixed Scenarios
-test('role permissions persist across requests', function () {
-    $admin = createTestAdmin();
-    
-    // First request
-    $response1 = $this->actingAs($admin)->get(route('dashboard'));
-    $response1->assertStatus(200);
-    
-    // Second request
-    $response2 = $this->actingAs($admin)->get(route('admin.blog-posts.index'));
-    $response2->assertStatus(200);
-});
-
-test('changing user role immediately affects permissions', function () {
-    $user = createTestMember(['role' => 'member']);
-    
-    // Member cannot access dashboard
-    $response1 = $this->actingAs($user)->get(route('dashboard'));
-    $response1->assertStatus(403);
-    
-    // Change role to admin
-    $user->update(['role' => 'admin']);
-    $user->refresh();
-    
-    // Now can access dashboard
-    $response2 = $this->actingAs($user)->get(route('dashboard'));
-    $response2->assertStatus(200);
-});
-
-test('master admin retains all admin permissions', function () {
-    $masterAdmin = createTestMasterAdmin();
-    
-    // Can access dashboard
-    $response1 = $this->actingAs($masterAdmin)->get(route('dashboard'));
-    $response1->assertStatus(200);
-    
-    // Can access blog posts
-    $response2 = $this->actingAs($masterAdmin)->get(route('admin.blog-posts.index'));
-    $response2->assertStatus(200);
-    
-    // Can access user management
-    $response3 = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
-    $response3->assertStatus(200);
-});
-
-test('multiple admins can work independently', function () {
-    $admin1 = createTestAdmin();
-    $admin2 = createTestAdmin();
-    
-    // Both can access dashboard
-    $response1 = $this->actingAs($admin1)->get(route('dashboard'));
-    $response1->assertStatus(200);
-    
-    $response2 = $this->actingAs($admin2)->get(route('dashboard'));
-    $response2->assertStatus(200);
-    
-    // Both can create posts
-    $this->actingAs($admin1)->post(route('admin.blog-posts.store'), [
-        'title' => 'Admin 1 Post',
-        'excerpt' => 'Excerpt',
-        'content' => 'Content',
-        'is_published' => true,
-    ]);
-    
-    $this->actingAs($admin2)->post(route('admin.blog-posts.store'), [
-        'title' => 'Admin 2 Post',
-        'excerpt' => 'Excerpt',
-        'content' => 'Content',
-        'is_published' => true,
-    ]);
-    
-    $this->assertDatabaseHas('blog_posts', ['title' => 'Admin 1 Post', 'user_id' => $admin1->id]);
-    $this->assertDatabaseHas('blog_posts', ['title' => 'Admin 2 Post', 'user_id' => $admin2->id]);
-});
-
-test('role-based access works with 2FA enabled', function () {
-    // Test that users with 2FA confirmed can access protected routes
-    // Note: EnsureTwoFactorEnabled middleware is disabled for role-based access tests
-    $admin = createTestAdmin(); // Has 2FA by default
-    
-    expect($admin->two_factor_confirmed_at)->not->toBeNull();
-    
-    // Admin with 2FA should be able to access dashboard (2FA middleware disabled in these tests)
-    $response = $this->actingAs($admin)->get(route('dashboard'));
-    $response->assertStatus(200);
-});
-
-test('unauthenticated requests to protected routes redirect to login', function () {
-    $routes = [
-        route('dashboard'),
-        route('admin.blog-posts.index'),
-        route('admin.blog-posts.create'),
-        route('admin.users.admins'),
-    ];
-    
-    foreach ($routes as $route) {
-        $response = $this->get($route);
-        $response->assertRedirect(route('login'));
-    }
+    it('redirects unauthenticated requests to login', function () {
+        $routes = [
+            route('dashboard'),
+            route('admin.blog-posts.index'),
+            route('admin.blog-posts.create'),
+            route('admin.users.admins'),
+        ];
+        
+        foreach ($routes as $route) {
+            expect($this->get($route))->toRedirectToLogin();
+        }
+    })->group('roles', 'edge-cases', 'guest');
 });

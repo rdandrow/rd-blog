@@ -32,6 +32,85 @@ expect()->extend('toBeOne', function () {
 
 /*
 |--------------------------------------------------------------------------
+| Custom Expectations for HTTP Responses
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Assert response is successful (200) with specific Inertia component.
+ */
+expect()->extend('toBeSuccessfulInertiaResponse', function (string $component) {
+    $this->value->assertStatus(200);
+    $this->value->assertInertia(fn ($page) => $page->component($component));
+    return $this;
+});
+
+/**
+ * Assert response is unauthorized (401 or 403).
+ */
+expect()->extend('toBeUnauthorized', function () {
+    expect($this->value->status())->toBeIn([401, 403]);
+    return $this;
+});
+
+/**
+ * Assert response is forbidden (403).
+ */
+expect()->extend('toBeForbidden', function () {
+    $this->value->assertStatus(403);
+    return $this;
+});
+
+/**
+ * Assert response redirects to login route.
+ */
+expect()->extend('toRedirectToLogin', function () {
+    $this->value->assertRedirect(route('login'));
+    return $this;
+});
+
+/**
+ * Assert response is not found (404).
+ */
+expect()->extend('toBeNotFound', function () {
+    $this->value->assertNotFound();
+    return $this;
+});
+
+/**
+ * Assert response is rate limited (429).
+ */
+expect()->extend('toBeRateLimited', function () {
+    $this->value->assertStatus(429);
+    return $this;
+});
+
+/**
+ * Assert response has validation errors for specific field.
+ */
+expect()->extend('toHaveValidationError', function (string $field) {
+    $this->value->assertSessionHasErrors($field);
+    return $this;
+});
+
+/**
+ * Assert response has success message.
+ */
+expect()->extend('toHaveSuccessMessage', function (string $message) {
+    $this->value->assertSessionHas('success', $message);
+    return $this;
+});
+
+/**
+ * Assert response has error message.
+ */
+expect()->extend('toHaveErrorMessage', function (string $message) {
+    $this->value->assertSessionHas('error', $message);
+    return $this;
+});
+
+/*
+|--------------------------------------------------------------------------
 | Functions
 |--------------------------------------------------------------------------
 |
@@ -110,17 +189,64 @@ function createComment(App\Models\BlogPost $post, ?App\Models\User $user = null,
 |
 */
 
+/**
+ * All user role types.
+ */
 dataset('user_roles', [
-    'admin' => [fn() => createTestAdmin()],
-    'master_admin' => [fn() => createTestMasterAdmin()],
-    'member' => [fn() => createTestMember()],
+    'admin' => fn() => createTestAdmin(),
+    'master_admin' => fn() => createTestMasterAdmin(),
+    'member' => fn() => createTestMember(),
 ]);
 
+/**
+ * Admin-level roles (admin and master_admin).
+ */
 dataset('admin_roles', [
-    'admin' => [fn() => createTestAdmin()],
-    'master_admin' => [fn() => createTestMasterAdmin()],
+    'admin' => fn() => createTestAdmin(),
+    'master_admin' => fn() => createTestMasterAdmin(),
 ]);
 
+/**
+ * Non-admin roles (only members).
+ */
 dataset('non_admin_roles', [
-    'member' => [fn() => createTestMember()],
+    'member' => fn() => createTestMember(),
+]);
+
+/**
+ * Unauthorized roles for master admin actions (admin and member).
+ */
+dataset('unauthorized_for_master_admin', [
+    'regular admin' => fn() => createTestAdmin(),
+    'member' => fn() => createTestMember(),
+]);
+
+/**
+ * Invalid email addresses for validation testing.
+ */
+dataset('invalid_emails', [
+    'missing @' => 'notanemail',
+    'missing domain' => 'test@',
+    'missing username' => '@example.com',
+    'spaces' => 'test @example.com',
+    'multiple @' => 'test@@example.com',
+]);
+
+/**
+ * Valid roles for user creation.
+ */
+dataset('valid_user_roles', [
+    'member',
+    'admin',
+    'master_admin',
+]);
+
+/**
+ * Invalid password lengths (below 8 characters).
+ */
+dataset('invalid_passwords', [
+    'empty' => '',
+    'too short' => 'short',
+    'single char' => 'a',
+    '7 chars' => 'abcdefg',
 ]);
