@@ -176,10 +176,34 @@ test('middleware trims string inputs', function () {
 
 // ConvertEmptyStringsToNull Middleware
 test('middleware converts empty strings to null', function () {
-    // This middleware functionality is already tested in the trim test above
-    // Skipping detailed empty string to null conversion test
-    expect(true)->toBeTrue();
-})->skip('Empty string to null conversion covered by trim test');
+    $admin = createTestAdmin();
+    
+    // Test with blog post creation - featured_image is nullable
+    $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), [
+        'title' => 'Test Post',
+        'excerpt' => 'Test excerpt',
+        'content' => 'Test content',
+        'featured_image' => '', // Empty string should become null
+        'is_published' => false,
+    ]);
+    
+    $post = BlogPost::latest()->first();
+    expect($post->featured_image)->toBeNull();
+    
+    // Test with user creation - ip_address is nullable
+    $masterAdmin = createTestMasterAdmin();
+    $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
+        'name' => 'Test User',
+        'email' => 'testuser@example.com',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'role' => 'member',
+        'ip_address' => '', // Empty string should become null
+    ]);
+    
+    $user = User::where('email', 'testuser@example.com')->first();
+    expect($user->ip_address)->toBeNull();
+});
 
 // Authorization Middleware Edge Cases
 test('can access own resources with proper authorization', function () {

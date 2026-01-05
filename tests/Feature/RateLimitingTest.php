@@ -75,20 +75,6 @@ test('rate limits are per email address', function () {
     $response->assertRedirect(); // Just check that login succeeded
 });
 
-// API Endpoint Rate Limiting (if you have API routes)
-test('rate limits comment creation per user', function () {
-    $user = createTestMember();
-    $post = createPublishedPost();
-    
-    // Verify comment creation works (rate limiting not currently implemented)
-    $response = $this->actingAs($user)->post(route('comments.store', $post->slug), [
-        'content' => "Test comment",
-    ]);
-    
-    expect($response->status())->toBeIn([201, 302]);
-    expect($post->fresh()->comments()->count())->toBe(1);
-})->skip('Rate limiting for comments not yet implemented');
-
 test('rate limits like toggling to prevent spam', function () {
     $user = createTestMember();
     $post = createPublishedPost();
