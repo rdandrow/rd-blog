@@ -1,6 +1,15 @@
 # Pest PHP Best Practices - Implementation Guide
 
-This document outlines best practices for improving our Pest PHP test suite based on official Pest documentation and community standards.
+> **Purpose**: Deep dive into Pest patterns, advanced techniques, and the historical journey of our test suite refactoring. For quick reference and common patterns, see [README.md](./README.md).
+
+This document outlines best practices for improving our Pest PHP test suite based on official Pest documentation and community standards. It serves as the authoritative reference for:
+
+- **Advanced Pest patterns** (snapshot testing, beforeAll optimization, custom expectations)
+- **Directory organization philosophy** (functional grouping vs structural mirroring)
+- **Refactoring journey** (completed improvements and remaining opportunities)
+- **Future enhancements** (mutation testing, coverage reporting)
+
+This document provides comprehensive context beyond the quick-reference patterns in the README.
 
 ## Current Status (January 2026)
 
@@ -30,7 +39,7 @@ This document outlines best practices for improving our Pest PHP test suite base
 - Using `expect()` API instead of PHPUnit assertions
 - Modern PHP syntax with arrow functions
 
-**Total:** 423 tests passing (2,266 assertions)
+Note: For current suite statistics (test count, assertions, timing), see the Test Suite README.
 
 ## Remaining Improvements
 
@@ -541,7 +550,7 @@ composer test
 - Apply scoped `beforeEach()` within describe blocks
 - Use chained expectations with `->and()`
 - Apply datasets to repetitive tests
-- Verify full test suite passes (423 tests, 2,266 assertions)
+- Verify full test suite passes (see README for current counts)
 
 ## Future Enhancements
 

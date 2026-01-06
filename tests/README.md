@@ -4,23 +4,43 @@ This document provides a comprehensive overview of the test suite for the RD Blo
 
 ## Test Statistics
 
-- **Total Tests**: 423
-- **Total Assertions**: 2,266
-- **Execution Time**: ~4 seconds (parallel execution)
+- **Total Tests**: 700 (422 feature + 278 unit)
+- **Total Assertions**: 2,831
+- **Execution Time**: ~4.67 seconds (parallel execution)
 - **Parallel Processes**: 12
-- **Test Framework**: Pest PHP 4.1 with Laravel plugin
+- **Test Framework**: Pest PHP 4.1 (built on PHPUnit 11.x)
 - **Last Updated**: January 2026
 
 ## Test Architecture
 
-All tests follow Pest PHP best practices:
-- **describe() blocks** for logical test organization
-- **it() syntax** for behavior-driven descriptions
-- **Custom expectations** for domain-specific assertions
-- **Test groups** for selective execution
-- **Chained expectations** with `->and()`
-- **Datasets** for reducing test duplication
-- **Scoped beforeEach()** for setup isolation
+This test suite uses **Pest PHP 4.1** for expressive, behavior-driven testing with **PHPUnit 11.x** as the underlying framework.
+
+### Testing Philosophy
+
+**Feature Tests** (Integration/Workflow):
+- Test complete user workflows spanning multiple components
+- Use real dependencies (database, filesystem with fakes)
+- Verify HTTP requests, responses, and side effects
+- Grouped by functional area (Admin, Auth, Public, Social, System)
+- Slower execution (seconds) but comprehensive coverage
+
+**Unit Tests** (Isolation):
+- Test individual classes/methods in complete isolation
+- Mock all external dependencies (no database, filesystem, network)
+- Very fast execution (milliseconds)
+- Mirror application structure exactly (Models, Services, Policies)
+- Focus on business logic and algorithms
+
+### Pest Best Practices Applied
+
+All tests follow modern Pest patterns:
+- ✅ **describe() blocks** - Logical test organization
+- ✅ **it() syntax** - Behavior-driven descriptions
+- ✅ **Custom expectations** - Domain-specific assertions
+- ✅ **Test groups** - Selective execution
+- ✅ **Chained expectations** - Use `->and()` for related assertions
+- ✅ **Datasets** - Reduce test duplication
+- ✅ **Scoped beforeEach()** - Setup isolation per describe block
 
 ## Test Organization
 
@@ -315,12 +335,52 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 
 ### Unit Tests (`tests/Unit/`)
 
-Unit tests verify isolated pieces of code without external dependencies.
+Unit tests verify isolated pieces of code without external dependencies. Our suite includes **278 unit tests** covering:
 
-##### `ExampleTest.php`
-- **Purpose**: Basic unit test example
-- **Tests**: 1 example test
-- **Note**: Demonstrates Pest PHP syntax for unit testing
+#### Structure
+```
+tests/Unit/
+├── Models/              # Model business logic (BlogPost, User, Comment, BlogPostLike)
+├── Services/            # Service layer (BlogPostService, BlogImageService)
+├── Policies/            # Authorization (BlogPostPolicy)
+├── Actions/Fortify/     # Authentication actions (CreateNewUser, ResetUserPassword)
+├── Http/
+│   ├── Requests/        # Form validation (StoreBlogPostRequest, UpdateBlogPostRequest)
+│   └── Resources/       # API transformations (BlogPostResource)
+```
+
+#### Completed Unit Test Files (278 tests total)
+
+**Models** (79 tests):
+- `BlogPostTest.php` - 22 tests (slug generation, reading time calculation)
+- `UserTest.php` - 24 tests (role helpers, relationship utilities)
+- `CommentTest.php` - 21 tests (threading, relationships, isReply method)
+- `BlogPostLikeTest.php` - 12 tests (pivot relationships, business logic)
+
+**Services** (45 tests):
+- `BlogPostServiceTest.php` - 30 tests (filtering, queries, data aggregation)
+- `BlogImageServiceTest.php` - 15 tests (file operations, path transformations)
+
+**Policies** (24 tests):
+- `BlogPostPolicyTest.php` - 24 tests (authorization rules, access control)
+
+**Actions/Fortify** (50 tests):
+- `CreateNewUserTest.php` - 19 tests (user creation, validation)
+- `ResetUserPasswordTest.php` - 12 tests (password reset, validation)
+- `PasswordValidationRulesTest.php` - 19 tests (password rules, confirmation)
+
+**HTTP Layer** (80 tests):
+- `StoreBlogPostRequestTest.php` - 31 tests (validation rules, authorization)
+- `UpdateBlogPostRequestTest.php` - 31 tests (update validation, policy integration)
+- `BlogPostResourceTest.php` - 18 tests (data transformation, conditional content)
+
+#### Unit Test Principles
+
+1. **Isolation** - No database, filesystem, or network operations
+2. **Speed** - Target < 100ms per test (most achieve < 20ms)
+3. **Mocking** - All external dependencies mocked/stubbed
+4. **Focus** - One behavior per test
+5. **Independence** - Tests can run in any order
 
 ## Test Helpers
 
@@ -435,6 +495,387 @@ composer test
 
 For more testing strategies and patterns, see `tests/PEST_BEST_PRACTICES.md`.
 
+## Best Practices Guide
+
+### Directory Organization
+
+**Feature Tests** - Functional grouping by domain:
+```
+tests/Feature/
+├── Admin/      # Administrative operations (authenticated admins)
+├── Auth/       # Authentication flows (login, registration, 2FA)
+├── Public/     # Public-facing features (guest-accessible)
+├── Social/     # User interactions (likes, comments, follows)
+├── Settings/   # User preferences and settings
+└── System/     # Infrastructure (middleware, rate limiting, errors)
+```
+
+**Unit Tests** - Mirror application structure exactly:
+```
+tests/Unit/
+├── Models/             → app/Models/
+├── Services/           → app/Services/
+├── Policies/           → app/Policies/
+├── Actions/Fortify/    → app/Actions/Fortify/
+└── Http/
+    ├── Requests/       → app/Http/Requests/
+    └── Resources/      → app/Http/Resources/
+```
+
+### Test Structure Patterns
+
+#### Feature Test Structure (Pest + Laravel)
+
+```php
+use function Pest\Laravel\{actingAs, get, post};
+
+describe('Blog Post Creation', function () {
+    beforeEach(function () {
+        $this->admin = createTestAdmin();
+    });
+    
+    it('allows admins to create published posts', function () {
+        $response = actingAs($this->admin)
+            ->post(route('admin.blog-posts.store'), [
+                'title' => 'New Post',
+                'content' => 'Post content',
+                'is_published' => true,
+            ]);
+        
+        expect($response)
+            ->toBeSuccessfulInertiaResponse('Posts/Create')
+            ->toHaveSuccessMessage('Blog post created successfully');
+        
+        $this->assertDatabaseHas('blog_posts', [
+            'title' => 'New Post',
+            'is_published' => true,
+        ]);
+    })->group('blog-posts', 'crud', 'authenticated');
+    
+    it('validates required fields', function () {
+        $response = actingAs($this->admin)->post(route('admin.blog-posts.store'), []);
+        
+        expect($response)
+            ->toHaveValidationError('title')
+            ->and($response)->toHaveValidationError('content');
+    })->group('blog-posts', 'validation');
+});
+```
+
+#### Unit Test Structure (PHPUnit + Mocking)
+
+```php
+use PHPUnit\Framework\TestCase;
+
+class BlogPostServiceTest extends TestCase
+{
+    private BlogPostService $service;
+    
+    protected function setUp(): void
+    {
+        // Runs before each test - common initialization
+        $this->service = new BlogPostService();
+    }
+    
+    public function test_apply_filters_adds_search_condition(): void
+    {
+        // Arrange: Set up test data and mocks
+        $query = $this->createMock(Builder::class);
+        $query->expects($this->once())
+            ->method('where')
+            ->with($this->callback(function ($closure) {
+                return $closure instanceof \Closure;
+            }));
+        
+        $filters = ['search' => 'test term'];
+        
+        // Act: Execute the behavior being tested
+        $result = $this->service->applyFilters($query, $filters);
+        
+        // Assert: Verify the outcome
+        $this->assertSame($query, $result);
+    }
+    
+    public function test_calculate_reading_time_returns_correct_minutes(): void
+    {
+        // Arrange
+        $content = str_repeat('word ', 200); // 200 words
+        
+        // Act
+        $minutes = BlogPost::calculateReadingTime($content);
+        
+        // Assert
+        $this->assertEquals(1, $minutes); // 200 words / 200 wpm = 1 min
+    }
+}
+```
+
+### Mocking External Dependencies (Unit Tests)
+
+**When to Mock:**
+- Database queries (use mocked repositories)
+- File operations (mock Storage facade)
+- Email/notifications (mock mailer)
+- External APIs (mock HTTP clients)
+- Time-dependent logic (mock Carbon/now())
+
+**Mock Examples:**
+
+```php
+// Mock with return value
+public function test_get_user_returns_user_from_repository(): void
+{
+    $user = new User(['id' => 1, 'name' => 'John']);
+    
+    $repository = $this->createMock(UserRepository::class);
+    $repository->method('find')->with(1)->willReturn($user);
+    
+    $service = new UserService($repository);
+    $result = $service->getUser(1);
+    
+    $this->assertSame($user, $result);
+}
+
+// Mock with exception
+public function test_handle_repository_exception(): void
+{
+    $repository = $this->createMock(UserRepository::class);
+    $repository->method('save')->willThrowException(new DatabaseException());
+    
+    $service = new UserService($repository);
+    
+    $this->expectException(ServiceException::class);
+    $service->createUser(['name' => 'John']);
+}
+
+// Mock Laravel Storage facade
+public function test_upload_generates_unique_filename(): void
+{
+    $file = $this->createMock(UploadedFile::class);
+    $file->method('getClientOriginalExtension')->willReturn('jpg');
+    $file->expects($this->once())
+        ->method('storeAs')
+        ->with('blog-images', $this->matchesRegularExpression('/^\d+_test-image\.jpg$/'))
+        ->willReturn('blog-images/12345_test-image.jpg');
+    
+    $service = new BlogImageService();
+    $path = $service->upload($file);
+    
+    $this->assertStringStartsWith('/storage/', $path);
+}
+```
+
+### Data Providers (Reduce Duplication)
+
+**Pest Datasets:**
+```php
+// In tests/Pest.php
+dataset('admin_roles', [
+    'admin' => fn() => createTestAdmin(),
+    'master_admin' => fn() => createTestMasterAdmin(),
+]);
+
+// In test file
+it('allows admins to perform action', function ($userFactory) {
+    $response = actingAs($userFactory())->post(route('some.action'));
+    expect($response)->toBeSuccessful();
+})->with('admin_roles');
+```
+
+**PHPUnit Data Providers:**
+```php
+/**
+ * @dataProvider discountProvider
+ */
+public function test_calculate_discount(float $price, float $percent, float $expected): void
+{
+    $result = $this->calculator->calculateDiscount($price, $percent);
+    $this->assertEquals($expected, $result);
+}
+
+public static function discountProvider(): array
+{
+    return [
+        '10% of 100' => [100.00, 10, 10.00],
+        '25% of 200' => [200.00, 25, 50.00],
+        '0% of 100' => [100.00, 0, 0.00],
+    ];
+}
+```
+
+### Test Naming Conventions
+
+**Feature Tests (Pest - Behavior-driven):**
+```php
+it('allows admins to create blog posts with valid data')
+it('prevents guests from accessing admin dashboard')
+it('displays published posts on the blog listing page')
+it('validates required fields when creating a post')
+```
+
+**Unit Tests (PHPUnit - Method-focused):**
+```php
+public function test_calculate_discount_with_valid_percentage(): void
+public function test_throw_exception_when_percentage_is_negative(): void
+public function test_format_currency_with_two_decimal_places(): void
+```
+
+### Assertions
+
+**Pest Expectations (Feature Tests):**
+```php
+expect($response)->toBeSuccessful();
+expect($response)->toBeSuccessfulInertiaResponse('Posts/Index');
+expect($response)->toHaveSuccessMessage('Post created');
+expect($response)->toHaveValidationError('title');
+expect($response)->toRedirectToLogin();
+expect($response)->toBeForbidden();
+expect($user->role)->toBe('admin');
+expect($posts)->toHaveCount(5);
+```
+
+**PHPUnit Assertions (Unit Tests):**
+```php
+$this->assertEquals($expected, $actual);
+$this->assertSame($expected, $actual);  // Strict comparison
+$this->assertTrue($condition);
+$this->assertInstanceOf(User::class, $object);
+$this->assertCount(3, $array);
+$this->assertStringContainsString('substring', $string);
+$this->expectException(InvalidArgumentException::class);
+```
+
+### Test Groups & Execution
+
+**Add groups for selective execution:**
+```php
+// Pest
+it('creates blog post', function () {
+    // test
+})->group('crud', 'blog-posts', 'authenticated');
+
+// PHPUnit
+/**
+ * @group services
+ * @group discounts
+ */
+class DiscountCalculatorTest extends TestCase { }
+```
+
+**Run by group:**
+```bash
+./vendor/bin/pest --group=crud
+./vendor/bin/pest --group=blog-posts
+./vendor/bin/pest --exclude-group=performance
+```
+
+### Performance Optimization
+
+**Feature Tests:**
+- Use `LazilyRefreshDatabase` for transaction-based rollback
+- Disable unnecessary middleware in specific tests
+- Use `Storage::fake()` instead of real filesystem
+- Keep test data minimal
+
+**Unit Tests:**
+- Target < 100ms per test (most should be < 20ms)
+- Never touch database, filesystem, or network
+- Mock all external dependencies
+- Avoid expensive object creation in loops
+
+### Common Anti-Patterns to Avoid
+
+❌ **Testing multiple behaviors in one test:**
+```php
+// BAD
+it('handles all user operations', function () {
+    $user->setName('John');
+    expect($user->getName())->toBe('John');
+    
+    $user->setEmail('john@example.com');
+    expect($user->getEmail())->toBe('john@example.com');
+});
+
+// GOOD - Split into separate tests
+it('sets user name', function () { /* ... */ });
+it('sets user email', function () { /* ... */ });
+```
+
+❌ **Test interdependence:**
+```php
+// BAD - Test depends on previous test
+private static User $user;
+it('creates user', function () { self::$user = User::create(...); });
+it('updates user', function () { self::$user->update(...); }); // Depends on previous!
+
+// GOOD - Each test creates its own data
+it('creates user', function () { $user = User::create(...); });
+it('updates user', function () { $user = User::create(...); $user->update(...); });
+```
+
+❌ **Testing implementation details:**
+```php
+// BAD
+it('calls internal cache method', function () {
+    $service = Mockery::mock(UserService::class)->makePartial();
+    $service->shouldReceive('cacheUser')->once(); // Testing implementation
+    $service->getUser(1);
+});
+
+// GOOD - Test behavior
+it('returns cached user on subsequent calls', function () {
+    $service->getUser(1); // First call - hits database
+    $service->getUser(1); // Second call - should be faster (cached)
+});
+```
+
+❌ **Database in unit tests:**
+```php
+// BAD - Unit test hitting database
+public function test_create_user(): void
+{
+    $service = new UserService();
+    $user = $service->createUser(['name' => 'John']);
+    $this->assertDatabaseHas('users', ['name' => 'John']); // NO!
+}
+
+// GOOD - Mock the repository
+public function test_create_user(): void
+{
+    $repository = $this->createMock(UserRepository::class);
+    $repository->expects($this->once())->method('save');
+    
+    $service = new UserService($repository);
+    $service->createUser(['name' => 'John']);
+}
+```
+
+### Test Organization Checklist
+
+✅ **Feature Tests:**
+- [ ] Use `describe()` blocks for logical grouping
+- [ ] Use `it()` for behavior-driven test names
+- [ ] Add test groups (`->group('crud', 'authenticated')`)
+- [ ] Use custom expectations (`toBeSuccessfulInertiaResponse()`)
+- [ ] Chain related assertions with `->and()`
+- [ ] Use scoped `beforeEach()` for setup
+- [ ] Verify database state after operations
+- [ ] Test authorization (guest, member, admin, master_admin)
+
+✅ **Unit Tests:**
+- [ ] Mock all external dependencies
+- [ ] Follow AAA pattern (Arrange-Act-Assert)
+- [ ] Test one behavior per test
+- [ ] Keep tests fast (< 100ms)
+- [ ] Never touch database/filesystem/network
+- [ ] Use descriptive method names
+- [ ] Test edge cases and error conditions
+- [ ] Verify behavior, not implementation
+
+For more detailed examples and patterns, see:
+- `tests/PEST_BEST_PRACTICES.md` - Pest-specific patterns and advanced techniques
+- `tests/PHPUNIT_BEST_PRACTICES.md` - PHPUnit unit testing comprehensive guide
+
 ## Test Coverage Highlights
 
 ### User Roles
@@ -532,18 +973,43 @@ For more testing strategies and patterns, see `tests/PEST_BEST_PRACTICES.md`.
 
 ### Best Practices
 
-1. **Keep tests focused**: Each test should verify one behavior
-2. **Use factories**: Don't manually create test data
-3. **Organize with describe()**: Group related tests logically
-4. **Use scoped beforeEach()**: Setup for describe blocks only
-5. **Chain expectations**: Use `->and()` for related assertions
-6. **Disable unrelated middleware**: Focus tests on specific functionality
-7. **Test edge cases**: Include boundary conditions and error states
-8. **Verify database state**: Check that data is correctly persisted
-9. **Test authorization**: Always verify access control
-10. **Use parallel execution**: Tests should be independent and parallelizable
+**Feature Tests (Pest):**
+1. Use `describe()` blocks for logical test organization
+2. Use `it()` syntax for behavior-driven test names
+3. Add test groups for selective execution (`->group('crud', 'auth')`)
+4. Use custom expectations (`toBeSuccessfulInertiaResponse()`)
+5. Chain related assertions with `->and()`
+6. Use scoped `beforeEach()` for describe-block setup
+7. Leverage datasets to reduce duplication (`->with('admin_roles')`)
+8. Test authorization across all user roles
+9. Verify database state after operations
+10. Keep tests independent (can run in parallel)
 
-For comprehensive best practices, patterns, and examples, see `tests/PEST_BEST_PRACTICES.md`.
+**Unit Tests (PHPUnit):**
+1. Mock all external dependencies (database, filesystem, network)
+2. Follow AAA pattern (Arrange-Act-Assert)
+3. Test one behavior per test method
+4. Keep tests fast (< 100ms, target < 20ms)
+5. Never touch database/filesystem/network in unit tests
+6. Use descriptive method names (`test_method_name_scenario`)
+7. Test edge cases and error conditions
+8. Verify behavior, not implementation details
+9. Use data providers for multiple test scenarios
+10. Mirror application structure in test organization
+
+**General:**
+- Each test verifies one behavior
+- Tests are independent (no shared state)
+- Use factories for test data creation
+- Disable unrelated middleware in tests
+- Test both happy path and error cases
+- Include boundary conditions
+- Keep test suites fast (parallel execution)
+- Document complex test scenarios
+
+For comprehensive patterns and examples:
+- `tests/PEST_BEST_PRACTICES.md` - Pest-specific patterns
+- `tests/PHPUNIT_BEST_PRACTICES.md` - PHPUnit unit testing guide
 
 ## Test Execution Performance
 
@@ -569,6 +1035,11 @@ When adding new features:
 ---
 
 **Last Updated**: January 2026  
-**Test Framework**: Pest PHP 4.1  
-**Test Count**: 423 tests (2,266 assertions)  
-**Average Execution Time**: ~4 seconds with parallel execution
+**Test Framework**: Pest PHP 4.1 (built on PHPUnit 11.x)  
+**Test Count**: 700 tests (422 feature + 278 unit)  
+**Assertions**: 2,831  
+**Execution Time**: ~4.67 seconds (parallel)  
+
+**Documentation:**
+- [PEST_BEST_PRACTICES.md](./PEST_BEST_PRACTICES.md) - Advanced Pest patterns and techniques
+- [PHPUNIT_BEST_PRACTICES.md](./PHPUNIT_BEST_PRACTICES.md) - Comprehensive unit testing guide
