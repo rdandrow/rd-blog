@@ -2,6 +2,29 @@
 
 /*
 |--------------------------------------------------------------------------
+| Test Constants
+|--------------------------------------------------------------------------
+|
+| Common constants used across test files for consistency and maintainability.
+|
+*/
+
+// Test IDs
+const TEST_NONEXISTENT_ID = 99999;
+
+// HTTP Status Codes
+const HTTP_OK = 200;
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_FORBIDDEN = 403;
+const HTTP_NOT_FOUND = 404;
+
+// Performance Thresholds
+const MAX_QUERY_TIME_SECONDS = 3;
+const MODERATE_QUERY_THRESHOLD = 20;
+const COMPLEX_QUERY_THRESHOLD = 25;
+
+/*
+|--------------------------------------------------------------------------
 | Test Case
 |--------------------------------------------------------------------------
 |
@@ -100,6 +123,53 @@ expect()->extend('toHaveSuccessMessage', function (string $message) {
     $this->value->assertSessionHas('success', $message);
     return $this;
 });
+
+/**
+ * Assert response has error message.
+ */
+expect()->extend('toHaveErrorMessage', function (string $message) {
+    $this->value->assertSessionHas('error', $message);
+    return $this;
+});
+
+/*
+|--------------------------------------------------------------------------
+| Helper Functions
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Helper to perform authenticated GET request.
+ * Reduces boilerplate: $this->actingAs($user)->get($route)
+ */
+function authenticatedGet($user, string $route)
+{
+    return test()->actingAs($user)->get($route);
+}
+
+/**
+ * Helper to perform authenticated POST request.
+ */
+function authenticatedPost($user, string $route, array $data = [])
+{
+    return test()->actingAs($user)->post($route, $data);
+}
+
+/**
+ * Helper to perform authenticated PUT request.
+ */
+function authenticatedPut($user, string $route, array $data = [])
+{
+    return test()->actingAs($user)->put($route, $data);
+}
+
+/**
+ * Helper to perform authenticated DELETE request.
+ */
+function authenticatedDelete($user, string $route)
+{
+    return test()->actingAs($user)->delete($route);
+}
 
 /**
  * Assert response has error message.

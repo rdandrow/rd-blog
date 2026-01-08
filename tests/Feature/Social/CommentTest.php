@@ -16,9 +16,14 @@ describe('Comment Creation', function () {
         $this->user = createTestMember();
         $this->post = createPublishedPost();
     });
+    
+    afterEach(function () {
+        // Ensure cleanup between tests
+        Comment::query()->delete();
+    });
 
     it('allows authenticated users to add comments to published blog posts', function () {
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => 'This is a test comment.',
         ]);
 
@@ -45,11 +50,11 @@ describe('Comment Creation', function () {
         $user1 = createTestMember();
         $user2 = createTestMember();
 
-        $this->actingAs($user1)->post(route('comments.store', $this->post->slug), [
+        authenticatedPost($user1, route('comments.store', $this->post->slug), [
             'content' => 'Comment from user 1',
         ]);
 
-        $this->actingAs($user2)->post(route('comments.store', $this->post->slug), [
+        authenticatedPost($user2, route('comments.store', $this->post->slug), [
             'content' => 'Comment from user 2',
         ]);
 
@@ -65,11 +70,11 @@ describe('Comment Creation', function () {
     })->group('comments', 'creation');
 
     it('allows same user to add multiple comments to the same post', function () {
-        $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => 'First comment',
         ]);
 
-        $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => 'Second comment',
         ]);
 
@@ -78,7 +83,7 @@ describe('Comment Creation', function () {
     })->group('comments', 'creation');
 
     it('returns 404 when adding comment to non-existent blog post', function () {
-        $response = $this->actingAs($this->user)->post(route('comments.store', 'non-existent-slug'), [
+        $response = authenticatedPost($this->user, route('comments.store', 'non-existent-slug'), [
             'content' => 'This is a test comment.',
         ]);
 
@@ -92,41 +97,28 @@ describe('Comment Validation', function () {
         $this->post = createPublishedPost();
     });
 
-    it('requires comment content', function () {
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
-            'content' => '',
-        ]);
-
-        expect($response)->toHaveValidationError('content');
-        $this->assertDatabaseCount('comments', 0);
-    })->group('comments', 'validation');
-
-    it('rejects comment content exceeding maximum length', function () {
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
-            'content' => str_repeat('a', 1001), // 1001 chars - exceeds 1000 char limit
-        ]);
-
-        expect($response)->toHaveValidationError('content');
-        $this->assertDatabaseCount('comments', 0);
-    })->group('comments', 'validation');
-
-    it('accepts comment content at maximum length', function () {
-        $content = str_repeat('a', 1000); // Exactly 1000 chars - at boundary limit
-
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+    it('validates comment content constraints', function (string $content, bool $shouldFail) {
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => $content,
         ]);
 
-        $response->assertRedirect();
-        $this->assertDatabaseHas('comments', [
-            'content' => $content,
-        ]);
-    })->group('comments', 'validation', 'boundary');
+        if ($shouldFail) {
+            expect($response)->toHaveValidationError('content');
+            $this->assertDatabaseCount('comments', 0);
+        } else {
+            $response->assertRedirect();
+            $this->assertDatabaseHas('comments', ['content' => $content]);
+        }
+    })->with([
+        'empty content fails' => ['', true],
+        'content exceeding max length fails' => [str_repeat('a', 1001), true],
+        'content at max length succeeds' => [str_repeat('a', 1000), false],
+    ])->group('comments', 'validation');
 
     it('preserves whitespace and formatting in comment content', function () {
         $content = "Line 1\n\nLine 2\n\nLine 3";
 
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => $content,
         ]);
 
@@ -139,7 +131,7 @@ describe('Comment Validation', function () {
     it('preserves special characters in comments', function () {
         $content = 'Test with special chars: <script>alert("xss")</script> & "quotes"';
 
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => $content,
         ]);
 
@@ -159,7 +151,7 @@ describe('Comment Replies', function () {
     });
 
     it('allows authenticated users to reply to comments', function () {
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => 'This is a reply.',
             'parent_id' => $this->parentComment->id, // Creates nested comment thread
         ]);
@@ -175,9 +167,9 @@ describe('Comment Replies', function () {
     })->group('comments', 'replies', 'authenticated');
 
     it('rejects reply with invalid parent comment id', function () {
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => 'This is a reply.',
-            'parent_id' => 99999, // Non-existent comment ID - must exist in database
+            'parent_id' => TEST_NONEXISTENT_ID, // Non-existent comment ID
         ]);
 
         expect($response)->toHaveValidationError('parent_id');
@@ -189,7 +181,7 @@ describe('Comment Replies', function () {
             'blog_post_id' => $post2->id, // Parent comment is on a different post
         ]);
 
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => 'This is a reply.',
             'parent_id' => $commentOnPost2->id,
         ]);
@@ -203,7 +195,7 @@ describe('Comment Replies', function () {
             'user_id' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => 'Replying to my own comment.',
             'parent_id' => $comment->id,
         ]);
@@ -224,7 +216,7 @@ describe('Comment Replies', function () {
         ]);
 
         // Create reply to the reply
-        $response = $this->actingAs($this->user)->post(route('comments.store', $this->post->slug), [
+        $response = authenticatedPost($this->user, route('comments.store', $this->post->slug), [
             'content' => 'Nested reply',
             'parent_id' => $firstReply->id,
         ]);
@@ -270,7 +262,7 @@ describe('Comment Deletion', function () {
             'user_id' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->delete(route('comments.destroy', $comment));
+        $response = authenticatedDelete($this->user, route('comments.destroy', $comment));
 
         expect($response)->toHaveSuccessMessage('Comment deleted successfully!');
         $this->assertDatabaseMissing('comments', [
@@ -287,7 +279,7 @@ describe('Comment Deletion', function () {
             'user_id' => $user2->id,
         ]);
 
-        $response = $this->actingAs($user1)->delete(route('comments.destroy', $comment));
+        $response = authenticatedDelete($user1, route('comments.destroy', $comment));
 
         expect($response)->toBeForbidden();
         $this->assertDatabaseHas('comments', [
@@ -302,7 +294,7 @@ describe('Comment Deletion', function () {
         ]);
 
         $admin = is_callable($adminFactory) ? $adminFactory() : $adminFactory;
-        $response = $this->actingAs($admin)->delete(route('comments.destroy', $comment));
+        $response = authenticatedDelete($admin, route('comments.destroy', $comment));
 
         expect($response)->toHaveSuccessMessage('Comment deleted successfully!');
         $this->assertDatabaseMissing('comments', [
@@ -337,7 +329,7 @@ describe('Comment Deletion', function () {
 
         $this->assertDatabaseCount('comments', 3);
 
-        $response = $this->actingAs($this->user)->delete(route('comments.destroy', $parentComment));
+        $response = authenticatedDelete($this->user, route('comments.destroy', $parentComment));
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('comments', [
@@ -359,7 +351,7 @@ describe('Comment Deletion', function () {
             'user_id' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($this->user)->delete(route('comments.destroy', $reply));
+        $response = authenticatedDelete($this->user, route('comments.destroy', $reply));
 
         $response->assertRedirect();
         $this->assertDatabaseMissing('comments', [
@@ -419,7 +411,7 @@ describe('Comment Relationships', function () {
         $user = createTestMember();
         $post = createPublishedPost();
 
-        $this->actingAs($user)->post(route('comments.store', $post->slug), [
+        authenticatedPost($user, route('comments.store', $post->slug), [
             'content' => 'Test comment',
         ]);
 

@@ -254,46 +254,71 @@ describe('User Creation', function () {
 describe('User Creation Validation', function () {
     beforeEach(function () {
         $this->masterAdmin = createTestMasterAdmin();
-    });
-
-    it('requires name', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
+        $this->validUserData = [
+            'name' => 'New User',
             'email' => 'newuser@test.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'role' => 'member',
-        ]);
+        ];
+    });
 
-        expect($response)->toHaveValidationError('name');
-    })->group('user-management', 'creation', 'validation');
+    it('validates required fields', function (string $field, array $data) {
+        $response = authenticatedPost($this->masterAdmin, route('admin.users.store'), $data);
 
-    it('requires email', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
-            'name' => 'New User',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'role' => 'member',
-        ]);
+        expect($response)->toHaveValidationError($field);
+    })->with([
+        'name is required' => [
+            'name',
+            [
+                'email' => 'newuser@test.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'role' => 'member',
+            ],
+        ],
+        'email is required' => [
+            'email',
+            [
+                'name' => 'New User',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+                'role' => 'member',
+            ],
+        ],
+        'password is required' => [
+            'password',
+            [
+                'name' => 'New User',
+                'email' => 'newuser@test.com',
+                'role' => 'member',
+            ],
+        ],
+        'role is required' => [
+            'role',
+            [
+                'name' => 'New User',
+                'email' => 'newuser@test.com',
+                'password' => 'password123',
+                'password_confirmation' => 'password123',
+            ],
+        ],
+    ])->group('user-management', 'creation', 'validation');
 
-        expect($response)->toHaveValidationError('email');
-    })->group('user-management', 'creation', 'validation');
+    it('validates email format and uniqueness', function (string $email, string $errorField) {
+        $data = array_merge($this->validUserData, ['email' => $email]);
+        $response = authenticatedPost($this->masterAdmin, route('admin.users.store'), $data);
 
-    it('requires valid email format', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
-            'name' => 'New User',
-            'email' => 'not-an-email',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'role' => 'member',
-        ]);
-
-        expect($response)->toHaveValidationError('email');
-    })->group('user-management', 'creation', 'validation');
+        expect($response)->toHaveValidationError($errorField);
+    })->with([
+        'invalid email format' => ['not-an-email', 'email'],
+        'uppercase email' => ['NewUser@TEST.COM', 'email'],
+    ])->group('user-management', 'creation', 'validation');
 
     it('requires unique email', function () {
         $existingUser = createTestMember(['email' => 'existing@test.com']);
         
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
+        $response = authenticatedPost($this->masterAdmin, route('admin.users.store'), [
             'name' => 'New User',
             'email' => 'existing@test.com', // Duplicate email - must be unique
             'password' => 'password123',
@@ -304,73 +329,24 @@ describe('User Creation Validation', function () {
         expect($response)->toHaveValidationError('email');
     })->group('user-management', 'creation', 'validation');
 
-    it('requires password', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
-            'name' => 'New User',
-            'email' => 'newuser@test.com',
-            'role' => 'member',
+    it('validates password confirmation', function (string $password, string $confirmation) {
+        $data = array_merge($this->validUserData, [
+            'password' => $password,
+            'password_confirmation' => $confirmation,
         ]);
+        $response = authenticatedPost($this->masterAdmin, route('admin.users.store'), $data);
 
         expect($response)->toHaveValidationError('password');
-    })->group('user-management', 'creation', 'validation');
-
-    it('requires password confirmation', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
-            'name' => 'New User',
-            'email' => 'newuser@test.com',
-            'password' => 'password123',
-            'role' => 'member',
-        ]);
-
-        expect($response)->toHaveValidationError('password');
-    })->group('user-management', 'creation', 'validation');
-
-    it('requires matching password confirmation', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
-            'name' => 'New User',
-            'email' => 'newuser@test.com',
-            'password' => 'password123',
-            'password_confirmation' => 'different', // Mismatch - must match password field
-            'role' => 'member',
-        ]);
-
-        expect($response)->toHaveValidationError('password');
-    })->group('user-management', 'creation', 'validation');
-
-    it('requires role', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
-            'name' => 'New User',
-            'email' => 'newuser@test.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-        ]);
-
-        expect($response)->toHaveValidationError('role');
-    })->group('user-management', 'creation', 'validation');
+    })->with([
+        'missing confirmation' => ['password123', ''],
+        'mismatched confirmation' => ['password123', 'different'],
+    ])->group('user-management', 'creation', 'validation');
 
     it('requires valid role', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
-            'name' => 'New User',
-            'email' => 'newuser@test.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'role' => 'invalid_role',
-        ]);
+        $data = array_merge($this->validUserData, ['role' => 'invalid_role']);
+        $response = authenticatedPost($this->masterAdmin, route('admin.users.store'), $data);
 
         expect($response)->toHaveValidationError('role');
-    })->group('user-management', 'creation', 'validation');
-
-    it('requires lowercase email format', function () {
-        $response = $this->actingAs($this->masterAdmin)->post(route('admin.users.store'), [
-            'name' => 'New User',
-            'email' => 'NewUser@TEST.COM',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            'role' => 'member',
-        ]);
-
-        // The lowercase validation rule requires lowercase input
-        expect($response)->toHaveValidationError('email');
     })->group('user-management', 'creation', 'validation');
 });
 

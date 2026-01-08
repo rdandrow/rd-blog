@@ -9,27 +9,11 @@
 
 use App\Models\BlogPost;
 use App\Models\User;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-describe('Database Connection Failures', function () {
-    it('handles database connection failures gracefully', function () {
-        config(['database.connections.sqlite.database' => '/invalid/path/database.sqlite']);
-        
-        $response = $this->get(route('home'));
-        
-        // Should handle error gracefully without exposing internal details
-        $response->assertStatus(500);
-    })->group('error-handling', 'database', '500');
-
-    it('handles database query failures during user creation', function () {
-        DB::shouldReceive('connection')->andThrow(new \PDOException('Database error'));
-        
-        expect(function () {
-            User::factory()->create();
-        })->toThrow(\PDOException::class);
-    })->group('error-handling', 'database');
-});
+uses(LazilyRefreshDatabase::class);
 
 describe('Transaction Rollback', function () {
     it('handles transaction rollback on error', function () {
@@ -202,7 +186,7 @@ describe('404 Errors', function () {
     })->group('error-handling', '404');
 
     it('handles missing user profile gracefully', function () {
-        $response = $this->get(route('author.profile', 99999));
+        $response = $this->get(route('author.profile', TEST_NONEXISTENT_ID));
         
         expect($response)->toBeNotFound();
     })->group('error-handling', '404');

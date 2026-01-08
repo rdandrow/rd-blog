@@ -53,14 +53,14 @@ describe('User Role Identification', function () {
 describe('Dashboard Access', function () {
     it('allows admin roles to access dashboard', function ($userFactory) {
         $user = is_callable($userFactory) ? $userFactory() : $userFactory;
-        $response = $this->actingAs($user)->get(route('dashboard'));
+        $response = authenticatedGet($user, route('dashboard'));
         
         expect($response)->toBeSuccessfulInertiaResponse('Dashboard');
     })->with('admin_roles')
       ->group('dashboard', 'access-control', 'authorized');
 
     it('denies member access to dashboard', function () {
-        $response = $this->actingAs(createTestMember())->get(route('dashboard'));
+        $response = authenticatedGet(createTestMember(), route('dashboard'));
         
         expect($response)->toBeForbidden(); // Forbidden - members don't have dashboard access
     })->group('dashboard', 'access-control', 'unauthorized');
@@ -71,70 +71,60 @@ describe('Dashboard Access', function () {
 });
 
 describe('Blog Post Management Access', function () {
-    it('allows admin roles to access blog post index', function ($userFactory) {
+    it('allows admin roles to access blog post routes', function ($userFactory, string $route, string $method) {
         $user = is_callable($userFactory) ? $userFactory() : $userFactory;
-        $response = $this->actingAs($user)->get(route('admin.blog-posts.index'));
         
-        $response->assertStatus(200);
+        if ($method === 'GET') {
+            $response = authenticatedGet($user, route($route));
+            $response->assertStatus(HTTP_OK);
+        } else {
+            $response = authenticatedPost($user, route($route), [
+                'title' => 'Test Post',
+                'excerpt' => 'Test excerpt',
+                'content' => 'Test content',
+                'is_published' => true,
+            ]);
+            $response->assertRedirect();
+            $this->assertDatabaseHas('blog_posts', [
+                'title' => 'Test Post',
+                'user_id' => $user->id,
+            ]);
+        }
     })->with('admin_roles')
+      ->with([
+          'blog post index' => ['admin.blog-posts.index', 'GET'],
+          'blog post create' => ['admin.blog-posts.create', 'GET'],
+          'blog post store' => ['admin.blog-posts.store', 'POST'],
+      ])
       ->group('blog-posts', 'access-control', 'authorized');
 
-    it('allows admin roles to access create page', function ($userFactory) {
-        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
-        $response = $this->actingAs($user)->get(route('admin.blog-posts.create'));
-        
-        $response->assertStatus(200);
-    })->with('admin_roles')
-      ->group('blog-posts', 'access-control', 'authorized');
-
-    it('allows admin roles to create blog posts', function ($userFactory) {
-        $user = is_callable($userFactory) ? $userFactory() : $userFactory;
-        
-        $response = $this->actingAs($user)->post(route('admin.blog-posts.store'), [
-            'title' => 'Test Post',
-            'excerpt' => 'Test excerpt',
-            'content' => 'Test content',
-            'is_published' => true,
-        ]);
-
-        $response->assertRedirect();
-        $this->assertDatabaseHas('blog_posts', [
-            'title' => 'Test Post',
-            'user_id' => $user->id,
-        ]);
-    })->with('admin_roles')
-      ->group('blog-posts', 'crud', 'authorized');
-
-    it('denies members from accessing blog post index', function () {
-        $response = $this->actingAs(createTestMember())
-            ->get(route('admin.blog-posts.index'));
-        
-        expect($response)->toBeForbidden();
-    })->group('blog-posts', 'access-control', 'unauthorized');
-
-    it('denies members from accessing create page', function () {
-        $response = $this->actingAs(createTestMember())
-            ->get(route('admin.blog-posts.create'));
-        
-        expect($response)->toBeForbidden();
-    })->group('blog-posts', 'access-control', 'unauthorized');
-
-    it('denies members from creating blog posts', function () {
+    it('denies members from accessing blog post management', function (string $route, string $method, array $data = []) {
         $member = createTestMember();
         
-        $response = $this->actingAs($member)->post(route('admin.blog-posts.store'), [
+        if ($method === 'GET') {
+            $response = authenticatedGet($member, route($route));
+        } else {
+            $response = authenticatedPost($member, route($route), $data);
+        }
+        
+        expect($response)->toBeForbidden();
+        
+        if ($method === 'POST') {
+            $this->assertDatabaseMissing('blog_posts', [
+                'title' => 'Test Post',
+                'user_id' => $member->id,
+            ]);
+        }
+    })->with([
+        'blog post index' => ['admin.blog-posts.index', 'GET'],
+        'blog post create page' => ['admin.blog-posts.create', 'GET'],
+        'blog post creation' => ['admin.blog-posts.store', 'POST', [
             'title' => 'Test Post',
             'excerpt' => 'Test excerpt',
             'content' => 'Test content',
             'is_published' => true,
-        ]);
-
-        expect($response)->toBeForbidden();
-        $this->assertDatabaseMissing('blog_posts', [
-            'title' => 'Test Post',
-            'user_id' => $member->id,
-        ]);
-    })->group('blog-posts', 'crud', 'unauthorized');
+        ]],
+    ])->group('blog-posts', 'access-control', 'unauthorized');
 
     it('redirects guests from blog post management', function () {
         expect($this->get(route('admin.blog-posts.index')))->toRedirectToLogin();

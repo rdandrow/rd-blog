@@ -14,9 +14,9 @@ describe('Password Update Page', function () {
     it('displays the password update page', function () {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->get(route('user-password.edit'));
+        $response = authenticatedGet($user, route('user-password.edit'));
 
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('settings', 'password', 'authenticated');
 });
 

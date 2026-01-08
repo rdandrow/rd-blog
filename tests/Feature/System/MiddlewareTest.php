@@ -79,7 +79,7 @@ describe('Middleware Execution Order', function () {
         
         $response = $this->actingAs($admin)->get(route('admin.blog-posts.edit', $post));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'authentication', 'authorization');
 
     it('stops middleware chain at first failure', function () {
@@ -95,7 +95,7 @@ describe('Role-Based Middleware', function () {
         
         $response = $this->actingAs($masterAdmin)->get(route('admin.blog-posts.index'));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'roles', 'authorization');
 
     it('allows regular admin through admin middleware', function () {
@@ -103,7 +103,7 @@ describe('Role-Based Middleware', function () {
         
         $response = $this->actingAs($admin)->get(route('admin.blog-posts.index'));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'roles', 'authorization');
 
     it('blocks member users from admin routes', function () {
@@ -127,7 +127,7 @@ describe('Role-Based Middleware', function () {
         
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'roles', 'authorization');
 });
 
@@ -141,7 +141,7 @@ describe('Two-Factor Authentication Middleware', function () {
     it('allows access during non-maintenance mode', function () {
         $response = $this->get(route('home'));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware');
 
     it('handles proxy headers correctly', function () {
@@ -150,7 +150,7 @@ describe('Two-Factor Authentication Middleware', function () {
             'X-Forwarded-Proto' => 'https',
         ])->get(route('home'));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware');
 });
 
@@ -167,7 +167,7 @@ describe('Request Transformation Middleware', function () {
     it('does not require CSRF token for GET requests', function () {
         $response = $this->get(route('home'));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'transformation');
 
     it('trims string inputs', function () {
@@ -223,7 +223,7 @@ describe('Authorization Middleware', function () {
         
         $response = $this->actingAs($admin)->get(route('admin.blog-posts.edit', $post));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'authorization');
 
     it('prevents access to other users resources', function () {
@@ -241,7 +241,7 @@ describe('Authorization Middleware', function () {
         
         $response = $this->get(route('blog.show', $post->slug));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'authorization');
 
     it('redirects guests from protected routes', function () {
@@ -256,6 +256,6 @@ describe('Authorization Middleware', function () {
         $this->actingAs($user)->get(route('dashboard'));
         $response = $this->actingAs($user)->get(route('dashboard'));
         
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'authentication');
 });

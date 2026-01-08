@@ -40,7 +40,7 @@ describe('Viewing Author Profiles', function () {
     })->group('author-profile', 'authenticated');
 
     it('returns 404 for non-existent authors', function () {
-        $response = $this->get(route('author.profile', 99999));
+        $response = $this->get(route('author.profile', TEST_NONEXISTENT_ID));
 
         expect($response)->toBeNotFound();
     })->group('author-profile', 'validation', 'edge-cases');

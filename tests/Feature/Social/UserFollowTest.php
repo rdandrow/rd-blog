@@ -10,83 +10,77 @@
 use App\Models\User;
 
 describe('Following Authors', function () {
-    it('allows authenticated users to follow admin users (authors)', function () {
-        $member = createTestMember();
-        $author = createTestAdmin();
+    beforeEach(function () {
+        $this->member = createTestMember();
+        $this->author = createTestAdmin();
+    });
 
-        $response = $this->actingAs($member)->post(route('user.follow.toggle', $author->id));
+    it('allows authenticated users to follow admin users (authors)', function () {
+        $response = authenticatedPost($this->member, route('user.follow.toggle', $this->author->id));
 
         expect($response)->toHaveSuccessMessage('Following successfully');
-        expect($member->following()->where('following_id', $author->id)->exists())->toBeTrue();
+        expect($this->member->following()->where('following_id', $this->author->id)->exists())->toBeTrue();
     })->group('follows', 'toggle', 'authenticated');
 
     it('redirects guests attempting to follow authors', function () {
-        $author = createTestAdmin();
-
-        $response = $this->post(route('user.follow.toggle', $author->id));
+        $response = $this->post(route('user.follow.toggle', $this->author->id));
 
         expect($response)->toRedirectToLogin();
     })->group('follows', 'toggle', 'guest');
 
     it('returns 404 for non-existent users', function () {
-        $member = createTestMember();
-
-        $response = $this->actingAs($member)->post(route('user.follow.toggle', 99999));
+        $response = authenticatedPost($this->member, route('user.follow.toggle', TEST_NONEXISTENT_ID));
 
         expect($response)->toBeNotFound();
     })->group('follows', 'toggle', 'validation');
 
     it('prevents users from following themselves', function () {
-        $author = createTestAdmin();
-
-        $response = $this->actingAs($author)->post(route('user.follow.toggle', $author->id));
+        $response = authenticatedPost($this->author, route('user.follow.toggle', $this->author->id));
 
         expect($response)->toHaveErrorMessage('You cannot follow yourself');
-        expect($author->following()->where('following_id', $author->id)->exists())->toBeFalse();
+        expect($this->author->following()->where('following_id', $this->author->id)->exists())->toBeFalse();
     })->group('follows', 'toggle', 'validation');
 
     it('prevents users from following member users (non-authors)', function () {
         $member1 = createTestMember(['email' => 'member1@test.com']);
         $member2 = createTestMember(['email' => 'member2@test.com']);
 
-        $response = $this->actingAs($member1)->post(route('user.follow.toggle', $member2->id));
+        $response = authenticatedPost($member1, route('user.follow.toggle', $member2->id));
 
         expect($response)->toHaveErrorMessage('You can only follow authors');
         expect($member1->following()->where('following_id', $member2->id)->exists())->toBeFalse();
     })->group('follows', 'toggle', 'validation');
 
     it('allows users to follow master admin users', function () {
-        $member = createTestMember();
         $masterAdmin = createTestMasterAdmin();
 
-        $response = $this->actingAs($member)->post(route('user.follow.toggle', $masterAdmin->id));
+        $response = authenticatedPost($this->member, route('user.follow.toggle', $masterAdmin->id));
 
         expect($response)->toHaveSuccessMessage('Following successfully');
-        expect($member->following()->where('following_id', $masterAdmin->id)->exists())->toBeTrue();
+        expect($this->member->following()->where('following_id', $masterAdmin->id)->exists())->toBeTrue();
     })->group('follows', 'toggle', 'authenticated');
 
     it('allows admin users to follow other admin users', function () {
         $author1 = createTestAdmin(['email' => 'author1@test.com']);
         $author2 = createTestAdmin(['email' => 'author2@test.com']);
 
-        $response = $this->actingAs($author1)->post(route('user.follow.toggle', $author2->id));
+        $response = authenticatedPost($author1, route('user.follow.toggle', $author2->id));
 
         expect($response)->toHaveSuccessMessage('Following successfully');
         expect($author1->following()->where('following_id', $author2->id)->exists())->toBeTrue();
     })->group('follows', 'toggle', 'authenticated');
 
     it('allows members to follow multiple authors', function () {
-        $member = createTestMember();
         $author1 = createTestAdmin(['email' => 'author1@test.com']);
         $author2 = createTestAdmin(['email' => 'author2@test.com']);
         $author3 = createTestAdmin(['email' => 'author3@test.com']);
 
-        $this->actingAs($member)->post(route('user.follow.toggle', $author1->id));
-        $this->actingAs($member)->post(route('user.follow.toggle', $author2->id));
-        $this->actingAs($member)->post(route('user.follow.toggle', $author3->id));
+        authenticatedPost($this->member, route('user.follow.toggle', $author1->id));
+        authenticatedPost($this->member, route('user.follow.toggle', $author2->id));
+        authenticatedPost($this->member, route('user.follow.toggle', $author3->id));
 
-        expect($member->following()->count())->toBe(3)
-            ->and($member->following()->pluck('users.id')->toArray())->toContain($author1->id, $author2->id, $author3->id);
+        expect($this->member->following()->count())->toBe(3)
+            ->and($this->member->following()->pluck('users.id')->toArray())->toContain($author1->id, $author2->id, $author3->id);
     })->group('follows', 'toggle', 'authenticated');
 
     it('allows authors to have multiple followers', function () {

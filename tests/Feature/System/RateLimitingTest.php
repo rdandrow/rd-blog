@@ -198,7 +198,7 @@ describe('Rate Limit Headers', function () {
         
         // Check if rate limit headers are present (if your app uses them)
         // This is optional based on your implementation
-        expect($response->status())->toBe(200);
+        expect($response->status())->toBe(HTTP_OK);
     })->group('rate-limiting', 'headers');
 });
 

@@ -10,14 +10,24 @@ use Illuminate\Support\Facades\DB;
  * 
  * These tests verify application performance characteristics including:
  * - N+1 query detection and prevention
- * - Large dataset handling (30-60 records - sufficient to catch issues)
+ * - Large dataset handling (balanced for speed vs effectiveness)
  * - Memory usage patterns
  * - Query optimization and indexing
  * 
- * Note: Dataset sizes are intentionally smaller (20-60 records) to balance
+ * Note: Dataset sizes are intentionally moderate (10-60 records) to balance
  * test speed with effectiveness. These sizes are sufficient to detect
- * performance issues while keeping tests fast.
+ * performance issues while keeping tests fast. Adjust QUERY_THRESHOLD
+ * constants if your application's eager loading strategy changes.
+ * 
+ * Key Metrics:
+ * - < 15 queries for list pages with eager loading
+ * - < 30 queries for detail pages with relationships
+ * - Query counts should remain constant regardless of dataset size
  */
+
+// Query thresholds for N+1 detection
+const LIST_PAGE_QUERY_THRESHOLD = 15;
+const DETAIL_PAGE_QUERY_THRESHOLD = 30;
 
 describe('N+1 Query Detection', function () {
     describe('Blog Posts', function () {
@@ -41,7 +51,7 @@ describe('N+1 Query Detection', function () {
             
             // Should not have a separate query for each post's author
             // Ideally should use eager loading
-            expect(count($queries))->toBeLessThan(15); // Allow some queries but not 1 per post
+            expect(count($queries))->toBeLessThan(LIST_PAGE_QUERY_THRESHOLD);
         })->group('performance', 'n+1', 'queries');
 
         it('loads relationships efficiently for single post', function () {
@@ -68,7 +78,7 @@ describe('N+1 Query Detection', function () {
             DB::disableQueryLog();
             
             // Should load all relationships efficiently
-            expect(count($queries))->toBeLessThan(30);
+            expect(count($queries))->toBeLessThan(DETAIL_PAGE_QUERY_THRESHOLD);
         })->group('performance', 'n+1', 'queries');
     });
 
@@ -90,8 +100,8 @@ describe('N+1 Query Detection', function () {
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             
-            // Should load posts efficiently with eager loading (< 15 queries for 10 posts)
-            expect(count($queries))->toBeLessThan(15);
+            // Should load posts efficiently with eager loading
+            expect(count($queries))->toBeLessThan(LIST_PAGE_QUERY_THRESHOLD);
         })->group('performance', 'n+1', 'queries');
     });
 
@@ -133,8 +143,8 @@ describe('N+1 Query Detection', function () {
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             
-            expect($response->status())->toBe(200)
-                ->and(count($queries))->toBeLessThan(25);
+            expect($response->status())->toBe(HTTP_OK)
+                ->and(count($queries))->toBeLessThan(COMPLEX_QUERY_THRESHOLD);
         })->group('performance', 'n+1', 'queries');
     });
 });

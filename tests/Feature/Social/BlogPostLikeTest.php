@@ -12,32 +12,30 @@ use App\Models\BlogPostLike;
 use App\Models\User;
 
 describe('Liking Blog Posts', function () {
-    it('allows authenticated users to like a blog post', function () {
-        $user = createTestMember();
-        $post = createPublishedPost();
+    beforeEach(function () {
+        $this->user = createTestMember();
+        $this->post = createPublishedPost();
+    });
 
-        $response = $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
+    it('allows authenticated users to like a blog post', function () {
+        $response = authenticatedPost($this->user, route('blog.like.toggle', $this->post->slug));
 
         expect($response)->toHaveSuccessMessage('Post liked');
         $this->assertDatabaseHas('blog_post_likes', [
-            'blog_post_id' => $post->id,
-            'user_id' => $user->id,
+            'blog_post_id' => $this->post->id,
+            'user_id' => $this->user->id,
         ]);
     })->group('likes', 'toggle', 'authenticated');
 
     it('denies guests from liking blog posts', function () {
-        $post = createPublishedPost();
-
-        $response = $this->post(route('blog.like.toggle', $post->slug));
+        $response = $this->post(route('blog.like.toggle', $this->post->slug));
 
         expect($response)->toRedirectToLogin();
         $this->assertDatabaseCount('blog_post_likes', 0);
     })->group('likes', 'toggle', 'guest');
 
     it('returns 404 for non-existent blog posts', function () {
-        $user = createTestMember();
-
-        $response = $this->actingAs($user)->post(route('blog.like.toggle', 'non-existent-slug'));
+        $response = authenticatedPost($this->user, route('blog.like.toggle', 'non-existent-slug'));
 
         expect($response)->toBeNotFound();
     })->group('likes', 'toggle', 'validation');
@@ -46,7 +44,7 @@ describe('Liking Blog Posts', function () {
         $author = createTestAdmin();
         $post = createPublishedPost(['user_id' => $author->id]);
 
-        $response = $this->actingAs($author)->post(route('blog.like.toggle', $post->slug));
+        $response = authenticatedPost($author, route('blog.like.toggle', $post->slug));
 
         expect($response)->toHaveSuccessMessage('Post liked');
         $this->assertDatabaseHas('blog_post_likes', [
@@ -59,92 +57,88 @@ describe('Liking Blog Posts', function () {
         $user1 = createTestMember(['email' => 'user1@test.com']);
         $user2 = createTestMember(['email' => 'user2@test.com']);
         $user3 = createTestMember(['email' => 'user3@test.com']);
-        $post = createPublishedPost();
 
-        $this->actingAs($user1)->post(route('blog.like.toggle', $post->slug));
-        $this->actingAs($user2)->post(route('blog.like.toggle', $post->slug));
-        $this->actingAs($user3)->post(route('blog.like.toggle', $post->slug));
+        authenticatedPost($user1, route('blog.like.toggle', $this->post->slug));
+        authenticatedPost($user2, route('blog.like.toggle', $this->post->slug));
+        authenticatedPost($user3, route('blog.like.toggle', $this->post->slug));
 
         $this->assertDatabaseCount('blog_post_likes', 3);
-        expect(BlogPostLike::where('blog_post_id', $post->id)->count())->toBe(3);
+        expect(BlogPostLike::where('blog_post_id', $this->post->id)->count())->toBe(3);
     })->group('likes', 'toggle', 'authenticated');
 
     it('allows users to like multiple blog posts', function () {
-        $user = createTestMember();
         $author = createTestAdmin();
         $post1 = createPublishedPost(['user_id' => $author->id, 'title' => 'Post 1']);
         $post2 = createPublishedPost(['user_id' => $author->id, 'title' => 'Post 2']);
         $post3 = createPublishedPost(['user_id' => $author->id, 'title' => 'Post 3']);
 
-        $this->actingAs($user)->post(route('blog.like.toggle', $post1->slug));
-        $this->actingAs($user)->post(route('blog.like.toggle', $post2->slug));
-        $this->actingAs($user)->post(route('blog.like.toggle', $post3->slug));
+        authenticatedPost($this->user, route('blog.like.toggle', $post1->slug));
+        authenticatedPost($this->user, route('blog.like.toggle', $post2->slug));
+        authenticatedPost($this->user, route('blog.like.toggle', $post3->slug));
 
         $this->assertDatabaseCount('blog_post_likes', 3);
-        expect(BlogPostLike::where('user_id', $user->id)->count())->toBe(3);
+        expect(BlogPostLike::where('user_id', $this->user->id)->count())->toBe(3);
     })->group('likes', 'toggle', 'authenticated');
 
     it('allows users to like both published and draft posts', function () {
-        $user = createTestMember();
         $author = createTestAdmin();
         $publishedPost = createPublishedPost(['user_id' => $author->id, 'title' => 'Published']);
         $draftPost = createDraftPost(['user_id' => $author->id, 'title' => 'Draft']);
 
-        $this->actingAs($user)->post(route('blog.like.toggle', $publishedPost->slug));
-        $this->actingAs($user)->post(route('blog.like.toggle', $draftPost->slug));
+        authenticatedPost($this->user, route('blog.like.toggle', $publishedPost->slug));
+        authenticatedPost($this->user, route('blog.like.toggle', $draftPost->slug));
 
         $this->assertDatabaseHas('blog_post_likes', [
             'blog_post_id' => $publishedPost->id,
-            'user_id' => $user->id,
+            'user_id' => $this->user->id,
         ]);
         
         $this->assertDatabaseHas('blog_post_likes', [
             'blog_post_id' => $draftPost->id,
-            'user_id' => $user->id,
+            'user_id' => $this->user->id,
         ]);
     })->group('likes', 'toggle', 'authenticated');
 });
 
 describe('Unliking Blog Posts', function () {
-    it('allows authenticated users to unlike previously liked posts', function () {
-        $user = createTestMember();
-        $post = createPublishedPost();
+    beforeEach(function () {
+        $this->user = createTestMember();
+        $this->post = createPublishedPost();
+    });
 
+    it('allows authenticated users to unlike previously liked posts', function () {
         BlogPostLike::create([
-            'blog_post_id' => $post->id,
-            'user_id' => $user->id,
+            'blog_post_id' => $this->post->id,
+            'user_id' => $this->user->id,
         ]);
 
         $this->assertDatabaseHas('blog_post_likes', [
-            'blog_post_id' => $post->id,
-            'user_id' => $user->id,
+            'blog_post_id' => $this->post->id,
+            'user_id' => $this->user->id,
         ]);
 
-        $response = $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
+        $response = authenticatedPost($this->user, route('blog.like.toggle', $this->post->slug));
 
         expect($response)->toHaveSuccessMessage('Like removed');
         $this->assertDatabaseMissing('blog_post_likes', [
-            'blog_post_id' => $post->id,
-            'user_id' => $user->id,
+            'blog_post_id' => $this->post->id,
+            'user_id' => $this->user->id,
         ]);
     })->group('likes', 'toggle', 'authenticated');
 
     it('toggles like twice to return to original state', function () {
-        $user = createTestMember();
-        $post = createPublishedPost();
-
         $this->assertDatabaseCount('blog_post_likes', 0);
 
-        $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
+        authenticatedPost($this->user, route('blog.like.toggle', $this->post->slug));
         $this->assertDatabaseHas('blog_post_likes', [
-            'blog_post_id' => $post->id,
-            'user_id' => $user->id,
+            'blog_post_id' => $this->post->id,
+            'user_id' => $this->user->id,
         ]);
 
-        $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
+        authenticatedPost($this->user, route('blog.like.toggle', $this->post->slug));
         $this->assertDatabaseMissing('blog_post_likes', [
-            'blog_post_id' => $post->id,
-            'user_id' => $user->id,
+            'blog_post_id' => $this->post->id,
+            'user_id' => $this->user->id,
         ]);
         $this->assertDatabaseCount('blog_post_likes', 0);
     })->group('likes', 'toggle', 'authenticated');

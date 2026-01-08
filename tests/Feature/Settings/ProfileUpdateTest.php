@@ -13,7 +13,7 @@ describe('Profile Display', function () {
     it('displays the profile edit page', function () {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->get(route('profile.edit'));
+        $response = authenticatedGet($user, route('profile.edit'));
 
         $response->assertOk();
     })->group('settings', 'profile', 'authenticated');

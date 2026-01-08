@@ -16,6 +16,10 @@ beforeEach(function () {
     Storage::fake('public');
 });
 
+afterEach(function () {
+    Storage::fake(); // Clean up storage between tests
+});
+
 describe('Blog Post Listing', function () {
     it('allows admin users to view their published blog posts', function () {
         $admin = createTestAdmin();
@@ -24,7 +28,7 @@ describe('Blog Post Listing', function () {
         BlogPost::factory()->published()->count(3)->create(['user_id' => $admin->id]);
         BlogPost::factory()->published()->count(2)->create(['user_id' => $otherAdmin->id]);
 
-        $response = $this->actingAs($admin)->get(route('admin.blog-posts.index'));
+        $response = authenticatedGet($admin, route('admin.blog-posts.index'));
 
         expect($response)->toBeSuccessfulInertiaResponse('Admin/BlogPosts/Index')
             ->and($response)->assertInertia(fn ($page) => $page->has('posts.data', 3));
@@ -33,7 +37,7 @@ describe('Blog Post Listing', function () {
     it('denies member users from accessing blog post index', function () {
         $member = createTestMember();
 
-        $response = $this->actingAs($member)->get(route('admin.blog-posts.index'));
+        $response = authenticatedGet($member, route('admin.blog-posts.index'));
 
         expect($response)->toBeForbidden();
     })->group('blog-posts', 'listing', 'unauthorized');
@@ -52,7 +56,7 @@ describe('Draft Posts Management', function () {
         BlogPost::factory()->draft()->count(2)->create(['user_id' => $admin->id]);
         BlogPost::factory()->published()->create(['user_id' => $admin->id]);
 
-        $response = $this->actingAs($admin)->get(route('admin.blog-posts.drafts'));
+        $response = authenticatedGet($admin, route('admin.blog-posts.drafts'));
 
         expect($response)->toBeSuccessfulInertiaResponse('Admin/BlogPosts/Drafts')
             ->and($response)->assertInertia(fn ($page) => $page->has('posts.data', 2));
@@ -64,7 +68,7 @@ describe('Draft Posts Management', function () {
         BlogPost::factory()->draft()->count(3)->create(['user_id' => $admin->id]);
         BlogPost::factory()->published()->count(2)->create(['user_id' => $admin->id]);
 
-        $response = $this->actingAs($admin)->get(route('admin.blog-posts.index'));
+        $response = authenticatedGet($admin, route('admin.blog-posts.index'));
 
         $response->assertInertia(fn ($page) => $page->has('posts.data', 2));
     })->group('blog-posts', 'drafts', 'filtering');
@@ -74,7 +78,7 @@ describe('Blog Post Creation', function () {
     it('allows admin users to view create blog post form', function () {
         $admin = createTestAdmin();
 
-        $response = $this->actingAs($admin)->get(route('admin.blog-posts.create'));
+        $response = authenticatedGet($admin, route('admin.blog-posts.create'));
 
         expect($response)->toBeSuccessfulInertiaResponse('Admin/BlogPosts/Create');
     })->group('blog-posts', 'creation', 'authorized');
@@ -91,7 +95,7 @@ describe('Blog Post Creation', function () {
             'is_published' => true,
         ];
 
-        $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), $postData);
+        $response = authenticatedPost($admin, route('admin.blog-posts.store'), $postData);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('blog_posts', [
@@ -119,7 +123,7 @@ describe('Blog Post Creation', function () {
             'is_published' => false,
         ];
 
-        $response = $this->actingAs($admin)->post(route('admin.blog-posts.store'), $postData);
+        $response = authenticatedPost($admin, route('admin.blog-posts.store'), $postData);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('blog_posts', [
@@ -139,7 +143,7 @@ describe('Blog Post Creation', function () {
             'is_published' => false,
         ];
 
-        $this->actingAs($admin)->post(route('admin.blog-posts.store'), $postData);
+        authenticatedPost($admin, route('admin.blog-posts.store'), $postData);
 
         $this->assertDatabaseHas('blog_posts', [
             'title' => 'My Awesome Blog Post!',
@@ -157,12 +161,12 @@ describe('Blog Post Creation', function () {
             'is_published' => true,
         ];
 
-        $this->actingAs($admin)->post(route('admin.blog-posts.store'), $postData);
+        authenticatedPost($admin, route('admin.blog-posts.store'), $postData);
 
         $postData['excerpt'] = 'Second post';
         $postData['content'] = 'Second content';
 
-        $this->actingAs($admin)->post(route('admin.blog-posts.store'), $postData);
+        authenticatedPost($admin, route('admin.blog-posts.store'), $postData);
 
         $posts = BlogPost::where('title', 'Duplicate Title')->get();
         expect($posts)->toHaveCount(2)
@@ -180,7 +184,7 @@ describe('Blog Post Creation', function () {
             'is_published' => false,
         ];
 
-        $response = $this->actingAs($member)->post(route('admin.blog-posts.store'), $postData);
+        $response = authenticatedPost($member, route('admin.blog-posts.store'), $postData);
 
         expect($response)->toBeForbidden();
     })->group('blog-posts', 'creation', 'unauthorized');
@@ -191,41 +195,41 @@ describe('Blog Post Creation Validation', function () {
         $this->admin = createTestAdmin();
     });
 
-    it('requires title', function () {
-        $postData = [
-            'excerpt' => 'Test excerpt',
-            'content' => 'Test content',
-            'is_published' => false,
-        ];
+    it('requires required fields', function (string $missingField, array $validData) {
+        unset($validData[$missingField]);
 
-        $response = $this->actingAs($this->admin)->post(route('admin.blog-posts.store'), $postData);
+        $response = authenticatedPost($this->admin, route('admin.blog-posts.store'), $validData);
 
-        expect($response)->toHaveValidationError('title');
-    })->group('blog-posts', 'creation', 'validation');
-
-    it('requires excerpt', function () {
-        $postData = [
-            'title' => 'Test Post',
-            'content' => 'Test content',
-            'is_published' => false,
-        ];
-
-        $response = $this->actingAs($this->admin)->post(route('admin.blog-posts.store'), $postData);
-
-        expect($response)->toHaveValidationError('excerpt');
-    })->group('blog-posts', 'creation', 'validation');
-
-    it('requires content', function () {
-        $postData = [
-            'title' => 'Test Post',
-            'excerpt' => 'Test excerpt',
-            'is_published' => false,
-        ];
-
-        $response = $this->actingAs($this->admin)->post(route('admin.blog-posts.store'), $postData);
-
-        expect($response)->toHaveValidationError('content');
-    })->group('blog-posts', 'creation', 'validation');
+        expect($response)->toHaveValidationError($missingField);
+    })->with([
+        'title is required' => [
+            'missingField' => 'title',
+            'validData' => [
+                'title' => 'Test Post',
+                'excerpt' => 'Test excerpt',
+                'content' => 'Test content',
+                'is_published' => false,
+            ],
+        ],
+        'excerpt is required' => [
+            'missingField' => 'excerpt',
+            'validData' => [
+                'title' => 'Test Post',
+                'excerpt' => 'Test excerpt',
+                'content' => 'Test content',
+                'is_published' => false,
+            ],
+        ],
+        'content is required' => [
+            'missingField' => 'content',
+            'validData' => [
+                'title' => 'Test Post',
+                'excerpt' => 'Test excerpt',
+                'content' => 'Test content',
+                'is_published' => false,
+            ],
+        ],
+    ])->group('blog-posts', 'creation', 'validation');
 });
 
 describe('Blog Post Editing', function () {
@@ -233,7 +237,7 @@ describe('Blog Post Editing', function () {
         $admin = createTestAdmin();
         $post = BlogPost::factory()->create(['user_id' => $admin->id]);
 
-        $response = $this->actingAs($admin)->get(route('admin.blog-posts.edit', $post));
+        $response = authenticatedGet($admin, route('admin.blog-posts.edit', $post));
 
         expect($response)->toBeSuccessfulInertiaResponse('Admin/BlogPosts/Edit')
             ->and($response)->assertInertia(fn ($page) => $page->has('post'));
@@ -244,7 +248,7 @@ describe('Blog Post Editing', function () {
         $admin2 = createTestAdmin(['email' => 'admin2@test.com']);
         $post = BlogPost::factory()->create(['user_id' => $admin2->id]);
 
-        $response = $this->actingAs($admin1)->get(route('admin.blog-posts.edit', $post));
+        $response = authenticatedGet($admin1, route('admin.blog-posts.edit', $post));
 
         expect($response)->toBeForbidden();
     })->group('blog-posts', 'editing', 'unauthorized');
@@ -261,7 +265,7 @@ describe('Blog Post Editing', function () {
             'is_published' => true,
         ];
 
-        $response = $this->actingAs($admin)->put(route('admin.blog-posts.update', $post), $updateData);
+        $response = authenticatedPut($admin, route('admin.blog-posts.update', $post), $updateData);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('blog_posts', [
@@ -286,7 +290,7 @@ describe('Blog Post Editing', function () {
             'is_published' => true,
         ];
 
-        $this->actingAs($admin)->put(route('admin.blog-posts.update', $post), $updateData);
+        authenticatedPut($admin, route('admin.blog-posts.update', $post), $updateData);
 
         $post->refresh();
         expect($post->is_published)->toBeTrue()
