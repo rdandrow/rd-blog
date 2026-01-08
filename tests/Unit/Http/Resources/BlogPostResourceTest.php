@@ -3,18 +3,23 @@
 use App\Http\Resources\BlogPostResource;
 use App\Models\BlogPost;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(Tests\TestCase::class);
+
+/**
+ * @group resources
+ * @group transformation
+ * @group blog-post-resource
+ * @group unit
+ */
 
 beforeEach(function () {
-    $this->author = User::factory()->create([
-        'name' => 'John Doe',
-    ]);
+    $this->author = new User(['name' => 'John Doe']);
+    $this->author->id = 1;
+    $this->author->avatar = null;
     
-    $this->post = BlogPost::factory()->create([
-        'user_id' => $this->author->id,
+    $this->post = new BlogPost([
         'title' => 'Test Post',
         'slug' => 'test-post',
         'excerpt' => 'Test excerpt',
@@ -25,6 +30,9 @@ beforeEach(function () {
         'published_at' => '2026-01-06 10:30:00',
         'reading_time' => 5,
     ]);
+    $this->post->id = 1;
+    $this->post->user_id = 1;
+    $this->post->setRelation('author', $this->author);
 });
 
 describe('basic transformation', function () {
@@ -163,10 +171,10 @@ describe('conditional content', function () {
 describe('edge cases', function () {
     test('handles null published_at', function () {
         // Arrange: Create post with null published_at
-        $post = BlogPost::factory()->create([
-            'user_id' => $this->author->id,
-            'published_at' => null,
-        ]);
+        $post = new BlogPost(['published_at' => null]);
+        $post->id = 2;
+        $post->user_id = $this->author->id;
+        $post->setRelation('author', $this->author);
         
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
@@ -180,10 +188,10 @@ describe('edge cases', function () {
 
     test('handles null featured_image', function () {
         // Arrange: Create post with null featured_image
-        $post = BlogPost::factory()->create([
-            'user_id' => $this->author->id,
-            'featured_image' => null,
-        ]);
+        $post = new BlogPost(['featured_image' => null]);
+        $post->id = 2;
+        $post->user_id = $this->author->id;
+        $post->setRelation('author', $this->author);
         
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
@@ -197,11 +205,14 @@ describe('edge cases', function () {
 
     test('handles null author avatar', function () {
         // Arrange: Create author (avatar is null by default)
-        $authorNoAvatar = User::factory()->create();
+        $authorNoAvatar = new User();
+        $authorNoAvatar->id = 2;
+        $authorNoAvatar->avatar = null;
         
-        $post = BlogPost::factory()->create([
-            'user_id' => $authorNoAvatar->id,
-        ]);
+        $post = new BlogPost();
+        $post->id = 2;
+        $post->user_id = $authorNoAvatar->id;
+        $post->setRelation('author', $authorNoAvatar);
         
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
@@ -249,10 +260,10 @@ describe('array structure', function () {
 describe('additional scenarios', function () {
     test('handles empty tags array', function () {
         // Arrange: Create post with no tags
-        $post = BlogPost::factory()->create([
-            'user_id' => $this->author->id,
-            'tags' => [],
-        ]);
+        $post = new BlogPost(['tags' => []]);
+        $post->id = 2;
+        $post->user_id = $this->author->id;
+        $post->setRelation('author', $this->author);
         
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
@@ -269,10 +280,10 @@ describe('additional scenarios', function () {
 
     test('preserves is_featured boolean value', function () {
         // Arrange: Create post with is_featured false
-        $postNotFeatured = BlogPost::factory()->create([
-            'user_id' => $this->author->id,
-            'is_featured' => false,
-        ]);
+        $postNotFeatured = new BlogPost(['is_featured' => false]);
+        $postNotFeatured->id = 2;
+        $postNotFeatured->user_id = $this->author->id;
+        $postNotFeatured->setRelation('author', $this->author);
         
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($postNotFeatured);
@@ -341,10 +352,10 @@ describe('additional scenarios', function () {
 
     test('handles multiple tags correctly', function () {
         // Arrange: Create post with many tags
-        $post = BlogPost::factory()->create([
-            'user_id' => $this->author->id,
-            'tags' => ['Laravel', 'PHP', 'Testing', 'TDD', 'Pest'],
-        ]);
+        $post = new BlogPost(['tags' => ['Laravel', 'PHP', 'Testing', 'TDD', 'Pest']]);
+        $post->id = 2;
+        $post->user_id = $this->author->id;
+        $post->setRelation('author', $this->author);
         
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);

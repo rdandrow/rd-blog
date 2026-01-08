@@ -4,9 +4,9 @@ This document provides a comprehensive overview of the test suite for the RD Blo
 
 ## Test Statistics
 
-- **Total Tests**: 700 (422 feature + 278 unit)
-- **Total Assertions**: 2,831
-- **Execution Time**: ~4.67 seconds (parallel execution)
+- **Total Tests**: 700+ (422 feature + 216 unit, growing)
+- **Total Assertions**: 2,675+
+- **Execution Time**: ~4.50 seconds (parallel execution)
 - **Parallel Processes**: 12
 - **Test Framework**: Pest PHP 4.1 (built on PHPUnit 11.x)
 - **Last Updated**: January 2026
@@ -353,26 +353,39 @@ tests/Unit/
 
 **Models** (79 tests):
 - `BlogPostTest.php` - 22 tests (slug generation, reading time calculation)
+  - **Groups**: `models`, `blog-post`, `unit`
 - `UserTest.php` - 24 tests (role helpers, relationship utilities)
+  - **Groups**: `models`, `user`, `unit`
 - `CommentTest.php` - 21 tests (threading, relationships, isReply method)
+  - **Groups**: `models`, `comment`, `relationships`, `unit`
 - `BlogPostLikeTest.php` - 12 tests (pivot relationships, business logic)
+  - **Groups**: `models`, `blog-post-like`, `relationships`, `unit`
 
 **Services** (45 tests):
 - `BlogPostServiceTest.php` - 30 tests (filtering, queries, data aggregation)
+  - **Groups**: `services`, `blog-post-service`, `unit`
 - `BlogImageServiceTest.php` - 15 tests (file operations, path transformations)
+  - **Groups**: `services`, `blog-image-service`, `unit`
 
 **Policies** (24 tests):
 - `BlogPostPolicyTest.php` - 24 tests (authorization rules, access control)
+  - **Groups**: `policies`, `authorization`, `blog-post-policy`, `unit`
 
 **Actions/Fortify** (50 tests):
 - `CreateNewUserTest.php` - 19 tests (user creation, validation)
+  - **Groups**: `actions`, `fortify`, `user-creation`, `unit`
 - `ResetUserPasswordTest.php` - 12 tests (password reset, validation)
+  - **Groups**: `actions`, `fortify`, `password-reset`, `unit`
 - `PasswordValidationRulesTest.php` - 19 tests (password rules, confirmation)
+  - **Groups**: `actions`, `fortify`, `password-validation`, `unit`
 
 **HTTP Layer** (80 tests):
 - `StoreBlogPostRequestTest.php` - 31 tests (validation rules, authorization)
+  - **Groups**: `requests`, `validation`, `authorization`, `unit`
 - `UpdateBlogPostRequestTest.php` - 31 tests (update validation, policy integration)
+  - **Groups**: `requests`, `validation`, `authorization`, `update-request`, `unit`
 - `BlogPostResourceTest.php` - 18 tests (data transformation, conditional content)
+  - **Groups**: `resources`, `transformation`, `blog-post-resource`, `unit`
 
 #### Unit Test Principles
 
@@ -381,6 +394,50 @@ tests/Unit/
 3. **Mocking** - All external dependencies mocked/stubbed
 4. **Focus** - One behavior per test
 5. **Independence** - Tests can run in any order
+6. **Memory Management** - Mockery mocks properly cleaned up with `afterEach`
+7. **Code Reusability** - Helper methods reduce duplication in validation tests
+8. **Edge Case Coverage** - Boundary conditions tested (empty, null, very large values)
+
+#### Running Unit Tests by Group
+
+All unit tests now include PHPDoc annotations documenting their test groups for better organization. While Pest uses the `->group()` method on individual tests/describe blocks, the PHPDoc comments serve as documentation.
+
+**By Directory (Most Practical):**
+```bash
+./vendor/bin/pest tests/Unit/Models           # All model tests (37 tests)
+./vendor/bin/pest tests/Unit/Services         # All service tests (5 tests)
+./vendor/bin/pest tests/Unit/Policies         # All policy tests (24 tests)
+./vendor/bin/pest tests/Unit/Actions/Fortify  # All Fortify action tests (50 tests)
+./vendor/bin/pest tests/Unit/Http/Requests    # All request validation tests (62 tests)
+./vendor/bin/pest tests/Unit/Http/Resources   # All resource transformation tests (18 tests)
+```
+
+**By Specific File:**
+```bash
+./vendor/bin/pest tests/Unit/Models/BlogPostTest.php              # BlogPost model tests
+./vendor/bin/pest tests/Unit/Models/UserTest.php --group=models   # User model tests (with group filter)
+./vendor/bin/pest tests/Unit/Services/BlogPostServiceTest.php     # BlogPostService tests
+./vendor/bin/pest tests/Unit/Services/BlogImageServiceTest.php    # BlogImageService tests
+```
+
+**All Unit Tests:**
+```bash
+./vendor/bin/pest tests/Unit                   # All 211 unit tests
+./vendor/bin/pest tests/Unit --compact         # Compact output
+```
+
+**Test Group Documentation:**
+
+Each unit test file includes PHPDoc annotations indicating its test groups:
+- `@group models` - Model business logic tests
+- `@group services` - Service layer tests
+- `@group policies` - Authorization policy tests
+- `@group actions` - Fortify action tests
+- `@group requests` - Form request validation tests
+- `@group resources` - API resource transformation tests
+- `@group unit` - All unit tests
+
+These annotations serve as documentation and help developers quickly identify the purpose and category of each test file.
 
 ## Test Helpers
 

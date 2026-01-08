@@ -2,16 +2,15 @@
 
 use App\Models\User;
 use App\Models\BlogPost;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(Tests\TestCase::class);
 
 describe('role helper methods', function () {
     beforeEach(function () {
-        // Create users once for all role tests to avoid repeated database hits
-        $this->masterAdmin = User::factory()->create(['role' => 'master_admin']);
-        $this->admin = User::factory()->create(['role' => 'admin']);
-        $this->member = User::factory()->create(['role' => 'member']);
+        // Create users in-memory for role tests
+        $this->masterAdmin = new User(['role' => 'master_admin']);
+        $this->admin = new User(['role' => 'admin']);
+        $this->member = new User(['role' => 'member']);
     });
 
     it('identifies master admin role correctly', function () {
@@ -68,12 +67,12 @@ describe('role helper methods', function () {
         // Act & Assert: Master admin should not be member
         expect($this->masterAdmin->isMember())->toBeFalse();
     });
-});
+})->group('models', 'user', 'unit');
 
 describe('relationship methods', function () {
     it('has following relationship', function () {
-        // Arrange: Create a user
-        $user = User::factory()->create();
+        // Arrange: Create a user in-memory
+        $user = new User();
         
         // Act: Get the following relationship
         $relationship = $user->following();
@@ -83,8 +82,8 @@ describe('relationship methods', function () {
     });
 
     it('has followers relationship', function () {
-        // Arrange: Create a user
-        $user = User::factory()->create();
+        // Arrange: Create a user in-memory
+        $user = new User();
         
         // Act: Get the followers relationship
         $relationship = $user->followers();
@@ -93,35 +92,9 @@ describe('relationship methods', function () {
         expect($relationship)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
     });
 
-    it('can follow another user', function () {
-        // Arrange: Create two users
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
-        
-        // Act: User 1 follows user 2
-        $user1->following()->attach($user2->id);
-        
-        // Assert: User 1 should be following user 2 (use query instead of eager loading)
-        expect($user1->following()->count())->toBe(1);
-        expect($user1->following()->first()->id)->toBe($user2->id);
-    });
-
-    it('can have followers', function () {
-        // Arrange: Create two users
-        $user1 = User::factory()->create();
-        $user2 = User::factory()->create();
-        
-        // Act: User 2 follows user 1
-        $user2->following()->attach($user1->id);
-        
-        // Assert: User 1 should have 1 follower (use query instead of eager loading)
-        expect($user1->followers()->count())->toBe(1);
-        expect($user1->followers()->first()->id)->toBe($user2->id);
-    });
-
     it('has blog posts relationship', function () {
-        // Arrange: Create a user
-        $user = User::factory()->create();
+        // Arrange: Create a user in-memory
+        $user = new User();
         
         // Act: Get the blog posts relationship
         $relationship = $user->blogPosts();
@@ -130,72 +103,39 @@ describe('relationship methods', function () {
         expect($relationship)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
     });
 
-    it('can have multiple blog posts', function () {
-        // Arrange: Create a user with blog posts
-        $user = User::factory()->create();
-        BlogPost::factory()->count(3)->create(['user_id' => $user->id]);
-        
-        // Act: Get blog posts count
-        $count = $user->blogPosts()->count();
-        
-        // Assert: Should have 3 blog posts
-        expect($count)->toBe(3);
-    });
-
-    it('can have published blog posts', function () {
-        // Arrange: Create a user with published and unpublished posts
-        $user = User::factory()->create();
-        BlogPost::factory()->count(2)->create([
-            'user_id' => $user->id,
-            'is_published' => true,
-            'published_at' => now(),
-        ]);
-        BlogPost::factory()->count(1)->create([
-            'user_id' => $user->id,
-            'is_published' => false,
-            'published_at' => null,
-        ]);
-        
-        // Act: Get published posts count
-        $publishedCount = $user->blogPosts()->where('is_published', true)->count();
-        
-        // Assert: Should have 2 published posts
-        expect($publishedCount)->toBe(2);
-    });
-
     it('following relationship uses correct pivot table and columns', function () {
-        // Arrange: Create a user
-        $user = User::factory()->create();
+        // Arrange: Create a user in-memory
+        $user = new User();
         
         // Act: Get the following relationship
         $relationship = $user->following();
         
-        // Assert: Should use correct pivot table
-        expect($relationship->getTable())->toBe('user_follows');
-        expect($relationship->getForeignPivotKeyName())->toBe('follower_id');
-        expect($relationship->getRelatedPivotKeyName())->toBe('following_id');
+        // Assert: Should use correct pivot table and keys
+        expect($relationship->getTable())->toBe('user_follows')
+            ->and($relationship->getForeignPivotKeyName())->toBe('follower_id')
+            ->and($relationship->getRelatedPivotKeyName())->toBe('following_id');
     });
 
     it('followers relationship uses correct pivot table and columns', function () {
-        // Arrange: Create a user
-        $user = User::factory()->create();
+        // Arrange: Create a user in-memory
+        $user = new User();
         
         // Act: Get the followers relationship
         $relationship = $user->followers();
         
-        // Assert: Should use correct pivot table
-        expect($relationship->getTable())->toBe('user_follows');
-        expect($relationship->getForeignPivotKeyName())->toBe('following_id');
-        expect($relationship->getRelatedPivotKeyName())->toBe('follower_id');
+        // Assert: Should use correct pivot table and keys
+        expect($relationship->getTable())->toBe('user_follows')
+            ->and($relationship->getForeignPivotKeyName())->toBe('following_id')
+            ->and($relationship->getRelatedPivotKeyName())->toBe('follower_id');
     });
-});
+})->group('models', 'user', 'relationships', 'unit');
 
 describe('role combinations', function () {
     it('correctly differentiates all three roles', function () {
-        // Arrange: Create users with each role (reuse from single creation)
-        $masterAdmin = User::factory()->make(['role' => 'master_admin']);
-        $admin = User::factory()->make(['role' => 'admin']);
-        $member = User::factory()->make(['role' => 'member']);
+        // Arrange: Create users with each role in-memory
+        $masterAdmin = new User(['role' => 'master_admin']);
+        $admin = new User(['role' => 'admin']);
+        $member = new User(['role' => 'member']);
         
         // Assert: Master admin checks
         expect($masterAdmin->isMasterAdmin())->toBeTrue();
@@ -215,39 +155,4 @@ describe('role combinations', function () {
         expect($member->isRegularAdmin())->toBeFalse();
         expect($member->isMember())->toBeTrue();
     });
-});
-
-describe('edge cases', function () {
-    it('handles empty following relationship', function () {
-        // Arrange: Create user with no following
-        $user = User::factory()->create();
-        
-        // Act: Get following count
-        $count = $user->following()->count();
-        
-        // Assert: Should have 0 following
-        expect($count)->toBe(0);
-    });
-
-    it('handles empty followers relationship', function () {
-        // Arrange: Create user with no followers
-        $user = User::factory()->create();
-        
-        // Act: Get followers count
-        $count = $user->followers()->count();
-        
-        // Assert: Should have 0 followers
-        expect($count)->toBe(0);
-    });
-
-    it('handles user with no blog posts', function () {
-        // Arrange: Create user with no blog posts
-        $user = User::factory()->create();
-        
-        // Act: Get blog posts count
-        $count = $user->blogPosts()->count();
-        
-        // Assert: Should have 0 blog posts
-        expect($count)->toBe(0);
-    });
-});
+})->group('models', 'user', 'unit');

@@ -6,8 +6,18 @@ use Illuminate\Support\Facades\Storage;
 
 uses(Tests\TestCase::class);
 
+/**
+ * @group services
+ * @group blog-image-service
+ * @group unit
+ */
+
 beforeEach(function () {
     $this->service = new BlogImageService();
+});
+
+afterEach(function () {
+    Storage::fake(); // Ensure storage is reset between tests
 });
 
 describe('upload method', function () {

@@ -6,6 +6,13 @@ use Illuminate\Validation\Rules\Password;
 
 uses(Tests\TestCase::class);
 
+/**
+ * @group actions
+ * @group fortify
+ * @group password-validation
+ * @group unit
+ */
+
 beforeEach(function () {
     // Create anonymous class that uses the trait for testing
     $this->class = new class {

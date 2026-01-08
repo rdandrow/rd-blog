@@ -2,16 +2,30 @@
 
 use App\Http\Requests\StoreBlogPostRequest;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(Tests\TestCase::class);
+
+/**
+ * @group requests
+ * @group validation
+ * @group authorization
+ * @group unit
+ */
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
+    $this->user = new User();
+    $this->user->id = 1;
     $this->request = new StoreBlogPostRequest();
+    
+    // Helper to validate rules and check for field errors
+    $this->validateField = function (array $data, string $field): bool {
+        $rules = $this->request->rules();
+        $validator = Validator::make($data, $rules);
+        return $validator->fails() && $validator->errors()->has($field);
+    };
 });
 
 describe('authorization', function () {
@@ -40,49 +54,34 @@ describe('authorization', function () {
 
 describe('required fields', function () {
     test('validates title is required', function () {
-        // Arrange: Missing title
-        $rules = $this->request->rules();
-        $validator = Validator::make(['title' => null], $rules);
+        // Arrange & Act: Validate missing title
+        $hasError = ($this->validateField)(['title' => null], 'title');
         
-        // Act: Run validation
-        $fails = $validator->fails();
-        
-        // Assert: Validation fails
-        expect($fails)->toBeTrue()
-            ->and($validator->errors()->has('title'))->toBeTrue();
+        // Assert: Validation fails for title field
+        expect($hasError)->toBeTrue();
     });
 
     test('validates excerpt is required', function () {
-        // Arrange: Missing excerpt
-        $rules = $this->request->rules();
-        $validator = Validator::make([
+        // Arrange & Act: Validate missing excerpt
+        $hasError = ($this->validateField)([
             'title' => 'Test Title',
             'excerpt' => null,
-        ], $rules);
+        ], 'excerpt');
         
-        // Act: Run validation
-        $fails = $validator->fails();
-        
-        // Assert: Validation fails
-        expect($fails)->toBeTrue()
-            ->and($validator->errors()->has('excerpt'))->toBeTrue();
+        // Assert: Validation fails for excerpt field
+        expect($hasError)->toBeTrue();
     });
 
     test('validates content is required', function () {
-        // Arrange: Missing content
-        $rules = $this->request->rules();
-        $validator = Validator::make([
+        // Arrange & Act: Validate missing content
+        $hasError = ($this->validateField)([
             'title' => 'Test Title',
             'excerpt' => 'Test excerpt',
             'content' => null,
-        ], $rules);
+        ], 'content');
         
-        // Act: Run validation
-        $fails = $validator->fails();
-        
-        // Assert: Validation fails
-        expect($fails)->toBeTrue()
-            ->and($validator->errors()->has('content'))->toBeTrue();
+        // Assert: Validation fails for content field
+        expect($hasError)->toBeTrue();
     });
 });
 

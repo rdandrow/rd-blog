@@ -3,18 +3,35 @@
 use App\Http\Requests\UpdateBlogPostRequest;
 use App\Models\BlogPost;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(Tests\TestCase::class);
+
+/**
+ * @group requests
+ * @group validation
+ * @group authorization
+ * @group update-request
+ * @group unit
+ */
 
 beforeEach(function () {
-    $this->author = User::factory()->create();
-    $this->nonAuthor = User::factory()->create();
-    $this->post = BlogPost::factory()->create(['user_id' => $this->author->id]);
+    $this->author = new User();
+    $this->author->id = 1;
+    $this->nonAuthor = new User();
+    $this->nonAuthor->id = 2;
+    $this->post = new BlogPost();
+    $this->post->user_id = 1;
     $this->request = new UpdateBlogPostRequest();
+    
+    // Helper to validate rules and check for field errors
+    $this->validateField = function (array $data, string $field): bool {
+        $rules = $this->request->rules();
+        $validator = Validator::make($data, $rules);
+        return $validator->fails() && $validator->errors()->has($field);
+    };
 });
 
 describe('authorization', function () {

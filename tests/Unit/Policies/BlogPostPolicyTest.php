@@ -3,14 +3,20 @@
 use App\Models\BlogPost;
 use App\Models\User;
 use App\Policies\BlogPostPolicy;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(Tests\TestCase::class, RefreshDatabase::class);
+uses(Tests\TestCase::class);
+
+/**
+ * @group policies
+ * @group authorization
+ * @group blog-post-policy
+ * @group unit
+ */
 
 describe('viewAny method', function () {
     it('allows all authenticated users to view any posts', function () {
         // Arrange: Create a user and policy
-        $user = User::factory()->make();
+        $user = new User();
         $policy = new BlogPostPolicy();
         
         // Act: Check viewAny authorization
@@ -22,9 +28,9 @@ describe('viewAny method', function () {
 
     it('allows users with different roles to view any posts', function () {
         // Arrange: Create users with different roles
-        $masterAdmin = User::factory()->make(['role' => 'master_admin']);
-        $admin = User::factory()->make(['role' => 'admin']);
-        $member = User::factory()->make(['role' => 'member']);
+        $masterAdmin = new User(['role' => 'master_admin']);
+        $admin = new User(['role' => 'admin']);
+        $member = new User(['role' => 'member']);
         $policy = new BlogPostPolicy();
         
         // Act & Assert: All roles can view any posts
@@ -37,8 +43,8 @@ describe('viewAny method', function () {
 describe('view method', function () {
     it('allows all authenticated users to view individual posts', function () {
         // Arrange: Create a user, blog post, and policy
-        $user = User::factory()->make();
-        $post = BlogPost::factory()->make();
+        $user = new User();
+        $post = new BlogPost();
         $policy = new BlogPostPolicy();
         
         // Act: Check view authorization
@@ -50,8 +56,10 @@ describe('view method', function () {
 
     it('allows users to view posts they do not own', function () {
         // Arrange: Create user and post owned by different user
-        $user = User::factory()->make(['id' => 1]);
-        $post = BlogPost::factory()->make(['user_id' => 2]);
+        $user = new User();
+        $user->id = 1;
+        $post = new BlogPost();
+        $post->user_id = 2;
         $policy = new BlogPostPolicy();
         
         // Act: Check view authorization
@@ -63,8 +71,10 @@ describe('view method', function () {
 
     it('allows users to view their own posts', function () {
         // Arrange: Create user and their own post
-        $user = User::factory()->make(['id' => 1]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User();
+        $user->id = 1;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check view authorization
@@ -78,7 +88,7 @@ describe('view method', function () {
 describe('create method', function () {
     it('allows all authenticated users to create posts', function () {
         // Arrange: Create a user and policy
-        $user = User::factory()->make();
+        $user = new User();
         $policy = new BlogPostPolicy();
         
         // Act: Check create authorization
@@ -90,9 +100,9 @@ describe('create method', function () {
 
     it('allows users with different roles to create posts', function () {
         // Arrange: Create users with different roles
-        $masterAdmin = User::factory()->make(['role' => 'master_admin']);
-        $admin = User::factory()->make(['role' => 'admin']);
-        $member = User::factory()->make(['role' => 'member']);
+        $masterAdmin = new User(['role' => 'master_admin']);
+        $admin = new User(['role' => 'admin']);
+        $member = new User(['role' => 'member']);
         $policy = new BlogPostPolicy();
         
         // Act & Assert: All roles can create posts
@@ -103,10 +113,12 @@ describe('create method', function () {
 });
 
 describe('update method', function () {
-    it('allows post author to update their post', function () {
+    it('allows post author to update their own post', function () {
         // Arrange: Create user and their post
-        $user = User::factory()->make(['id' => 1]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User();
+        $user->id = 1;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check update authorization
@@ -118,8 +130,10 @@ describe('update method', function () {
 
     it('denies non-authors from updating posts', function () {
         // Arrange: Create user and post owned by different user
-        $user = User::factory()->make(['id' => 2]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User();
+        $user->id = 2;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check update authorization
@@ -130,9 +144,11 @@ describe('update method', function () {
     });
 
     it('denies admins from updating posts they do not own', function () {
-        // Arrange: Create admin user and post owned by member
-        $admin = User::factory()->make(['id' => 2, 'role' => 'admin']);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        // Arrange: Create admin user and post owned by someone else
+        $admin = new User(['role' => 'admin']);
+        $admin->id = 2;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check update authorization
@@ -143,9 +159,11 @@ describe('update method', function () {
     });
 
     it('denies master admins from updating posts they do not own', function () {
-        // Arrange: Create master admin user and post owned by member
-        $masterAdmin = User::factory()->make(['id' => 2, 'role' => 'master_admin']);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        // Arrange: Create master admin user and post owned by someone else
+        $masterAdmin = new User(['role' => 'master_admin']);
+        $masterAdmin->id = 2;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check update authorization
@@ -157,10 +175,12 @@ describe('update method', function () {
 });
 
 describe('delete method', function () {
-    it('allows post author to delete their post', function () {
+    it('allows post author to delete their own post', function () {
         // Arrange: Create user and their post
-        $user = User::factory()->make(['id' => 1]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User();
+        $user->id = 1;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check delete authorization
@@ -172,8 +192,10 @@ describe('delete method', function () {
 
     it('denies non-authors from deleting posts', function () {
         // Arrange: Create user and post owned by different user
-        $user = User::factory()->make(['id' => 2]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User();
+        $user->id = 2;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check delete authorization
@@ -184,9 +206,11 @@ describe('delete method', function () {
     });
 
     it('denies admins from deleting posts they do not own', function () {
-        // Arrange: Create admin user and post owned by member
-        $admin = User::factory()->make(['id' => 2, 'role' => 'admin']);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        // Arrange: Create admin user and post owned by someone else
+        $admin = new User(['role' => 'admin']);
+        $admin->id = 2;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check delete authorization
@@ -197,9 +221,11 @@ describe('delete method', function () {
     });
 
     it('denies master admins from deleting posts they do not own', function () {
-        // Arrange: Create master admin user and post owned by member
-        $masterAdmin = User::factory()->make(['id' => 2, 'role' => 'master_admin']);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        // Arrange: Create master admin user and post owned by someone else
+        $masterAdmin = new User(['role' => 'master_admin']);
+        $masterAdmin->id = 2;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check delete authorization
@@ -213,8 +239,8 @@ describe('delete method', function () {
 describe('restore method', function () {
     it('denies all users from restoring posts', function () {
         // Arrange: Create user and post
-        $user = User::factory()->make(['id' => 1]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User(['id' => 1]);
+        $post = new BlogPost(['user_id' => 1]);
         $policy = new BlogPostPolicy();
         
         // Act: Check restore authorization
@@ -226,8 +252,10 @@ describe('restore method', function () {
 
     it('denies post author from restoring their own post', function () {
         // Arrange: Create user and their post
-        $user = User::factory()->make(['id' => 1]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User();
+        $user->id = 1;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check restore authorization
@@ -239,8 +267,8 @@ describe('restore method', function () {
 
     it('denies admins from restoring posts', function () {
         // Arrange: Create admin user and post
-        $admin = User::factory()->make(['role' => 'admin']);
-        $post = BlogPost::factory()->make();
+        $admin = new User(['role' => 'admin']);
+        $post = new BlogPost();
         $policy = new BlogPostPolicy();
         
         // Act: Check restore authorization
@@ -252,8 +280,8 @@ describe('restore method', function () {
 
     it('denies master admins from restoring posts', function () {
         // Arrange: Create master admin user and post
-        $masterAdmin = User::factory()->make(['role' => 'master_admin']);
-        $post = BlogPost::factory()->make();
+        $masterAdmin = new User(['role' => 'master_admin']);
+        $post = new BlogPost();
         $policy = new BlogPostPolicy();
         
         // Act: Check restore authorization
@@ -267,8 +295,10 @@ describe('restore method', function () {
 describe('forceDelete method', function () {
     it('denies all users from force deleting posts', function () {
         // Arrange: Create user and post
-        $user = User::factory()->make(['id' => 1]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User();
+        $user->id = 1;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check forceDelete authorization
@@ -280,8 +310,10 @@ describe('forceDelete method', function () {
 
     it('denies post author from force deleting their own post', function () {
         // Arrange: Create user and their post
-        $user = User::factory()->make(['id' => 1]);
-        $post = BlogPost::factory()->make(['user_id' => 1]);
+        $user = new User();
+        $user->id = 1;
+        $post = new BlogPost();
+        $post->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Act: Check forceDelete authorization
@@ -293,8 +325,8 @@ describe('forceDelete method', function () {
 
     it('denies admins from force deleting posts', function () {
         // Arrange: Create admin user and post
-        $admin = User::factory()->make(['role' => 'admin']);
-        $post = BlogPost::factory()->make();
+        $admin = new User(['role' => 'admin']);
+        $post = new BlogPost();
         $policy = new BlogPostPolicy();
         
         // Act: Check forceDelete authorization
@@ -306,8 +338,8 @@ describe('forceDelete method', function () {
 
     it('denies master admins from force deleting posts', function () {
         // Arrange: Create master admin user and post
-        $masterAdmin = User::factory()->make(['role' => 'master_admin']);
-        $post = BlogPost::factory()->make();
+        $masterAdmin = new User(['role' => 'master_admin']);
+        $post = new BlogPost();
         $policy = new BlogPostPolicy();
         
         // Act: Check forceDelete authorization
@@ -321,9 +353,12 @@ describe('forceDelete method', function () {
 describe('authorization matrix', function () {
     it('correctly applies authorization rules across all methods', function () {
         // Arrange: Create author, non-author, and posts
-        $author = User::factory()->make(['id' => 1]);
-        $nonAuthor = User::factory()->make(['id' => 2]);
-        $authorPost = BlogPost::factory()->make(['user_id' => 1]);
+        $author = new User();
+        $author->id = 1;
+        $nonAuthor = new User();
+        $nonAuthor->id = 2;
+        $authorPost = new BlogPost();
+        $authorPost->user_id = 1;
         $policy = new BlogPostPolicy();
         
         // Assert: Author permissions on their own post
