@@ -370,3 +370,174 @@ describe('additional scenarios', function () {
             ->and($array['tags'])->toContain('Pest');
     });
 });
+
+describe('Snapshot Testing', function () {
+    test('blog post resource matches snapshot for index route', function () {
+        // Arrange: Create consistent test data
+        $author = new User(['name' => 'Jane Smith', 'email' => 'jane@example.com']);
+        $author->id = 100;
+        $author->avatar = 'https://example.com/avatar.jpg';
+        
+        $post = new BlogPost([
+            'title' => 'Snapshot Test Post',
+            'slug' => 'snapshot-test-post',
+            'excerpt' => 'This is a test post for snapshot testing',
+            'content' => 'Full content of the blog post that should not appear on index',
+            'featured_image' => 'https://example.com/featured.jpg',
+            'tags' => ['Laravel', 'Testing', 'Snapshots'],
+            'is_featured' => true,
+            'published_at' => '2026-01-08 12:00:00',
+            'reading_time' => 8,
+        ]);
+        $post->id = 100;
+        $post->user_id = 100;
+        $post->setRelation('author', $author);
+        
+        $request = Request::create('/blog', 'GET');
+        $resource = new BlogPostResource($post);
+        
+        // Act: Transform to array
+        $array = $resource->toArray($request);
+        
+        // Assert: Matches snapshot (content should be excluded on index)
+        expect($array)->toMatchSnapshot();
+    })->group('snapshots');
+    
+    test('blog post resource matches snapshot for show route', function () {
+        // Arrange: Create consistent test data
+        $author = new User(['name' => 'Jane Smith', 'email' => 'jane@example.com']);
+        $author->id = 100;
+        $author->avatar = 'https://example.com/avatar.jpg';
+        
+        $post = new BlogPost([
+            'title' => 'Snapshot Test Post',
+            'slug' => 'snapshot-test-post',
+            'excerpt' => 'This is a test post for snapshot testing',
+            'content' => 'Full content of the blog post that should appear on show route',
+            'featured_image' => 'https://example.com/featured.jpg',
+            'tags' => ['Laravel', 'Testing', 'Snapshots'],
+            'is_featured' => true,
+            'published_at' => '2026-01-08 12:00:00',
+            'reading_time' => 8,
+        ]);
+        $post->id = 100;
+        $post->user_id = 100;
+        $post->setRelation('author', $author);
+        
+        // Simulate blog.show route
+        $request = Request::create('/blog/snapshot-test-post', 'GET');
+        $request->setRouteResolver(function () {
+            $route = new \Illuminate\Routing\Route('GET', '/blog/{slug}', []);
+            $route->name('blog.show');
+            return $route;
+        });
+        
+        $resource = new BlogPostResource($post);
+        
+        // Act: Transform to array
+        $array = $resource->toArray($request);
+        
+        // Assert: Matches snapshot (content should be included on show route)
+        expect($array)->toMatchSnapshot();
+    })->group('snapshots');
+    
+    test('blog post resource with null values matches snapshot', function () {
+        // Arrange: Create post with null optional fields
+        $author = new User(['name' => 'No Avatar User', 'email' => 'noavatar@example.com']);
+        $author->id = 101;
+        $author->avatar = null;
+        
+        $post = new BlogPost([
+            'title' => 'Post Without Image',
+            'slug' => 'post-without-image',
+            'excerpt' => 'This post has no featured image',
+            'content' => 'Content without images',
+            'featured_image' => null,
+            'tags' => [],
+            'is_featured' => false,
+            'published_at' => null,
+            'reading_time' => 3,
+        ]);
+        $post->id = 101;
+        $post->user_id = 101;
+        $post->setRelation('author', $author);
+        
+        $request = Request::create('/blog', 'GET');
+        $resource = new BlogPostResource($post);
+        
+        // Act: Transform to array
+        $array = $resource->toArray($request);
+        
+        // Assert: Matches snapshot with null values
+        expect($array)->toMatchSnapshot();
+    })->group('snapshots');
+    
+    test('blog post resource with multiple tags matches snapshot', function () {
+        // Arrange: Create post with many tags
+        $author = new User(['name' => 'Multi Tag Author', 'email' => 'tags@example.com']);
+        $author->id = 102;
+        $author->avatar = 'https://example.com/author2.jpg';
+        
+        $post = new BlogPost([
+            'title' => 'Post With Many Tags',
+            'slug' => 'post-with-many-tags',
+            'excerpt' => 'Testing multiple tags handling',
+            'content' => 'Content about various topics',
+            'featured_image' => 'https://example.com/multi-tags.jpg',
+            'tags' => ['Laravel', 'PHP', 'Testing', 'TDD', 'Pest'],
+            'is_featured' => false,
+            'published_at' => '2026-01-15 10:00:00',
+            'reading_time' => 12,
+        ]);
+        $post->id = 102;
+        $post->user_id = 102;
+        $post->setRelation('author', $author);
+        
+        $request = Request::create('/blog', 'GET');
+        $resource = new BlogPostResource($post);
+        
+        // Act: Transform to array
+        $array = $resource->toArray($request);
+        
+        // Assert: Matches snapshot with multiple tags
+        expect($array)->toMatchSnapshot();
+    })->group('snapshots');
+    
+    test('blog post resource with complete attributes matches snapshot', function () {
+        // Arrange: Create post with all populated attributes
+        $author = new User(['name' => 'Complete Author', 'email' => 'complete@example.com']);
+        $author->id = 103;
+        $author->avatar = 'https://example.com/complete-avatar.jpg';
+        
+        $post = new BlogPost([
+            'title' => 'Complete Test Post',
+            'slug' => 'complete-test-post',
+            'excerpt' => 'Post with all attributes populated',
+            'content' => 'Full detailed content goes here',
+            'featured_image' => 'https://example.com/complete-featured.jpg',
+            'tags' => ['Complete', 'Testing'],
+            'is_featured' => true,
+            'published_at' => '2026-02-01 08:30:00',
+            'reading_time' => 6,
+        ]);
+        $post->id = 103;
+        $post->user_id = 103;
+        $post->setRelation('author', $author);
+        
+        // Simulate blog.show route to include content
+        $request = Request::create('/blog/complete-test-post', 'GET');
+        $request->setRouteResolver(function () {
+            $route = new \Illuminate\Routing\Route('GET', '/blog/{slug}', []);
+            $route->name('blog.show');
+            return $route;
+        });
+        
+        $resource = new BlogPostResource($post);
+        
+        // Act: Transform to array
+        $array = $resource->toArray($request);
+        
+        // Assert: Matches snapshot with all complete attributes
+        expect($array)->toMatchSnapshot();
+    })->group('snapshots');
+});

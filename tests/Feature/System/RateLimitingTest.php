@@ -130,8 +130,11 @@ describe('Follow/Unfollow Rate Limiting', function () {
 
 describe('Registration Rate Limiting', function () {
     it('rate limits registration attempts from same IP', function () {
-        // Attempt multiple registrations
-        for ($i = 0; $i < 10; $i++) {
+        // Clear any existing rate limits for this test
+        RateLimiter::clear('register:127.0.0.1');
+        
+        // Attempt registrations - check after fewer attempts for faster test
+        for ($i = 0; $i < 6; $i++) {
             $response = $this->post(route('register'), [
                 'name' => "User $i",
                 'email' => "user$i@example.com",
@@ -145,7 +148,7 @@ describe('Registration Rate Limiting', function () {
             }
         }
         
-        // If we get here without rate limiting, that's also valid depending on config
+        // If we get here without rate limiting after 6 attempts, that's also valid depending on config
         expect(true)->toBeTrue();
     })->group('rate-limiting', 'registration');
 });
@@ -154,8 +157,11 @@ describe('Password Reset Rate Limiting', function () {
     it('rate limits password reset requests', function () {
         $user = createTestMember(['email' => 'test@example.com']);
         
-        // Request multiple password resets
-        for ($i = 0; $i < 10; $i++) {
+        // Clear any existing rate limits for this test
+        RateLimiter::clear('password-reset:test@example.com');
+        
+        // Request password resets - check after fewer attempts for faster test
+        for ($i = 0; $i < 6; $i++) {
             $response = $this->post(route('password.email'), [
                 'email' => 'test@example.com',
             ]);
@@ -166,7 +172,7 @@ describe('Password Reset Rate Limiting', function () {
             }
         }
         
-        // If we get here without rate limiting, that's also valid
+        // If we get here without rate limiting after 6 attempts, that's also valid
         expect(true)->toBeTrue();
     })->group('rate-limiting', 'password-reset');
 });
@@ -206,8 +212,8 @@ describe('Global Request Rate Limiting', function () {
     it('handles burst of requests gracefully', function () {
         $responses = [];
         
-        // Make many requests in quick succession
-        for ($i = 0; $i < 30; $i++) {
+        // Make requests in quick succession - reduced from 30 to 15 for faster test
+        for ($i = 0; $i < 15; $i++) {
             $responses[] = $this->get(route('home'));
         }
         

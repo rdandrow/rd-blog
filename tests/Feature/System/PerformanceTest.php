@@ -31,12 +31,19 @@ const DETAIL_PAGE_QUERY_THRESHOLD = 30;
 
 describe('N+1 Query Detection', function () {
     describe('Blog Posts', function () {
+        beforeEach(function () {
+            // Cache admin to reuse across tests in this describe block
+            static $cachedAdmin;
+            if (!$cachedAdmin) {
+                $cachedAdmin = createTestAdmin();
+            }
+            $this->testAdmin = $cachedAdmin;
+        });
+        
         it('avoids N+1 queries for authors on index page', function () {
-            $admin = createTestAdmin();
-            
             // Create multiple posts with same author
             BlogPost::factory()->count(10)->create([
-                'user_id' => $admin->id,
+                'user_id' => $this->testAdmin->id,
                 'is_published' => true,
                 'published_at' => now()->subDay(),
             ]);
@@ -51,7 +58,7 @@ describe('N+1 Query Detection', function () {
             
             // Should not have a separate query for each post's author
             // Ideally should use eager loading
-            expect(count($queries))->toBeLessThan(LIST_PAGE_QUERY_THRESHOLD);
+            expect(count($queries))->toHaveEfficientQueryCount(LIST_PAGE_QUERY_THRESHOLD);
         })->group('performance', 'n+1', 'queries');
 
         it('loads relationships efficiently for single post', function () {
@@ -78,30 +85,36 @@ describe('N+1 Query Detection', function () {
             DB::disableQueryLog();
             
             // Should load all relationships efficiently
-            expect(count($queries))->toBeLessThan(DETAIL_PAGE_QUERY_THRESHOLD);
+            expect(count($queries))->toHaveEfficientQueryCount(DETAIL_PAGE_QUERY_THRESHOLD);
         })->group('performance', 'n+1', 'queries');
     });
 
     describe('Author Profiles', function () {
+        beforeEach(function () {
+            // Cache profile admin to reuse
+            static $cachedProfileAdmin;
+            if (!$cachedProfileAdmin) {
+                $cachedProfileAdmin = createTestAdmin();
+                // Create multiple posts with same author
+                BlogPost::factory()->count(10)->create([
+                    'user_id' => $cachedProfileAdmin->id,
+                    'is_published' => true,
+                    'published_at' => now()->subDay(),
+                ]);
+            }
+            $this->profileAdmin = $cachedProfileAdmin;
+        });
+        
         it('avoids N+1 queries when loading posts', function () {
-            $admin = createTestAdmin();
-            
-            // Create multiple posts with same author
-            BlogPost::factory()->count(10)->create([
-                'user_id' => $admin->id,
-                'is_published' => true,
-                'published_at' => now()->subDay(),
-            ]);
-            
             DB::enableQueryLog();
             
-            $response = $this->get(route('author.profile', $admin->id));
+            $response = $this->get(route('author.profile', $this->profileAdmin->id));
             
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             
             // Should load posts efficiently with eager loading
-            expect(count($queries))->toBeLessThan(LIST_PAGE_QUERY_THRESHOLD);
+            expect(count($queries))->toHaveEfficientQueryCount(LIST_PAGE_QUERY_THRESHOLD);
         })->group('performance', 'n+1', 'queries');
     });
 
@@ -123,7 +136,7 @@ describe('N+1 Query Detection', function () {
             DB::disableQueryLog();
             
             // Should eagerly load comment authors (< 20 queries for 10 comments)
-            expect(count($queries))->toBeLessThan(20);
+            expect(count($queries))->toHaveEfficientQueryCount(20);
         })->group('performance', 'n+1', 'queries');
 
         it('loads nested relationships efficiently', function () {
@@ -144,7 +157,7 @@ describe('N+1 Query Detection', function () {
             DB::disableQueryLog();
             
             expect($response->status())->toBe(HTTP_OK)
-                ->and(count($queries))->toBeLessThan(COMPLEX_QUERY_THRESHOLD);
+                ->and(count($queries))->toHaveEfficientQueryCount(COMPLEX_QUERY_THRESHOLD);
         })->group('performance', 'n+1', 'queries');
     });
 });
@@ -187,7 +200,7 @@ describe('Large Dataset Handling', function () {
             $executionTime = $endTime - $startTime;
             
             expect($response->status())->toBe(200)
-                ->and($executionTime)->toBeLessThan(3); // 3 seconds
+                ->and($executionTime)->toExecuteWithinTime(MAX_QUERY_TIME_SECONDS);
         })->group('performance', 'queries');
     });
 
@@ -209,7 +222,7 @@ describe('Large Dataset Handling', function () {
             $executionTime = $endTime - $startTime;
             
             expect($response->status())->toBe(200)
-                ->and($executionTime)->toBeLessThan(2); // 2 seconds
+                ->and($executionTime)->toExecuteWithinTime(2);
         })->group('performance', 'queries');
 
         it('handles many likes on single post', function () {
@@ -294,7 +307,7 @@ describe('Query Optimization', function () {
             $queries = DB::getQueryLog();
             DB::disableQueryLog();
             
-            expect(count($queries))->toBeLessThan(10);
+            expect(count($queries))->toHaveEfficientQueryCount(10);
         })->group('performance', 'optimization', 'queries');
     });
 
@@ -316,7 +329,7 @@ describe('Query Optimization', function () {
             $executionTime = $endTime - $startTime;
             
             expect($count)->toBe(30)
-                ->and($executionTime)->toBeLessThan(0.5); // Should be very fast
+                ->and($executionTime)->toExecuteWithinTime(0.5);
         })->group('performance', 'optimization', 'queries');
     });
 
@@ -340,7 +353,7 @@ describe('Query Optimization', function () {
             }
             
             // All requests should complete in reasonable total time
-            expect($totalTime)->toBeLessThan(5); // 5 seconds for 10 requests
+            expect($totalTime)->toExecuteWithinTime(5);
         })->group('performance', 'optimization');
     });
 });

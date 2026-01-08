@@ -92,19 +92,22 @@ describe('Admin Users Listing', function () {
     })->group('user-management', 'listing', 'admins');
 
     it('orders admin users by creation date descending', function () {
-        $masterAdmin = createTestMasterAdmin();
+        // Create master admin with explicit older timestamp
+        $masterAdmin = User::factory()->masterAdmin()->create([
+            'created_at' => now()->subDays(10)
+        ]);
         
-        // Create with explicit timestamps using sleep to ensure different creation times
+        // Create with explicit timestamps - no sleep needed, just set created_at directly
         $admin1 = User::factory()->admin()->create([
             'name' => 'Admin One',
             'created_at' => now()->subDays(2)
         ]);
-        sleep(1);
+        
         $admin2 = User::factory()->admin()->create([
             'name' => 'Admin Two',
             'created_at' => now()->subDay()
         ]);
-        sleep(1);
+        
         $admin3 = User::factory()->admin()->create([
             'name' => 'Admin Three',
             'created_at' => now()

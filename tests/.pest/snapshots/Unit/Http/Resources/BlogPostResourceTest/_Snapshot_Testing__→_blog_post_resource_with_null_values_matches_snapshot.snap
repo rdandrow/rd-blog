@@ -1,0 +1,17 @@
+{
+    "id": 101,
+    "title": "Post Without Image",
+    "slug": "post-without-image",
+    "excerpt": "This post has no featured image",
+    "content": {},
+    "featured_image": null,
+    "author": {
+        "id": 101,
+        "name": "No Avatar User",
+        "avatar": null
+    },
+    "published_at": null,
+    "reading_time": 3,
+    "tags": [],
+    "is_featured": false
+}

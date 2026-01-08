@@ -48,7 +48,7 @@ describe('user creation', function () {
         $user = $this->action->create($input);
         
         // Assert: User created with correct attributes
-        expect($user)->toBeInstanceOf(User::class)
+        expect($user)->toBeValidUser()
             ->and($user->name)->toBe('John Doe')
             ->and($user->email)->toBe('john@example.com')
             ->and($user->exists)->toBeTrue();

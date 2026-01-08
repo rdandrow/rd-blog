@@ -36,6 +36,8 @@ const COMPLEX_QUERY_THRESHOLD = 25;
 
 pest()->extend(Tests\TestCase::class)
     ->use(Illuminate\Foundation\Testing\LazilyRefreshDatabase::class)
+    ->use(Tests\Traits\DatabaseAssertions::class)
+    ->use(Tests\Traits\HttpTestHelpers::class)
     ->in('Feature');
 
 /*
@@ -129,6 +131,103 @@ expect()->extend('toHaveSuccessMessage', function (string $message) {
  */
 expect()->extend('toHaveErrorMessage', function (string $message) {
     $this->value->assertSessionHas('error', $message);
+    return $this;
+});
+
+/*
+|--------------------------------------------------------------------------
+| Domain-Specific Custom Expectations
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Assert array contains a valid blog post structure.
+ */
+expect()->extend('toBeValidBlogPost', function () {
+    expect($this->value)
+        ->toBeArray()
+        ->toHaveKeys(['id', 'title', 'slug', 'excerpt', 'content', 'author', 'is_published', 'published_at']);
+    return $this;
+});
+
+/**
+ * Assert array matches expected blog post structure with type validation.
+ */
+expect()->extend('toHaveCorrectPostStructure', function () {
+    $value = $this->value;
+    
+    expect($value)->toBeArray();
+    expect($value['id'])->toBeInt();
+    expect($value['title'])->toBeString();
+    expect($value['slug'])->toBeString();
+    expect($value['excerpt'])->toBeString();
+    
+    return $this;
+});
+
+/**
+ * Assert user object has required role methods and properties.
+ */
+expect()->extend('toBeValidUser', function () {
+    $user = $this->value;
+    
+    expect($user)->toBeInstanceOf(App\Models\User::class);
+    expect($user->id)->not->toBeNull();
+    expect($user->name)->not->toBeNull();
+    expect($user->email)->not->toBeNull();
+    expect($user->role)->not->toBeNull();
+    
+    return $this;
+});
+
+/**
+ * Assert query count is below performance threshold.
+ */
+expect()->extend('toHaveEfficientQueryCount', function (int $threshold = MODERATE_QUERY_THRESHOLD) {
+    $count = $this->value;
+    
+    expect($count)->toBeLessThan($threshold);
+    
+    return $this;
+});
+
+/**
+ * Assert execution time is below performance threshold (in seconds).
+ */
+expect()->extend('toExecuteWithinTime', function (float $maxSeconds = MAX_QUERY_TIME_SECONDS) {
+    $executionTime = $this->value;
+    
+    expect($executionTime)->toBeLessThan($maxSeconds);
+    
+    return $this;
+});
+
+/**
+ * Assert blog post has required relationships loaded.
+ */
+expect()->extend('toHaveRelationshipsLoaded', function (array $relationships) {
+    $model = $this->value;
+    
+    foreach ($relationships as $relationship) {
+        expect($model->relationLoaded($relationship))->toBeTrue(
+            "Expected relationship '{$relationship}' to be loaded"
+        );
+    }
+    
+    return $this;
+});
+
+/**
+ * Assert comment belongs to a blog post and user.
+ */
+expect()->extend('toBeValidComment', function () {
+    $comment = $this->value;
+    
+    expect($comment)->toBeInstanceOf(App\Models\Comment::class)
+        ->and($comment->blog_post_id)->not->toBeNull()
+        ->and($comment->user_id)->not->toBeNull()
+        ->and($comment->content)->not->toBeEmpty();
+    
     return $this;
 });
 

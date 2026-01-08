@@ -1,0 +1,21 @@
+{
+    "id": 100,
+    "title": "Snapshot Test Post",
+    "slug": "snapshot-test-post",
+    "excerpt": "This is a test post for snapshot testing",
+    "content": "Full content of the blog post that should appear on show route",
+    "featured_image": "https:\/\/example.com\/featured.jpg",
+    "author": {
+        "id": 100,
+        "name": "Jane Smith",
+        "avatar": "https:\/\/example.com\/avatar.jpg"
+    },
+    "published_at": "2026-01-08T12:00:00.000000Z",
+    "reading_time": 8,
+    "tags": [
+        "Laravel",
+        "Testing",
+        "Snapshots"
+    ],
+    "is_featured": true
+}

@@ -1,0 +1,30 @@
+{
+    "$schema": "https://raw.githubusercontent.com/infection/infection/master/resources/schema.json",
+    "source": {
+        "directories": [
+            "app/Models",
+            "app/Http/Resources",
+            "app/Actions/Fortify",
+            "app/Policies",
+            "app/Services",
+            "app/Http/Requests",
+            "app/Http/Middleware",
+            "app/Listeners"
+        ]
+    },
+    "logs": {
+        "text": "infection.log",
+        "summary": "infection-summary.log",
+        "json": "infection.json",
+        "perMutator": "infection-per-mutator.md"
+    },
+    "mutators": {
+        "@default": true
+    },
+    "testFramework": "phpunit",
+    "testFrameworkOptions": "--configuration=phpunit.xml --testsuite=Unit",
+    "bootstrap": "./vendor/autoload.php",
+    "timeout": 10,
+    "minMsi": 70,
+    "minCoveredMsi": 80
+}

@@ -419,4 +419,73 @@ describe('Comment Relationships', function () {
         expect($comment->created_at)->not->toBeNull()
             ->and($comment->updated_at)->not->toBeNull();
     })->group('comments', 'timestamps');
+    
+    it('can have multiple replies on a single comment', function () {
+        $user = createTestMember();
+        $post = createPublishedPost();
+        
+        // Create parent comment
+        $parent = Comment::factory()->create([
+            'blog_post_id' => $post->id,
+            'user_id' => $user->id,
+        ]);
+        
+        // Create multiple replies
+        Comment::factory()->count(3)->create([
+            'blog_post_id' => $post->id,
+            'user_id' => $user->id,
+            'parent_id' => $parent->id,
+        ]);
+        
+        // Assert: Parent has 3 replies
+        expect($parent->replies)->toHaveCount(3)
+            ->and($parent->replies)->each->toBeInstanceOf(Comment::class);
+    })->group('comments', 'replies', 'relationships');
+    
+    it('orders replies by created_at ascending', function () {
+        $user = createTestMember();
+        $post = createPublishedPost();
+        
+        // Create parent comment
+        $parent = Comment::factory()->create([
+            'blog_post_id' => $post->id,
+            'user_id' => $user->id,
+        ]);
+        
+        // Create replies with explicit timestamps
+        $reply1 = Comment::factory()->create([
+            'blog_post_id' => $post->id,
+            'user_id' => $user->id,
+            'parent_id' => $parent->id,
+            'created_at' => now()->subMinutes(3),
+        ]);
+        
+        $reply2 = Comment::factory()->create([
+            'blog_post_id' => $post->id,
+            'user_id' => $user->id,
+            'parent_id' => $parent->id,
+            'created_at' => now()->subMinutes(2),
+        ]);
+        
+        $reply3 = Comment::factory()->create([
+            'blog_post_id' => $post->id,
+            'user_id' => $user->id,
+            'parent_id' => $parent->id,
+            'created_at' => now()->subMinutes(1),
+        ]);
+        
+        // Assert: Replies are in chronological order
+        $replies = $parent->replies;
+        expect($replies->first()->id)->toBe($reply1->id)
+            ->and($replies->last()->id)->toBe($reply3->id);
+    })->group('comments', 'replies', 'ordering');
+    
+    it('factory creates valid comment using custom expectation', function () {
+        $comment = Comment::factory()->create();
+        
+        // Assert: Comment is valid using domain-specific expectation
+        expect($comment)->toBeValidComment()
+            ->and($comment->blogPost)->toBeInstanceOf(BlogPost::class)
+            ->and($comment->user)->toBeInstanceOf(User::class);
+    })->group('comments', 'factory', 'validation');
 });
