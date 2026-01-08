@@ -1,0 +1,23 @@
+{
+    "id": 102,
+    "title": "Post With Many Tags",
+    "slug": "post-with-many-tags",
+    "excerpt": "Testing multiple tags handling",
+    "content": {},
+    "featured_image": "https:\/\/example.com\/multi-tags.jpg",
+    "author": {
+        "id": 102,
+        "name": "Multi Tag Author",
+        "avatar": "https:\/\/example.com\/author2.jpg"
+    },
+    "published_at": "2026-01-15T10:00:00.000000Z",
+    "reading_time": 12,
+    "tags": [
+        "Laravel",
+        "PHP",
+        "Testing",
+        "TDD",
+        "Pest"
+    ],
+    "is_featured": false
+}

@@ -33,7 +33,7 @@ class BlogPostFactory extends Factory
             'is_featured' => fake()->boolean(20),
             'is_published' => $publishedAt !== null,
             'published_at' => $publishedAt,
-            'user_id' => 1, // Assuming the first user exists
+            'user_id' => \App\Models\User::factory(),
         ];
     }
 
