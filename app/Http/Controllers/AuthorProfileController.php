@@ -35,7 +35,6 @@ class AuthorProfileController extends Controller
             'author' => [
                 'id' => $author->id,
                 'name' => $author->name,
-                'email' => $author->email,
                 'bio' => $author->bio,
                 'website' => $author->website,
                 'followers_count' => $author->followers()->count(),
