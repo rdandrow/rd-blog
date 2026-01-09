@@ -11,20 +11,9 @@ use App\Http\Controllers\BlogPostLikeController;
 use App\Http\Controllers\UserFollowController;
 use App\Http\Controllers\AuthorProfileController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Admin\UserManagementController;
 
 Route::get('/', [PublicBlogController::class, 'index'])->name('home');
-
-// Admin Authentication Routes
-Route::middleware('guest')->group(function () {
-    Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
-    Route::post('/admin/login', [AdminAuthController::class, 'login']);
-    Route::get('/admin/register', [AdminAuthController::class, 'showRegisterForm'])->name('admin.register');
-    Route::post('/admin/register', [AdminAuthController::class, 'register']);
-});
-
-Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->middleware('auth')->name('admin.logout');
 
 // Admin Dashboard
 Route::get('admin/dashboard', function () {
