@@ -419,12 +419,13 @@ describe('Author Blog Posts', function () {
 
         $response = $this->get(route('author.profile', $author->id));
 
-        // Should only load 10 posts
+        // Should only load 10 posts (limited by query)
+        // posts_count now uses count of loaded blogPosts collection, not separate count query
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
                 ->has('posts', 10)
-                ->where('author.posts_count', 50)
+                ->where('author.posts_count', 10) // Count of loaded posts (limited to 10)
             );
     })->group('author-profile', 'posts', 'edge-cases');
 });

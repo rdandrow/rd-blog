@@ -14,21 +14,26 @@ class AuthorProfileController extends Controller
      */
     public function show(string $id, Request $request): Response
     {
-        $author = User::with(['blogPosts' => function ($query) {
-            $query->published()->latest()->take(10);
-        }])
-        ->findOrFail($id);
+        $currentUser = $request->user();
+        
+        $author = User::withCount(['followers', 'following'])
+            ->with([
+                'blogPosts' => function ($query) {
+                    $query->published()->latest()->take(10);
+                },
+            ])
+            ->when($currentUser, function ($query) use ($currentUser, $id) {
+                $query->withExists([
+                    'followers as is_following' => function ($query) use ($currentUser) {
+                        $query->where('follower_id', $currentUser->id);
+                    }
+                ]);
+            })
+            ->findOrFail($id);
 
         // Only show profile for admin users (authors)
         if (!$author->isAdmin()) {
             abort(404);
-        }
-
-        $currentUser = $request->user();
-        $isFollowing = false;
-        
-        if ($currentUser) {
-            $isFollowing = $currentUser->following()->where('following_id', $author->id)->exists();
         }
 
         return Inertia::render('AuthorProfile', [
@@ -37,9 +42,9 @@ class AuthorProfileController extends Controller
                 'name' => $author->name,
                 'bio' => $author->bio,
                 'website' => $author->website,
-                'followers_count' => $author->followers()->count(),
-                'following_count' => $author->following()->count(),
-                'posts_count' => $author->blogPosts()->published()->count(),
+                'followers_count' => $author->followers_count,
+                'following_count' => $author->following_count,
+                'posts_count' => $author->blogPosts->count(),
             ],
             'posts' => $author->blogPosts->map(function ($post) {
                 return [
@@ -52,7 +57,7 @@ class AuthorProfileController extends Controller
                     'tags' => $post->tags ?? [],
                 ];
             }),
-            'is_following' => $isFollowing,
+            'is_following' => $currentUser ? ($author->is_following ?? false) : false,
         ]);
     }
 }

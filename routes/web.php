@@ -43,16 +43,16 @@ Route::get('blog/{slug}', [PublicBlogController::class, 'show'])->name('blog.sho
 // Author profile route
 Route::get('author/{id}', [AuthorProfileController::class, 'show'])->name('author.profile');
 
-// Comment routes (requires authentication)
-Route::middleware(['auth'])->group(function () {
+// Comment routes (requires authentication with rate limiting)
+Route::middleware(['auth', 'throttle:10,1'])->group(function () {
     Route::post('blog/{slug}/comments', [CommentController::class, 'store'])->name('comments.store');
-    Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
-    
-    // Like routes
     Route::post('blog/{slug}/like', [BlogPostLikeController::class, 'toggle'])->name('blog.like.toggle');
-    
-    // Follow routes
     Route::post('user/{userId}/follow', [UserFollowController::class, 'toggle'])->name('user.follow.toggle');
+});
+
+// Delete comment route (separate rate limit)
+Route::middleware(['auth'])->group(function () {
+    Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 });
 
 // Two-factor authentication setup routes (for new users during registration)

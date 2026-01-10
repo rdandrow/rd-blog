@@ -86,6 +86,8 @@ class BlogPostService
     public function getAvailableTags(): Collection
     {
         return BlogPost::published()
+            ->select('tags')
+            ->whereNotNull('tags')
             ->get()
             ->pluck('tags')
             ->flatten()

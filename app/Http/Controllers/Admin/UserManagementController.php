@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
@@ -21,8 +22,8 @@ class UserManagementController extends Controller
     {
         $admins = User::whereIn('role', ['admin', 'master_admin'])
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn($user) => [
+            ->paginate(20)
+            ->through(fn($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
@@ -42,8 +43,8 @@ class UserManagementController extends Controller
     {
         $members = User::where('role', 'member')
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn($user) => [
+            ->paginate(20)
+            ->through(fn($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
@@ -65,21 +66,23 @@ class UserManagementController extends Controller
             'role' => ['required', Rule::in(['master_admin', 'admin', 'member'])],
         ]);
 
-        // Prevent demoting the last master admin
-        if ($user->isMasterAdmin() && $request->role !== 'master_admin') {
-            $masterAdminCount = User::where('role', 'master_admin')->count();
-            if ($masterAdminCount <= 1) {
-                return back()->withErrors([
-                    'role' => 'Cannot demote the last master admin.',
-                ]);
+        return DB::transaction(function () use ($request, $user) {
+            // Prevent demoting the last master admin
+            if ($user->isMasterAdmin() && $request->role !== 'master_admin') {
+                $masterAdminCount = User::where('role', 'master_admin')->count();
+                if ($masterAdminCount <= 1) {
+                    return back()->withErrors([
+                        'role' => 'Cannot demote the last master admin.',
+                    ]);
+                }
             }
-        }
 
-        $user->update([
-            'role' => $request->role,
-        ]);
+            $user->update([
+                'role' => $request->role,
+            ]);
 
-        return back()->with('success', 'User role updated successfully.');
+            return back()->with('success', 'User role updated successfully.');
+        });
     }
 
     /**

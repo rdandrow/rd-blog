@@ -22,8 +22,14 @@ interface Member {
     created_at: string;
 }
 
+interface PaginatedMembers {
+    data: Member[];
+    links: Record<string, any>;
+    meta: Record<string, any>;
+}
+
 defineProps<{
-    members: Member[];
+    members: PaginatedMembers;
 }>();
 
 const showCreateDialog = ref(false);
@@ -111,7 +117,7 @@ function deleteUser() {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="member in members" :key="member.id">
+                                <tr v-for="member in members.data" :key="member.id">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                                         {{ member.name }}
                                     </td>

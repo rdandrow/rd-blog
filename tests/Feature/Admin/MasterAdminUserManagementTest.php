@@ -67,11 +67,11 @@ describe('Admin Users Listing', function () {
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Users/AdminUsers')
-            ->has('admins', 3) // masterAdmin + 2 admins
+            ->has('admins.data', 3) // masterAdmin + 2 admins (paginated data)
         );
         
         // Verify all admin users are present (regardless of order)
-        $adminNames = $response->viewData('page')['props']['admins'];
+        $adminNames = $response->viewData('page')['props']['admins']['data'];
         $names = collect($adminNames)->pluck('name')->toArray();
         expect($names)->toContain($masterAdmin->name)
             ->and($names)->toContain('Admin One')
@@ -87,7 +87,7 @@ describe('Admin Users Listing', function () {
         
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
-            ->has('admins', 1) // Only the master admin
+            ->has('admins.data', 1) // Only the master admin (paginated data)
         );
     })->group('user-management', 'listing', 'admins');
 
@@ -117,11 +117,11 @@ describe('Admin Users Listing', function () {
         
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
-            ->has('admins', 4) // 3 admins + masterAdmin
+            ->has('admins.data', 4) // 3 admins + masterAdmin (paginated data)
         );
         
         // Verify most recent is first
-        $admins = $response->viewData('page')['props']['admins'];
+        $admins = $response->viewData('page')['props']['admins']['data'];
         expect($admins[0]['name'])->toBe('Admin Three');
     })->group('user-management', 'listing', 'admins');
 });
@@ -138,11 +138,11 @@ describe('Member Users Listing', function () {
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Users/MemberUsers')
-            ->has('members', 2)
+            ->has('members.data', 2) // paginated data
         );
         
         // Verify both members are present
-        $members = $response->viewData('page')['props']['members'];
+        $members = $response->viewData('page')['props']['members']['data'];
         $names = collect($members)->pluck('name')->toArray();
         expect($names)->toContain('Member One')
             ->and($names)->toContain('Member Two');
@@ -157,7 +157,7 @@ describe('Member Users Listing', function () {
         
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
-            ->has('members', 0)
+            ->has('members.data', 0) // paginated data
         );
     })->group('user-management', 'listing', 'members');
 
@@ -171,9 +171,9 @@ describe('Member Users Listing', function () {
         
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
-            ->where('members.0.name', 'Member Three') // Most recent first
-            ->where('members.1.name', 'Member Two')
-            ->where('members.2.name', 'Member One')
+            ->where('members.data.0.name', 'Member Three') // Most recent first (paginated data)
+            ->where('members.data.1.name', 'Member Two')
+            ->where('members.data.2.name', 'Member One')
         );
     })->group('user-management', 'listing', 'members');
 });
@@ -586,10 +586,10 @@ describe('Edge Cases and Complex Scenarios', function () {
         $response = $this->actingAs($masterAdmin1)->get(route('admin.users.admins'));
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page->has('admins', 4));
+        $response->assertInertia(fn ($page) => $page->has('admins.data', 4)); // paginated data
 
         // Verify correct role distribution
-        $admins = $response->viewData('page')['props']['admins'];
+        $admins = $response->viewData('page')['props']['admins']['data'];
         $roles = collect($admins)->pluck('role')->toArray();
         $masterAdminCount = collect($roles)->filter(fn($role) => $role === 'master_admin')->count();
         $adminCount = collect($roles)->filter(fn($role) => $role === 'admin')->count();
@@ -634,14 +634,14 @@ describe('Edge Cases and Complex Scenarios', function () {
 
         // Verify user appears in admin list
         $response1 = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
-        $response1->assertInertia(fn ($page) => $page->has('admins', 2)); // masterAdmin + admin
+        $response1->assertInertia(fn ($page) => $page->has('admins.data', 2)); // masterAdmin + admin (paginated data)
 
         // Delete the admin
         $this->actingAs($masterAdmin)->delete(route('admin.users.destroy', $admin));
 
         // Verify user no longer appears
         $response2 = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
-        $response2->assertInertia(fn ($page) => $page->has('admins', 1)); // Only masterAdmin remains
+        $response2->assertInertia(fn ($page) => $page->has('admins.data', 1)); // Only masterAdmin remains (paginated data)
     })->group('user-management', 'edge-cases', 'deletion');
 
     it('includes all required fields in admin user data', function () {
@@ -651,7 +651,7 @@ describe('Edge Cases and Complex Scenarios', function () {
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
 
         $response->assertInertia(fn ($page) => $page
-            ->has('admins.0', fn ($admin) => $admin
+            ->has('admins.data.0', fn ($admin) => $admin // paginated data
                 ->has('id')
                 ->has('name')
                 ->has('email')
@@ -668,7 +668,7 @@ describe('Edge Cases and Complex Scenarios', function () {
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.members'));
 
         $response->assertInertia(fn ($page) => $page
-            ->has('members.0', fn ($member) => $member
+            ->has('members.data.0', fn ($member) => $member // paginated data
                 ->has('id')
                 ->has('name')
                 ->has('email')
