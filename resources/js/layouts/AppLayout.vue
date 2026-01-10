@@ -14,11 +14,12 @@ withDefaults(defineProps<Props>(), {
 
 const page = usePage();
 const user = page.props.auth.user as any;
-const isMember = user?.role === 'member';
+// Show landing layout for guests and members, sidebar for admins
+const showLandingLayout = !user || user?.role === 'member';
 </script>
 
 <template>
-    <AppLandingHeaderLayout v-if="isMember">
+    <AppLandingHeaderLayout v-if="showLandingLayout">
         <slot />
     </AppLandingHeaderLayout>
     <AppSidebarLayout v-else :breadcrumbs="breadcrumbs">

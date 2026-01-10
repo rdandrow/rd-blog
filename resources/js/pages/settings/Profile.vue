@@ -89,6 +89,7 @@ const user = page.props.auth.user;
                             autocomplete="url"
                             placeholder="https://example.com"
                         />
+                        <p class="text-xs text-muted-foreground mt-1">Enter your website URL (protocol is optional, https:// will be added automatically)</p>
                         <InputError class="mt-2" :message="errors.website" />
                     </div>
 

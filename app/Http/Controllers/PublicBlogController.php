@@ -72,7 +72,10 @@ class PublicBlogController extends Controller
         
         if ($user) {
             $userHasLiked = $post->likes()->where('user_id', $user->id)->exists();
-            $isFollowingAuthor = $user->following()->where('following_id', $post->author->id)->exists();
+            
+            if ($post->author) {
+                $isFollowingAuthor = $user->following()->where('following_id', $post->author->id)->exists();
+            }
         }
 
         return Inertia::render('BlogPost', [
@@ -83,11 +86,11 @@ class PublicBlogController extends Controller
                 'excerpt' => $post->excerpt,
                 'content' => $post->content,
                 'featured_image' => $post->featured_image,
-                'author' => [
+                'author' => $post->author ? [
                     'id' => $post->author->id,
                     'name' => $post->author->name,
                     'avatar' => $post->author->avatar ?? null,
-                ],
+                ] : null,
                 'published_at' => $post->published_at?->toISOString(),
                 'reading_time' => $post->reading_time,
                 'tags' => $post->tags ?? [],

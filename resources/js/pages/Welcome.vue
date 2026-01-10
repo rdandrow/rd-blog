@@ -32,9 +32,9 @@ withDefaults(
 // Use search state composable
 const { isSearchOpen, openSearch, closeSearch } = useSearchState();
 
-// Check if user is a member
+// Check if user is authenticated and is a member
 const user = computed(() => page.props.auth?.user as any);
-const isMember = computed(() => user.value?.role === 'member');
+const isMember = computed(() => user.value && user.value.role === 'member');
 
 // Sign out function
 const signOut = () => {

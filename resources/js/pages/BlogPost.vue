@@ -281,7 +281,7 @@
               <form @submit.prevent="submitReply" class="space-y-3">
                 <div>
                   <textarea
-                    v-model="replyContent"
+                    v-model="replyForm.content"
                     rows="3"
                     class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500"
                     placeholder="Write your reply..."
@@ -289,16 +289,16 @@
                     required
                   ></textarea>
                   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {{ replyContent.length }}/1000 characters
+                    {{ replyForm.content.length }}/1000 characters
                   </p>
                 </div>
                 <div class="flex gap-2">
                   <button
                     type="submit"
-                    :disabled="form.processing || !replyContent.trim()"
+                    :disabled="replyForm.processing || !replyForm.content.trim()"
                     class="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {{ form.processing ? 'Posting...' : 'Post Reply' }}
+                    {{ replyForm.processing ? 'Posting...' : 'Post Reply' }}
                   </button>
                   <button
                     type="button"
@@ -405,14 +405,19 @@ interface Props {
 const props = defineProps<Props>();
 const page = usePage();
 
-// Comment form
+// Comment form for main comments
 const form = useForm({
   content: '',
   parent_id: null as number | null,
 });
 
+// Separate form for replies
+const replyForm = useForm({
+  content: '',
+  parent_id: null as number | null,
+});
+
 const replyingTo = ref<number | null>(null);
-const replyContent = ref('');
 
 const toggleLike = () => {
   router.post(`/blog/${props.post.slug}/like`, {}, {
@@ -439,32 +444,24 @@ const submitMainComment = () => {
 };
 
 const submitReply = () => {
-  // Ensure parent_id is set from replyingTo (defensive programming)
-  if (replyingTo.value !== null) {
-    form.parent_id = replyingTo.value;
-  }
-  // Copy reply content to form and submit
-  form.content = replyContent.value;
-  form.post(`/blog/${props.post.slug}/comments`, {
+  replyForm.post(`/blog/${props.post.slug}/comments`, {
     preserveScroll: true,
     onSuccess: () => {
-      form.reset();
+      replyForm.reset();
       replyingTo.value = null;
-      replyContent.value = '';
     },
   });
 };
 
 const startReply = (commentId: number) => {
   replyingTo.value = commentId;
-  form.parent_id = commentId;
-  replyContent.value = '';
+  replyForm.parent_id = commentId;
+  replyForm.content = '';
 };
 
 const cancelReply = () => {
   replyingTo.value = null;
-  form.parent_id = null;
-  replyContent.value = '';
+  replyForm.reset();
 };
 
 const deleteComment = (commentId: number) => {
