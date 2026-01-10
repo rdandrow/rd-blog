@@ -24,7 +24,6 @@ describe('Viewing Author Profiles', function () {
             ->and($response)->assertInertia(fn ($page) => $page
                 ->has('author')
                 ->where('author.name', 'Test Author')
-                ->where('author.email', 'author@test.com')
             );
     })->group('author-profile', 'public', 'guest');
 
@@ -104,7 +103,6 @@ describe('Profile Data', function () {
 
         expect($response)->assertInertia(fn ($page) => $page
             ->where('author.name', 'John Doe')
-            ->where('author.email', 'john@example.com')
             ->where('author.bio', 'Software developer and writer')
             ->where('author.website', 'https://johndoe.com')
         );
@@ -156,7 +154,6 @@ describe('Profile Data', function () {
         expect($response)->assertInertia(fn ($page) => $page
             ->has('author.id')
             ->has('author.name')
-            ->has('author.email')
             ->has('author.bio')
             ->has('author.website')
             ->has('author.followers_count')

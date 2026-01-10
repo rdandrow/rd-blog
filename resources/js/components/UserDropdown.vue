@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref } from 'vue';
+import { useClickOutside } from '@/composables/useClickOutside';
 
 defineProps<{
     userName: string;
@@ -23,19 +24,7 @@ const signOut = () => {
 };
 
 // Close dropdown when clicking outside
-const handleClickOutside = (event: MouseEvent) => {
-    if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
-        closeDropdown();
-    }
-};
-
-onMounted(() => {
-    document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
-});
+useClickOutside(dropdownRef, closeDropdown);
 </script>
 
 <template>
