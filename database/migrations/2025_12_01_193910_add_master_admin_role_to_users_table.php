@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -27,6 +28,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // First, migrate any master_admin users to admin role
+        DB::table('users')
+            ->where('role', 'master_admin')
+            ->update(['role' => 'admin']);
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('role');
         });
