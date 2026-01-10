@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
-import { Clock, User } from 'lucide-vue-next';
+import { Clock } from 'lucide-vue-next';
 
 interface BlogPost {
   id: number;

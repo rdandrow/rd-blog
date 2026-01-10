@@ -22,7 +22,7 @@ interface Member {
     created_at: string;
 }
 
-const props = defineProps<{
+defineProps<{
     members: Member[];
 }>();
 

@@ -22,7 +22,7 @@ interface Admin {
     created_at: string;
 }
 
-const props = defineProps<{
+defineProps<{
     admins: Admin[];
 }>();
 

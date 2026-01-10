@@ -2,15 +2,12 @@
 import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import UserDropdown from '@/components/UserDropdown.vue';
-import { Link, router, usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user as any);
 
-const signOut = () => {
-    router.post('/logout');
-};
 </script>
 
 <template>

@@ -205,16 +205,18 @@ const deletePost = (post: BlogPost) => {
                 ? 'bg-primary text-primary-foreground' 
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             ]"
-            v-html="link.label || ''"
-          />
+          >
+            <span v-html="link.label || ''" />
+          </Link>
           <span
             v-else
             :class="[
               'px-3 py-2 text-sm rounded-md transition-colors',
               'text-muted-foreground opacity-50 cursor-not-allowed'
             ]"
-            v-html="link.label || ''"
-          />
+          >
+            <span v-html="link.label || ''" />
+          </span>
         </template>
       </div>
     </div>
