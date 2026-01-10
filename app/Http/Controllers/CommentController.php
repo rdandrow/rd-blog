@@ -25,7 +25,7 @@ class CommentController extends Controller
         if (isset($validated['parent_id'])) {
             $parentComment = Comment::findOrFail($validated['parent_id']);
             if ($parentComment->blog_post_id !== $blogPost->id) {
-                abort(400, 'Invalid parent comment');
+                return back()->withErrors(['parent_id' => 'This reply does not belong to the current post.']);
             }
         }
 

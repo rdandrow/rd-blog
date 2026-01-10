@@ -186,7 +186,7 @@ describe('Comment Replies', function () {
             'parent_id' => $commentOnPost2->id,
         ]);
 
-        $response->assertStatus(400);
+        $response->assertStatus(302);
     })->group('comments', 'replies', 'validation');
 
     it('allows users to reply to their own comments', function () {
