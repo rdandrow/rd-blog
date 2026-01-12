@@ -153,22 +153,43 @@ Visit `http://localhost:8000`
 
 ## Testing
 
+**Test Suite:** 359 tests • 1,757 assertions • 3.5s execution (parallel)
+
 ```bash
-# Run all tests
-./vendor/bin/pest
+# Run all tests (parallel - fastest)
+composer test
 
-# With coverage
-./vendor/bin/pest --coverage
+# Sequential execution
+composer test:sequential
 
-# Specific suites
+# With coverage report
+composer test:coverage
+
+# Direct Pest commands
+./vendor/bin/pest --parallel      # Parallel (68% faster)
+./vendor/bin/pest                 # Sequential
+
+# Specific test suites
 ./vendor/bin/pest tests/Feature/Auth/
+./vendor/bin/pest tests/Feature/PerformanceTest.php
 ```
 
+**Performance:**
+- Parallel execution: **3.5 seconds** (12 processes)
+- Sequential execution: 11.3 seconds
+- 68% faster with `--parallel` flag
+
 **Test Coverage:**
-- Authentication flows (login, register, 2FA)
-- Blog CRUD operations
-- Authorization policies
-- Dashboard access
+- Authentication flows (login, register, 2FA, password reset)
+- Blog CRUD operations (create, read, update, delete)
+- Authorization policies (admin, member, guest access)
+- Comment system (nested replies, deletion)
+- Social features (likes, follows, author profiles)
+- Search & filtering (tags, authors, content)
+- Error handling (database failures, validation, security)
+- Rate limiting (login attempts, spam prevention)
+- Middleware (execution order, CSRF, authorization)
+- Performance (N+1 queries, large datasets, memory usage)
 
 ## Production Deployment
 

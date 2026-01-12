@@ -13,27 +13,50 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, FileText, FilePenLine } from 'lucide-vue-next';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, Folder, LayoutGrid, FileText, FilePenLine, Users, UserCog } from 'lucide-vue-next';
+import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-    {
-        title: 'Blog Posts',
-        href: '/admin/blog-posts',
-        icon: FileText,
-    },
-    {
-        title: 'My Drafts',
-        href: '/admin/blog-posts/drafts',
-        icon: FilePenLine,
-    },
-];
+const page = usePage();
+const user = computed(() => page.props.auth?.user as any);
+const isMasterAdmin = computed(() => user.value?.role === 'master_admin');
+
+const mainNavItems = computed<NavItem[]>(() => {
+    const items: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'Blog Posts',
+            href: '/admin/blog-posts',
+            icon: FileText,
+        },
+        {
+            title: 'My Drafts',
+            href: '/admin/blog-posts/drafts',
+            icon: FilePenLine,
+        },
+    ];
+
+    // Add user management items only for master admins
+    if (isMasterAdmin.value) {
+        items.push({
+            title: 'Admin Users',
+            href: '/admin/users/admins',
+            icon: UserCog,
+        });
+        items.push({
+            title: 'Member Users',
+            href: '/admin/users/members',
+            icon: Users,
+        });
+    }
+
+    return items;
+});
 
 const footerNavItems: NavItem[] = [
     {

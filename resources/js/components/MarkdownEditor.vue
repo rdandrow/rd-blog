@@ -499,9 +499,6 @@ const makeHeader = (level: number) => {
 const makeH1 = () => makeHeader(1);
 const makeH2 = () => makeHeader(2);
 const makeH3 = () => makeHeader(3);
-const makeH4 = () => makeHeader(4);
-const makeH5 = () => makeHeader(5);
-const makeH6 = () => makeHeader(6);
 
 // Toolbar button definitions for keyboard navigation
 const toolbarButtons = [

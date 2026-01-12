@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ErrorDisplay from '@/components/ErrorDisplay.vue';
 import MarkdownEditor from '@/components/MarkdownEditor.vue';

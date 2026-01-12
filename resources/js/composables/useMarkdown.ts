@@ -41,7 +41,9 @@ export const useMarkdown = () => {
               return '<pre class="hljs"><code>' +
                      hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
                      '</code></pre>';
-            } catch (__) {}
+            } catch {
+              // Fallback to default escaping
+            }
           }
 
           // Use default escaping for unknown languages

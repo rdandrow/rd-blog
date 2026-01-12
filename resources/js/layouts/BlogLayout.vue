@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router, usePage } from '@inertiajs/vue3';
 import AppLogo from '@/components/AppLogo.vue';
+import UserDropdown from '@/components/UserDropdown.vue';
+
+const page = usePage();
 
 // Reactive state
 const isMobileMenuOpen = ref(false);
@@ -23,8 +26,16 @@ const closeMobileMenu = () => {
   isMobileMenuOpen.value = false;
 };
 
+const signOut = () => {
+  router.post('/logout');
+};
+
 // Computed
 const currentYear = computed(() => new Date().getFullYear());
+const user = computed(() => page.props.auth?.user as any);
+const isLoggedIn = computed(() => !!user.value);
+const isMember = computed(() => user.value?.role === 'member');
+const isAdmin = computed(() => user.value && (user.value.role === 'admin' || user.value.role === 'master_admin'));
 </script>
 
 <template>
@@ -62,6 +73,34 @@ const currentYear = computed(() => new Date().getFullYear());
               >
                 {{ item.name }}
               </Link>
+            </div>
+            
+            <!-- User Authentication -->
+            <div v-if="isLoggedIn" class="flex items-center gap-3">
+              <!-- Dashboard link for admins -->
+              <Link
+                v-if="isAdmin"
+                href="/admin/dashboard"
+                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Dashboard
+              </Link>
+              
+              <!-- User dropdown for members -->
+              <UserDropdown
+                v-if="isMember"
+                :userName="user.name"
+                :userRole="user.role"
+              />
+              
+              <!-- Sign out button for admins -->
+              <button
+                v-if="isAdmin"
+                @click="signOut"
+                class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-accent"
+              >
+                Sign out
+              </button>
             </div>
           </div>
 
@@ -103,6 +142,65 @@ const currentYear = computed(() => new Date().getFullYear());
           >
             {{ item.name }}
           </Link>
+          
+          <!-- Mobile User Menu -->
+          <div v-if="isLoggedIn" class="pt-4 mt-4 border-t border-border space-y-1">
+            <!-- User info -->
+            <div class="px-3 py-2 text-sm">
+              <p class="font-medium text-foreground">{{ user.name }}</p>
+              <p class="text-xs text-muted-foreground capitalize">{{ user.role.replace('_', ' ') }}</p>
+            </div>
+            
+            <!-- Dashboard link for admins -->
+            <Link
+              v-if="isAdmin"
+              href="/admin/dashboard"
+              class="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              @click="closeMobileMenu"
+            >
+              Dashboard
+            </Link>
+            
+            <!-- Settings links for members -->
+            <template v-if="isMember">
+              <Link
+                href="/settings/profile"
+                class="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                @click="closeMobileMenu"
+              >
+                Profile
+              </Link>
+              <Link
+                href="/settings/password"
+                class="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                @click="closeMobileMenu"
+              >
+                Password
+              </Link>
+              <Link
+                href="/settings/two-factor"
+                class="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                @click="closeMobileMenu"
+              >
+                Two-Factor Auth
+              </Link>
+              <Link
+                href="/settings/appearance"
+                class="block px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                @click="closeMobileMenu"
+              >
+                Appearance
+              </Link>
+            </template>
+            
+            <!-- Sign out -->
+            <button
+              @click="signOut"
+              class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-accent transition-colors"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
     </header>

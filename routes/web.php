@@ -6,24 +6,54 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\BlogPostController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\BlogPostLikeController;
+use App\Http\Controllers\UserFollowController;
+use App\Http\Controllers\AuthorProfileController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Admin\UserManagementController;
 
 Route::get('/', [PublicBlogController::class, 'index'])->name('home');
 
-Route::get('dashboard', function () {
+// Admin Dashboard
+Route::get('admin/dashboard', function () {
     return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified', 'ensure.2fa'])->name('dashboard');
+})->middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->name('dashboard');
 
 Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 
 // Blog Post Management Routes (Admin)
-Route::middleware(['auth', 'verified', 'ensure.2fa'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
     Route::resource('blog-posts', BlogPostController::class);
 });
 
+// User Management Routes (Master Admin Only)
+Route::middleware(['auth', 'verified', 'ensure.2fa', 'master.admin'])->prefix('admin/users')->name('admin.users.')->group(function () {
+    Route::get('admins', [UserManagementController::class, 'indexAdmins'])->name('admins');
+    Route::get('members', [UserManagementController::class, 'indexMembers'])->name('members');
+    Route::post('/', [UserManagementController::class, 'store'])->name('store');
+    Route::patch('{user}/role', [UserManagementController::class, 'updateRole'])->name('updateRole');
+    Route::delete('{user}', [UserManagementController::class, 'destroy'])->name('destroy');
+});
+
 // Public blog post route (individual post viewing by slug)
 Route::get('blog/{slug}', [PublicBlogController::class, 'show'])->name('blog.show');
+
+// Author profile route
+Route::get('author/{id}', [AuthorProfileController::class, 'show'])->name('author.profile');
+
+// Comment routes (requires authentication with rate limiting)
+Route::middleware(['auth', 'throttle:10,1'])->group(function () {
+    Route::post('blog/{slug}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::post('blog/{slug}/like', [BlogPostLikeController::class, 'toggle'])->name('blog.like.toggle');
+    Route::post('user/{userId}/follow', [UserFollowController::class, 'toggle'])->name('user.follow.toggle');
+});
+
+// Delete comment route (separate rate limit)
+Route::middleware(['auth'])->group(function () {
+    Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
+});
 
 // Two-factor authentication setup routes (for new users during registration)
 Route::middleware(['auth'])->group(function () {

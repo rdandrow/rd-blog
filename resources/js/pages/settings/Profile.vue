@@ -10,6 +10,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem } from '@/types';
@@ -75,6 +76,37 @@ const user = page.props.auth.user;
                             placeholder="Email address"
                         />
                         <InputError class="mt-2" :message="errors.email" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="website">Website</Label>
+                        <Input
+                            id="website"
+                            type="url"
+                            class="mt-1 block w-full"
+                            name="website"
+                            :default-value="user.website"
+                            autocomplete="url"
+                            placeholder="https://example.com"
+                        />
+                        <p class="text-xs text-muted-foreground mt-1">Enter your website URL (protocol is optional, https:// will be added automatically)</p>
+                        <InputError class="mt-2" :message="errors.website" />
+                    </div>
+
+                    <div v-if="user.role === 'admin' || user.role === 'master_admin'" class="grid gap-2">
+                        <Label for="bio">Bio</Label>
+                        <Textarea
+                            id="bio"
+                            class="mt-1 block w-full"
+                            name="bio"
+                            :default-value="user.bio"
+                            rows="4"
+                            placeholder="Tell us about yourself..."
+                        />
+                        <InputError class="mt-2" :message="errors.bio" />
+                        <p class="text-sm text-muted-foreground">
+                            This will be displayed on your author profile page.
+                        </p>
                     </div>
 
                     <div v-if="mustVerifyEmail && !user.email_verified_at">

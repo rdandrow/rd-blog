@@ -33,10 +33,6 @@ const confirmTwoFactor = () => {
     });
 };
 
-const showRecoveryCodes = () => {
-    step.value = 'recovery';
-};
-
 const proceedAfterRecovery = () => {
     router.get('/dashboard');
 };

@@ -1,0 +1,20 @@
+{
+    "id": 103,
+    "title": "Complete Test Post",
+    "slug": "complete-test-post",
+    "excerpt": "Post with all attributes populated",
+    "content": "Full detailed content goes here",
+    "featured_image": "https:\/\/example.com\/complete-featured.jpg",
+    "author": {
+        "id": 103,
+        "name": "Complete Author",
+        "avatar": "https:\/\/example.com\/complete-avatar.jpg"
+    },
+    "published_at": "2026-02-01T08:30:00.000000Z",
+    "reading_time": 6,
+    "tags": [
+        "Complete",
+        "Testing"
+    ],
+    "is_featured": true
+}

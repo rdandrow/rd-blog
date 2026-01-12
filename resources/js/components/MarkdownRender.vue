@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useMarkdown } from '@/composables/useMarkdown';
 
 const props = withDefaults(defineProps<{
@@ -15,13 +15,10 @@ const hasError = ref(false);
 
 const rendered = computed(() => {
   try {
-    hasError.value = false;
     const result = render(props.content);
     
     // Check if rendering resulted in an error display
     if (result.includes('class="text-destructive"') || result.includes('Preview Error')) {
-      hasError.value = true;
-      
       if (props.fallbackToPlainText && props.content) {
         // Fallback to plain text with basic formatting
         return `<div class="whitespace-pre-wrap text-sm p-4 bg-muted/50 rounded border border-dashed">
@@ -34,7 +31,6 @@ const rendered = computed(() => {
     return result;
   } catch (error) {
     console.error('MarkdownRender error:', error);
-    hasError.value = true;
     
     if (props.fallbackToPlainText && props.content) {
       return `<div class="whitespace-pre-wrap text-sm p-4 bg-muted/50 rounded border border-dashed">
@@ -48,6 +44,14 @@ const rendered = computed(() => {
     </div>`;
   }
 });
+
+// Watch for errors in rendering to update hasError ref
+watch(rendered, (newValue) => {
+  hasError.value = newValue.includes('class="text-destructive"') || 
+                   newValue.includes('Preview Error') ||
+                   newValue.includes('Failed to render content');
+}, { immediate: true });
+
 </script>
 
 <template>

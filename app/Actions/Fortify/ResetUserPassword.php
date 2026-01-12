@@ -15,7 +15,7 @@ class ResetUserPassword implements ResetsUserPasswords
      *
      * @param  array<string, string>  $input
      */
-    public function reset(User $user, array $input): void
+    public function reset(User $user, array $input, ?callable $persistUser = null): void
     {
         Validator::make($input, [
             'password' => $this->passwordRules(),
@@ -23,6 +23,12 @@ class ResetUserPassword implements ResetsUserPasswords
 
         $user->forceFill([
             'password' => $input['password'],
-        ])->save();
+        ]);
+
+        if ($persistUser) {
+            $persistUser($user);
+        } else {
+            $user->save();
+        }
     }
 }
