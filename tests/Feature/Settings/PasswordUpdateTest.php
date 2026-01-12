@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Hash;
 
 describe('Password Update Page', function () {
     it('displays the password update page', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = authenticatedGet($user, route('user-password.edit'));
 
@@ -22,7 +22,7 @@ describe('Password Update Page', function () {
 
 describe('Password Change', function () {
     it('allows users to update their password', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
@@ -40,7 +40,7 @@ describe('Password Change', function () {
     })->group('settings', 'password', 'authenticated');
 
     it('requires correct current password to update', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)

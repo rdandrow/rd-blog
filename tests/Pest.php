@@ -294,7 +294,7 @@ expect()->extend('toHaveErrorMessage', function (string $message) {
  */
 function createTestAdmin(array $attributes = []): App\Models\User
 {
-    return App\Models\User::factory()->admin()->create($attributes);
+    return App\Models\User::factory()->admin()->withTwoFactor()->create($attributes);
 }
 
 /**
@@ -302,7 +302,7 @@ function createTestAdmin(array $attributes = []): App\Models\User
  */
 function createTestMasterAdmin(array $attributes = []): App\Models\User
 {
-    return App\Models\User::factory()->masterAdmin()->create($attributes);
+    return App\Models\User::factory()->masterAdmin()->withTwoFactor()->create($attributes);
 }
 
 /**
@@ -310,7 +310,7 @@ function createTestMasterAdmin(array $attributes = []): App\Models\User
  */
 function createTestMember(array $attributes = []): App\Models\User
 {
-    return App\Models\User::factory()->create($attributes);
+    return App\Models\User::factory()->withTwoFactor()->create($attributes);
 }
 
 /**

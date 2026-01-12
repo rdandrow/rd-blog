@@ -156,3 +156,60 @@ describe('role combinations', function () {
         expect($member->isMember())->toBeTrue();
     });
 })->group('models', 'user', 'unit');
+
+describe('factory defaults', function () {
+    beforeEach(function () {
+        // Use database for factory tests
+        $this->artisan('migrate:fresh');
+    });
+
+    it('creates users with remember_token as null by default', function () {
+        // Arrange & Act: Create a user using the factory
+        $user = User::factory()->create();
+        
+        // Assert: remember_token should be null (not set until user uses "Remember Me")
+        expect($user->remember_token)->toBeNull();
+        
+        // Cleanup
+        $user->delete();
+    });
+
+    it('creates users without two-factor authentication by default', function () {
+        // Arrange & Act: Create a user using the factory
+        $user = User::factory()->create();
+        
+        // Assert: 2FA fields should be null (not set until user enables 2FA)
+        expect($user->two_factor_secret)->toBeNull()
+            ->and($user->two_factor_recovery_codes)->toBeNull()
+            ->and($user->two_factor_confirmed_at)->toBeNull()
+            ->and($user->hasEnabledTwoFactorAuthentication())->toBeFalse();
+        
+        // Cleanup
+        $user->delete();
+    });
+
+    it('creates users with email verified by default', function () {
+        // Arrange & Act: Create a user using the factory
+        $user = User::factory()->create();
+        
+        // Assert: email_verified_at should be set (common test scenario)
+        expect($user->email_verified_at)->not->toBeNull();
+        
+        // Cleanup
+        $user->delete();
+    });
+
+    it('can create users with two-factor authentication when explicitly requested', function () {
+        // Arrange & Act: Create a user with 2FA enabled
+        $user = User::factory()->withTwoFactor()->create();
+        
+        // Assert: 2FA fields should be set
+        expect($user->two_factor_secret)->not->toBeNull()
+            ->and($user->two_factor_recovery_codes)->not->toBeNull()
+            ->and($user->two_factor_confirmed_at)->not->toBeNull()
+            ->and($user->hasEnabledTwoFactorAuthentication())->toBeTrue();
+        
+        // Cleanup
+        $user->delete();
+    });
+})->group('models', 'user', 'factory', 'unit');

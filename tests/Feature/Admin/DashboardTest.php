@@ -16,7 +16,7 @@ describe('Dashboard Access', function () {
     })->group('dashboard', 'guest');
 
     it('allows authenticated users to visit dashboard', function () {
-        $user = User::factory()->admin()->create();
+        $user = User::factory()->admin()->withTwoFactor()->create();
 
         $response = authenticatedGet($user, route('dashboard'));
 

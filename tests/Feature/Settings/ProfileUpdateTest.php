@@ -11,7 +11,7 @@ use App\Models\User;
 
 describe('Profile Display', function () {
     it('displays the profile edit page', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = authenticatedGet($user, route('profile.edit'));
 
@@ -21,7 +21,7 @@ describe('Profile Display', function () {
 
 describe('Profile Update', function () {
     it('allows users to update their profile information', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
@@ -41,7 +41,7 @@ describe('Profile Update', function () {
     })->group('settings', 'profile', 'authenticated');
 
     it('preserves email verification when email is unchanged', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
@@ -59,7 +59,7 @@ describe('Profile Update', function () {
 
 describe('Account Deletion', function () {
     it('allows users to delete their account with correct password', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
@@ -75,7 +75,7 @@ describe('Account Deletion', function () {
     })->group('settings', 'profile', 'deletion');
 
     it('requires correct password to delete account', function () {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)

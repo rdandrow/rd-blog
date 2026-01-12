@@ -38,7 +38,7 @@ describe('Two-Factor Settings Page', function () {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
         }
 
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         Features::twoFactorAuthentication([
             'confirm' => true,
