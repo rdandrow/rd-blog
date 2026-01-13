@@ -25,7 +25,19 @@ Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 // Blog Post Management Routes (Admin)
 Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
-    Route::resource('blog-posts', BlogPostController::class);
+    // Rate limit blog post creation and updates to prevent abuse
+    Route::post('blog-posts', [BlogPostController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('blog-posts.store');
+    Route::match(['put', 'patch'], 'blog-posts/{blog_post}', [BlogPostController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('blog-posts.update');
+    // Other blog post routes without rate limiting
+    Route::get('blog-posts', [BlogPostController::class, 'index'])->name('blog-posts.index');
+    Route::get('blog-posts/create', [BlogPostController::class, 'create'])->name('blog-posts.create');
+    Route::get('blog-posts/{blog_post}', [BlogPostController::class, 'show'])->name('blog-posts.show');
+    Route::get('blog-posts/{blog_post}/edit', [BlogPostController::class, 'edit'])->name('blog-posts.edit');
+    Route::delete('blog-posts/{blog_post}', [BlogPostController::class, 'destroy'])->name('blog-posts.destroy');
 });
 
 // User Management Routes (Master Admin Only)

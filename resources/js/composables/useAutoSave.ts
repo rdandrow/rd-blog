@@ -1,0 +1,132 @@
+import { ref, watch, onMounted, onUnmounted } from 'vue';
+
+interface AutoSaveData {
+  timestamp: number;
+  data: Record<string, any>;
+}
+
+export const useAutoSave = (storageKey: string, formData: Record<string, any>, intervalMs: number = 30000) => {
+  const lastSaved = ref<Date | null>(null);
+  const hasDraft = ref(false);
+  let autoSaveInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Check for existing draft on mount
+  const checkForDraft = (): AutoSaveData | null => {
+    try {
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        const parsed: AutoSaveData = JSON.parse(savedData);
+        // Check if draft is less than 7 days old
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        if (parsed.timestamp > sevenDaysAgo) {
+          return parsed;
+        } else {
+          // Remove stale draft
+          localStorage.removeItem(storageKey);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for draft:', error);
+      localStorage.removeItem(storageKey);
+    }
+    return null;
+  };
+
+  // Save draft to localStorage
+  const saveDraft = () => {
+    try {
+      const dataToSave: AutoSaveData = {
+        timestamp: Date.now(),
+        data: { ...formData }
+      };
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+      lastSaved.value = new Date();
+      hasDraft.value = true;
+    } catch (error) {
+      console.error('Error saving draft:', error);
+    }
+  };
+
+  // Restore draft from localStorage
+  const restoreDraft = (): Record<string, any> | null => {
+    const draft = checkForDraft();
+    if (draft) {
+      hasDraft.value = true;
+      return draft.data;
+    }
+    return null;
+  };
+
+  // Clear draft from localStorage
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(storageKey);
+      hasDraft.value = false;
+      lastSaved.value = null;
+    } catch (error) {
+      console.error('Error clearing draft:', error);
+    }
+  };
+
+  // Start auto-save interval
+  const startAutoSave = () => {
+    if (autoSaveInterval) return;
+
+    autoSaveInterval = setInterval(() => {
+      // Only save if there's content
+      const hasContent = Object.values(formData).some(value => {
+        if (typeof value === 'string') return value.trim().length > 0;
+        if (Array.isArray(value)) return value.length > 0;
+        return value != null;
+      });
+
+      if (hasContent) {
+        saveDraft();
+      }
+    }, intervalMs);
+  };
+
+  // Stop auto-save interval
+  const stopAutoSave = () => {
+    if (autoSaveInterval) {
+      clearInterval(autoSaveInterval);
+      autoSaveInterval = null;
+    }
+  };
+
+  // Format last saved time
+  const getLastSavedText = (): string => {
+    if (!lastSaved.value) return '';
+    
+    const now = new Date();
+    const diff = now.getTime() - lastSaved.value.getTime();
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    
+    if (seconds < 60) return 'just now';
+    if (minutes === 1) return '1 minute ago';
+    if (minutes < 60) return `${minutes} minutes ago`;
+    
+    return lastSaved.value.toLocaleTimeString(undefined, { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  // Cleanup on unmount
+  onUnmounted(() => {
+    stopAutoSave();
+  });
+
+  return {
+    lastSaved,
+    hasDraft,
+    checkForDraft,
+    saveDraft,
+    restoreDraft,
+    clearDraft,
+    startAutoSave,
+    stopAutoSave,
+    getLastSavedText
+  };
+};
