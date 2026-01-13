@@ -25,6 +25,10 @@ Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 // Blog Post Management Routes (Admin)
 Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
+    // Image upload for markdown content
+    Route::post('blog-posts/upload-image', [BlogPostController::class, 'uploadImage'])
+        ->middleware('throttle:20,1')
+        ->name('blog-posts.upload-image');
     // Rate limit blog post creation and updates to prevent abuse
     Route::post('blog-posts', [BlogPostController::class, 'store'])
         ->middleware('throttle:10,1')

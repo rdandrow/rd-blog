@@ -23,6 +23,14 @@ The following aspects are covered by PHP tests:
    - Content detection algorithms
    - Time formatting logic
 
+3. **Image Upload Tests** (`tests/Feature/Admin/BlogPostImageUploadTest.php`)
+   - Image upload with valid formats (jpeg, png, gif, webp)
+   - File validation (size limits, file types)
+   - Authorization and rate limiting (20 uploads/minute)
+   - Storage in blog-images directory
+   - Unique filename generation
+   - Error handling for upload failures
+
 ### ⚠️ Missing Frontend Tests (Requires JavaScript Testing Framework)
 
 The following aspects require a JavaScript testing framework (Vitest recommended) to test properly:
@@ -46,6 +54,17 @@ The following aspects require a JavaScript testing framework (Vitest recommended
    - Validation warning lifecycle
    - Dark mode class application
    - Keyboard shortcuts
+
+4. **Image Paste/Upload Feature** (`resources/js/components/MarkdownEditor.vue`)
+   - Paste event handling for images from clipboard
+   - Drag-and-drop event handling (dragover, drop, dragleave)
+   - File upload to backend API
+   - Progress indicator display
+   - Error message display
+   - Markdown syntax insertion after upload
+   - Cursor positioning after image insertion
+   - Drag overlay visual feedback
+   - File type and size validation on client-side
 
 ## Recommended Setup for Frontend Testing
 
@@ -244,6 +263,268 @@ describe('useAutoSave', () => {
     clearDraft();
 
     expect(localStorage.getItem('test-key')).toBeNull();
+  });
+});
+```
+
+### Example Test File: Image Upload Functionality
+
+Create `tests/frontend/components/MarkdownEditor.test.ts`:
+
+```typescript
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { mount } from '@vue/test-utils';
+import MarkdownEditor from '@/components/MarkdownEditor.vue';
+import { nextTick } from 'vue';
+
+describe('MarkdownEditor - Image Upload', () => {
+  let fetchMock: any;
+
+  beforeEach(() => {
+    // Mock fetch for image uploads
+    fetchMock = vi.fn();
+    global.fetch = fetchMock;
+    
+    // Mock CSRF token
+    document.head.innerHTML = '<meta name="csrf-token" content="test-token">';
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('should upload pasted image from clipboard', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        url: 'http://example.com/storage/blog-images/test.jpg',
+        path: 'blog-images/test.jpg',
+      }),
+    });
+
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    const textarea = wrapper.find('textarea');
+    
+    // Create a mock clipboard event with an image
+    const file = new File(['image'], 'test.png', { type: 'image/png' });
+    const dataTransfer = {
+      items: [{
+        type: 'image/png',
+        getAsFile: () => file,
+      }],
+    };
+
+    const pasteEvent = new ClipboardEvent('paste', {
+      clipboardData: dataTransfer as any,
+    });
+
+    await textarea.element.dispatchEvent(pasteEvent);
+    await nextTick();
+
+    // Wait for upload to complete
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/admin/blog-posts/upload-image',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+    });
+
+    // Check that markdown was inserted
+    await vi.waitFor(() => {
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toContain('![test](');
+    });
+  });
+
+  it('should upload dropped image file', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        url: 'http://example.com/storage/blog-images/dropped.jpg',
+        path: 'blog-images/dropped.jpg',
+      }),
+    });
+
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    const textarea = wrapper.find('textarea');
+    
+    // Create a mock drop event with an image
+    const file = new File(['image'], 'dropped.jpg', { type: 'image/jpeg' });
+    const dataTransfer = {
+      files: [file],
+    };
+
+    const dropEvent = new DragEvent('drop', {
+      dataTransfer: dataTransfer as any,
+    });
+
+    await textarea.element.dispatchEvent(dropEvent);
+    await nextTick();
+
+    // Wait for upload to complete
+    await vi.waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+      expect(wrapper.emitted('update:modelValue')?.[0]?.[0]).toContain('![dropped](');
+    });
+  });
+
+  it('should show drag overlay when dragging file over textarea', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    const textarea = wrapper.find('textarea');
+    
+    await textarea.trigger('dragover', {
+      dataTransfer: { files: [new File([''], 'test.jpg', { type: 'image/jpeg' })] },
+    });
+
+    await nextTick();
+
+    // Check for drag overlay
+    expect(wrapper.html()).toContain('Drop image to upload');
+  });
+
+  it('should display upload progress indicator', async () => {
+    fetchMock.mockImplementation(() => 
+      new Promise(resolve => setTimeout(() => resolve({
+        ok: true,
+        json: async () => ({ success: true, url: 'test.jpg', path: 'test.jpg' }),
+      }), 100))
+    );
+
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    const file = new File(['image'], 'test.png', { type: 'image/png' });
+    const pasteEvent = new ClipboardEvent('paste', {
+      clipboardData: {
+        items: [{
+          type: 'image/png',
+          getAsFile: () => file,
+        }],
+      } as any,
+    });
+
+    const textarea = wrapper.find('textarea');
+    await textarea.element.dispatchEvent(pasteEvent);
+    await nextTick();
+
+    // Should show upload progress
+    expect(wrapper.text()).toContain('Uploading');
+  });
+
+  it('should display error for oversized images', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    // Create a file larger than 2MB
+    const largeFile = new File(['x'.repeat(3 * 1024 * 1024)], 'large.jpg', { 
+      type: 'image/jpeg' 
+    });
+    
+    Object.defineProperty(largeFile, 'size', { value: 3 * 1024 * 1024 });
+
+    const pasteEvent = new ClipboardEvent('paste', {
+      clipboardData: {
+        items: [{
+          type: 'image/jpeg',
+          getAsFile: () => largeFile,
+        }],
+      } as any,
+    });
+
+    const textarea = wrapper.find('textarea');
+    await textarea.element.dispatchEvent(pasteEvent);
+    await nextTick();
+
+    // Should show error message
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain('Image must be less than 2MB');
+    });
+  });
+
+  it('should display error for non-image files', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    const textFile = new File(['text'], 'document.txt', { type: 'text/plain' });
+
+    const pasteEvent = new ClipboardEvent('paste', {
+      clipboardData: {
+        items: [{
+          type: 'text/plain',
+          getAsFile: () => textFile,
+        }],
+      } as any,
+    });
+
+    const textarea = wrapper.find('textarea');
+    await textarea.element.dispatchEvent(pasteEvent);
+    await nextTick();
+
+    // Should show error message
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain('Only image files are allowed');
+    });
+  });
+
+  it('should handle upload API errors gracefully', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        error: 'Upload failed',
+      }),
+    });
+
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    const file = new File(['image'], 'test.png', { type: 'image/png' });
+    const pasteEvent = new ClipboardEvent('paste', {
+      clipboardData: {
+        items: [{
+          type: 'image/png',
+          getAsFile: () => file,
+        }],
+      } as any,
+    });
+
+    const textarea = wrapper.find('textarea');
+    await textarea.element.dispatchEvent(pasteEvent);
+    await nextTick();
+
+    // Should show error message
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain('Error');
+    });
   });
 });
 ```

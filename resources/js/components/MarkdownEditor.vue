@@ -33,6 +33,11 @@ const renderError = ref<string | null>(null);
 const lastSuccessfulRender = ref('');
 const validationWarnings = ref<string[]>([]);
 
+// Image upload state
+const isUploadingImage = ref(false);
+const uploadProgress = ref<string>('');
+const isDraggingOver = ref(false);
+
 // Keyboard navigation state
 const focusedButtonIndex = ref(-1);
 const toolbarRef = ref<HTMLElement | null>(null);
@@ -544,6 +549,141 @@ const makeH1 = () => makeHeader(1);
 const makeH2 = () => makeHeader(2);
 const makeH3 = () => makeHeader(3);
 
+// Image upload functionality
+const uploadImage = async (file: File): Promise<void> => {
+  if (!file.type.startsWith('image/')) {
+    uploadProgress.value = 'Error: Only image files are allowed';
+    setTimeout(() => uploadProgress.value = '', 3000);
+    return;
+  }
+
+  if (file.size > 2048 * 1024) { // 2MB
+    uploadProgress.value = 'Error: Image must be less than 2MB';
+    setTimeout(() => uploadProgress.value = '', 3000);
+    return;
+  }
+
+  isUploadingImage.value = true;
+  uploadProgress.value = `Uploading ${file.name}...`;
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  try {
+    const response = await fetch('/admin/blog-posts/upload-image', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+    });
+
+    // Check if response is HTML (likely a redirect or error page)
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('text/html')) {
+      throw new Error('Authentication required. Please refresh the page and try again.');
+    }
+
+    if (!response.ok) {
+      let errorMessage = 'Upload failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || error.message || errorMessage;
+        // Handle validation errors
+        if (error.errors && typeof error.errors === 'object') {
+          const firstError = Object.values(error.errors)[0];
+          errorMessage = Array.isArray(firstError) ? firstError[0] : String(firstError);
+        }
+      } catch {
+        // If JSON parsing fails, use status text
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    
+    if (!data.url) {
+      throw new Error('Invalid response from server');
+    }
+    
+    // Insert markdown image syntax at cursor position
+    const el = textareaRef.value;
+    if (!el) return;
+
+    const text = value.value ?? '';
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    
+    const imageMarkdown = `![${file.name.replace(/\.[^/.]+$/, '')}](${data.url})`;
+    const newText = text.slice(0, start) + imageMarkdown + text.slice(end);
+    
+    value.value = newText;
+    
+    await nextTick();
+    
+    // Position cursor after inserted image
+    const newCursorPos = start + imageMarkdown.length;
+    el.focus();
+    el.setSelectionRange(newCursorPos, newCursorPos);
+    
+    uploadProgress.value = 'Image uploaded successfully!';
+    setTimeout(() => uploadProgress.value = '', 2000);
+  } catch (error) {
+    console.error('Image upload error:', error);
+    uploadProgress.value = error instanceof Error ? `Error: ${error.message}` : 'Upload failed';
+    setTimeout(() => uploadProgress.value = '', 3000);
+  } finally {
+    isUploadingImage.value = false;
+  }
+};
+
+// Handle paste events for images
+const handlePaste = async (event: ClipboardEvent) => {
+  const items = event.clipboardData?.items;
+  if (!items) return;
+
+  for (const item of Array.from(items)) {
+    if (item.type.startsWith('image/')) {
+      event.preventDefault();
+      const file = item.getAsFile();
+      if (file) {
+        await uploadImage(file);
+      }
+      break;
+    }
+  }
+};
+
+// Handle drag and drop events
+const handleDragOver = (event: DragEvent) => {
+  event.preventDefault();
+  isDraggingOver.value = true;
+};
+
+const handleDragLeave = (event: DragEvent) => {
+  event.preventDefault();
+  isDraggingOver.value = false;
+};
+
+const handleDrop = async (event: DragEvent) => {
+  event.preventDefault();
+  isDraggingOver.value = false;
+
+  const files = event.dataTransfer?.files;
+  if (!files || files.length === 0) return;
+
+  // Upload the first image file found
+  for (const file of Array.from(files)) {
+    if (file.type.startsWith('image/')) {
+      await uploadImage(file);
+      break;
+    }
+  }
+};
+
 // Toolbar button definitions for keyboard navigation
 const toolbarButtons = [
   { action: makeH1, label: 'Heading 1', shortcut: 'Ctrl+1', category: 'headers' },
@@ -684,16 +824,52 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Write -->
-    <textarea
-      v-if="tab === 'write'"
-      ref="textareaRef"
-      v-model="value"
-      :rows="rows"
-      class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-y"
-      :placeholder="placeholder"
-      @keydown="handleTextareaKeyDown"
-    />
+    <!-- Image upload status -->
+    <div v-if="uploadProgress" class="mb-2 p-2 rounded text-sm flex items-center gap-2" :class="uploadProgress.startsWith('Error') ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'">
+      <svg v-if="isUploadingImage" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <svg v-else-if="!uploadProgress.startsWith('Error')" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+      <span>{{ uploadProgress }}</span>
+    </div>
+
+    <!-- Write (with drag-drop overlay) -->
+    <div v-if="tab === 'write'" class="relative">
+      <textarea
+        ref="textareaRef"
+        v-model="value"
+        :rows="rows"
+        :class="[
+          'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-y',
+          isDraggingOver && 'ring-2 ring-primary'
+        ]"
+        :placeholder="placeholder"
+        @keydown="handleTextareaKeyDown"
+        @paste="handlePaste"
+        @dragover="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
+      />
+      
+      <!-- Drag overlay -->
+      <div
+        v-if="isDraggingOver"
+        class="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-md flex items-center justify-center pointer-events-none"
+      >
+        <div class="text-center">
+          <svg class="w-12 h-12 mx-auto mb-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <p class="text-sm font-medium text-primary">Drop image to upload</p>
+        </div>
+      </div>
+    </div>
 
     <!-- Preview -->
     <div
@@ -744,6 +920,27 @@ onUnmounted(() => {
     <!-- Keyboard shortcuts help -->
     <div class="mt-2 text-xs text-muted-foreground space-y-1">
       <p>Supports Markdown: headings, lists, links, images, code, and more.</p>
+      <details class="cursor-pointer">
+        <summary class="hover:text-foreground">Image Upload</summary>
+        <div class="mt-2 text-xs bg-muted/30 p-3 rounded border space-y-3">
+          <div>
+            <p class="font-medium text-foreground mb-2">Upload images directly to your post:</p>
+            <ul class="space-y-1 ml-4">
+              <li>• <kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+V</kbd> Paste images from your clipboard</li>
+              <li>• Drag and drop image files into the editor</li>
+              <li>• Add multiple images - each will be uploaded separately</li>
+            </ul>
+          </div>
+          <div>
+            <p class="font-medium text-foreground mb-1">Supported formats:</p>
+            <p class="ml-4">JPEG, PNG, GIF, WebP</p>
+          </div>
+          <div>
+            <p class="font-medium text-foreground mb-1">Maximum file size:</p>
+            <p class="ml-4">2 MB per image</p>
+          </div>
+        </div>
+      </details>
       <details class="cursor-pointer">
         <summary class="hover:text-foreground">Code Syntax Highlighting</summary>
         <div class="mt-2 text-xs bg-muted/30 p-3 rounded border">

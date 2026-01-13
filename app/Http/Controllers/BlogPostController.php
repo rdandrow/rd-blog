@@ -168,4 +168,34 @@ class BlogPostController extends Controller
             ->route('admin.blog-posts.index')
             ->with('success', 'Blog post deleted successfully!');
     }
+
+    /**
+     * Upload an image for markdown content
+     */
+    public function uploadImage(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        if (!$request->hasFile('image')) {
+            return response()->json(['error' => 'No image provided'], 400);
+        }
+
+        try {
+            $fullPath = $this->imageService->upload($request->file('image'));
+            $url = asset($fullPath);
+            
+            return response()->json([
+                'success' => true,
+                'url' => $url,
+                'path' => $fullPath,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to upload image: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

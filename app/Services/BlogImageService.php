@@ -14,7 +14,8 @@ class BlogImageService
     public function upload(UploadedFile $file): string
     {
         $extension = $file->getClientOriginalExtension();
-        $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $extension;
+        $timestamp = round(microtime(true) * 1000); // Use microseconds for uniqueness
+        $filename = $timestamp . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $extension;
         $path = $file->storeAs('blog-images', $filename, 'public');
         
         return '/storage/' . $path;
