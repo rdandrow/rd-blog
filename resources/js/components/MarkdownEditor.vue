@@ -258,6 +258,12 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
           makeNumberedList();
         }
         break;
+      case 't':
+        if (event.shiftKey) {
+          event.preventDefault();
+          makeTable();
+        }
+        break;
     }
   }
 };
@@ -539,6 +545,30 @@ const makeLink = () => replaceSelection('[', '](https://)', 'link-text');
 const makeBulletedList = () => wrapLines('- ');
 const makeNumberedList = () => wrapLines('1. ', true);
 
+const makeTable = async () => {
+  const el = textareaRef.value;
+  const text = value.value ?? '';
+  if (!el) return;
+  const { start, end } = getSelection();
+  
+  // Create a 3x3 table template
+  const table = `
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+`;
+  
+  const newText = text.slice(0, start) + table + text.slice(end);
+  value.value = newText;
+  await nextTick();
+  el.focus();
+  
+  // Place cursor at the first header cell for easy editing
+  const headerStart = start + table.indexOf('Header 1');
+  el.setSelectionRange(headerStart, headerStart + 'Header 1'.length);
+};
+
 // Header actions
 const makeHeader = (level: number) => {
   const prefix = '#'.repeat(level) + ' ';
@@ -696,6 +726,7 @@ const toolbarButtons = [
   { action: makeCodeBlock, label: 'Code Block', shortcut: 'Ctrl+Shift+`', category: 'format' },
   { action: makeBulletedList, label: 'Bulleted List', shortcut: 'Ctrl+Shift+8', category: 'lists' },
   { action: makeNumberedList, label: 'Numbered List', shortcut: 'Ctrl+Shift+7', category: 'lists' },
+  { action: makeTable, label: 'Table', shortcut: 'Ctrl+Shift+T', category: 'structure' },
 ];
 
 // Add keyboard event listeners
@@ -798,7 +829,7 @@ onUnmounted(() => {
       </div>
       
       <!-- Lists Group -->
-      <div class="flex items-center gap-1">
+      <div class="flex items-center gap-1 border-r border-border pr-2">
         <button 
           v-for="button in toolbarButtons.filter(b => b.category === 'lists')"
           :key="button.label"
@@ -815,6 +846,26 @@ onUnmounted(() => {
         >
           <span v-if="button.label === 'Bulleted List'">• List</span>
           <span v-else-if="button.label === 'Numbered List'">1. List</span>
+        </button>
+      </div>
+      
+      <!-- Structure Group -->
+      <div class="flex items-center gap-1">
+        <button 
+          v-for="button in toolbarButtons.filter(b => b.category === 'structure')"
+          :key="button.label"
+          type="button" 
+          :data-toolbar-button="toolbarButtons.findIndex(b => b === button)"
+          :tabindex="-1"
+          class="px-2 py-1 text-sm rounded border border-border hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-colors"
+          :class="{ 'ring-2 ring-ring ring-offset-1': focusedButtonIndex === toolbarButtons.findIndex(b => b === button) }"
+          :aria-label="`${button.label} (${button.shortcut})`"
+          :title="`${button.label} - ${button.shortcut}`"
+          @click="button.action"
+          @focus="handleButtonFocus(toolbarButtons.findIndex(b => b === button))"
+          @blur="handleButtonBlur"
+        >
+          <span v-if="button.label === 'Table'">⊞ Table</span>
         </button>
       </div>
       
@@ -920,6 +971,29 @@ onUnmounted(() => {
     <!-- Keyboard shortcuts help -->
     <div class="mt-2 text-xs text-muted-foreground space-y-1">
       <p>Supports Markdown: headings, lists, links, images, code, and more.</p>
+            <details class="cursor-pointer">
+        <summary class="hover:text-foreground">Tables</summary>
+        <div class="mt-2 text-xs bg-muted/30 p-3 rounded border space-y-3">
+          <div>
+            <p class="font-medium text-foreground mb-2">Create tables with pipes and dashes:</p>
+            <div class="bg-background/50 p-2 rounded font-mono text-xs space-y-1">
+              <div>| Header 1 | Header 2 | Header 3 |</div>
+              <div>|----------|----------|----------|</div>
+              <div>| Cell 1   | Cell 2   | Cell 3   |</div>
+              <div>| Cell 4   | Cell 5   | Cell 6   |</div>
+            </div>
+          </div>
+          <div>
+            <p class="font-medium text-foreground mb-1">Tips:</p>
+            <ul class="ml-4 space-y-1">
+              <li>• Use <kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+T</kbd> to insert a template</li>
+              <li>• Pipes <code>|</code> separate columns</li>
+              <li>• Second row defines the header separator</li>
+              <li>• Alignment is optional (spaces for readability)</li>
+            </ul>
+          </div>
+        </div>
+      </details>
       <details class="cursor-pointer">
         <summary class="hover:text-foreground">Image Upload</summary>
         <div class="mt-2 text-xs bg-muted/30 p-3 rounded border space-y-3">
@@ -982,6 +1056,7 @@ onUnmounted(() => {
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+8</kbd> Bullet List</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+7</kbd> Number List</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+`</kbd> Code Block</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+T</kbd> Table</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Enter</kbd> Continue List</div>
           </div>
           <div class="grid grid-cols-2 gap-x-4 gap-y-1">

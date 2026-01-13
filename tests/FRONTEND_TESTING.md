@@ -66,6 +66,26 @@ The following aspects require a JavaScript testing framework (Vitest recommended
    - Drag overlay visual feedback
    - File type and size validation on client-side
 
+5. **Table Insert Feature** (`resources/js/components/MarkdownEditor.vue`)
+   - Ctrl+Shift+T keyboard shortcut triggers table insertion
+   - Table button click inserts 3x3 table template
+   - Template contains proper markdown table syntax
+   - Cursor positioned at first header cell after insertion
+   - Table template includes header row, separator, and data rows
+   - Inserted table has proper line breaks around it
+   - Table renders correctly in preview mode
+   - Handles insertion at any cursor position in content
+
+6. **Table CSS Styling** (`resources/css/app.css`)
+   - Table borders render correctly (border-collapse, 1px solid)
+   - Table headers have distinct background color
+   - Zebra striping on alternating tbody rows
+   - Hover effects on table rows
+   - Proper spacing and padding on th/td elements
+   - Tables inherit prose typography styles
+   - CSS custom properties for theming (--color-muted, --color-border, --color-accent)
+   - Responsive table rendering
+
 ## Recommended Setup for Frontend Testing
 
 ### Step 1: Install Testing Dependencies
@@ -619,3 +639,185 @@ While backend PHP tests provide good coverage for server-side logic and business
 4. **Integration**: Verifying composable integration with components
 
 The recommended setup above provides a solid foundation for comprehensive frontend testing of the auto-save functionality and other Vue/TypeScript code.
+### Example: Table Insert Feature Tests
+
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest';
+import { mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
+import MarkdownEditor from '@/components/MarkdownEditor.vue';
+
+describe('MarkdownEditor - Table Insert', () => {
+  it('should insert table template when Ctrl+Shift+T is pressed', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: 'Some existing content',
+      },
+    });
+
+    const textarea = wrapper.find('textarea').element as HTMLTextAreaElement;
+    
+    // Set cursor position
+    textarea.setSelectionRange(23, 23); // After "content"
+    
+    // Trigger keyboard shortcut
+    await textarea.dispatchEvent(new KeyboardEvent('keydown', {
+      key: 't',
+      ctrlKey: true,
+      shiftKey: true,
+      bubbles: true,
+    }));
+
+    await nextTick();
+
+    // Check that table was inserted
+    const updatedValue = wrapper.emitted('update:modelValue')?.[0]?.[0] as string;
+    expect(updatedValue).toContain('| Header 1 | Header 2 | Header 3 |');
+    expect(updatedValue).toContain('|----------|----------|----------|');
+    expect(updatedValue).toContain('| Cell 1   | Cell 2   | Cell 3   |');
+    expect(updatedValue).toContain('Some existing content');
+  });
+
+  it('should insert table when table button is clicked', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    // Find and click the table button
+    const tableButton = wrapper.find('button[aria-label*="Table"]');
+    expect(tableButton.exists()).toBe(true);
+    
+    await tableButton.trigger('click');
+    await nextTick();
+
+    // Check that table template was inserted
+    const updatedValue = wrapper.emitted('update:modelValue')?.[0]?.[0] as string;
+    expect(updatedValue).toMatch(/\| Header 1 \| Header 2 \| Header 3 \|/);
+    expect(updatedValue).toMatch(/\|[-\s|]+\|/); // Separator row
+    expect(updatedValue).toContain('Cell 1');
+  });
+
+  it('should position cursor at first header cell after insertion', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: '',
+      },
+    });
+
+    const textarea = wrapper.find('textarea').element as HTMLTextAreaElement;
+    
+    // Trigger table insertion
+    const tableButton = wrapper.find('button[aria-label*="Table"]');
+    await tableButton.trigger('click');
+    await nextTick();
+
+    // Wait a tick for cursor positioning
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Check selection
+    const selectedText = textarea.value.substring(
+      textarea.selectionStart,
+      textarea.selectionEnd
+    );
+    expect(selectedText).toBe('Header 1');
+  });
+
+  it('should insert table at cursor position', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: 'Before\n\nAfter',
+      },
+    });
+
+    const textarea = wrapper.find('textarea').element as HTMLTextAreaElement;
+    
+    // Position cursor between "Before" and "After"
+    textarea.setSelectionRange(7, 7); // After "Before\n"
+    
+    // Insert table
+    const tableButton = wrapper.find('button[aria-label*="Table"]');
+    await tableButton.trigger('click');
+    await nextTick();
+
+    const updatedValue = wrapper.emitted('update:modelValue')?.[0]?.[0] as string;
+    
+    // Table should be between "Before" and "After"
+    expect(updatedValue.indexOf('Before')).toBeLessThan(
+      updatedValue.indexOf('| Header 1')
+    );
+    expect(updatedValue.indexOf('| Cell 4')).toBeLessThan(
+      updatedValue.indexOf('After')
+    );
+  });
+
+  it('should render table correctly in preview mode', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: `
+| Name | Email | Role |
+|------|-------|------|
+| John | j@e.c | Admin |
+| Jane | ja@e.c| User |
+`,
+      },
+    });
+
+    // Switch to preview mode
+    const previewButton = wrapper.find('button:has-text("Preview")');
+    await previewButton.trigger('click');
+    await nextTick();
+
+    const preview = wrapper.find('[v-html]');
+    const html = preview.html();
+    
+    // Should render as HTML table
+    expect(html).toContain('<table');
+    expect(html).toContain('<thead');
+    expect(html).toContain('<tbody');
+    expect(html).toContain('<th>Name</th>');
+    expect(html).toContain('<td>John</td>');
+  });
+
+  it('should handle table with special characters', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: `
+| Name | Status |
+|------|--------|
+| Test | ✓ Done |
+`,
+      },
+    });
+
+    await wrapper.find('button:has-text("Preview")').trigger('click');
+    await nextTick();
+
+    const html = wrapper.find('[v-html]').html();
+    expect(html).toContain('✓ Done');
+  });
+
+  it('should support inline markdown in table cells', async () => {
+    const wrapper = mount(MarkdownEditor, {
+      props: {
+        modelValue: `
+| Feature | Status |
+|---------|--------|
+| **Bold** | *Italic* |
+| \`code\` | [link](url) |
+`,
+      },
+    });
+
+    await wrapper.find('button:has-text("Preview")').trigger('click');
+    await nextTick();
+
+    const html = wrapper.find('[v-html]').html();
+    expect(html).toContain('<strong>Bold</strong>');
+    expect(html).toContain('<em>Italic</em>');
+    expect(html).toContain('<code>code</code>');
+    expect(html).toContain('<a href="url">link</a>');
+  });
+});
+```

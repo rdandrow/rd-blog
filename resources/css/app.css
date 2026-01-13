@@ -225,6 +225,70 @@
     padding: 0.5rem !important;
 }
 
+/* Markdown table wrapper for responsive scrolling */
+.prose :where(table):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Markdown table styling */
+.prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+    min-width: 100%;
+}
+
+.prose table thead {
+    border-bottom: 2px solid var(--color-border);
+}
+
+.prose table th {
+    padding: 0.75rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid hsl(0 0% 85%);
+    background-color: hsl(0 0% 94%);
+    white-space: nowrap;
+}
+
+.dark .prose table th {
+    background-color: hsl(220 13% 22%);
+    border-color: hsl(220 13% 35%);
+}
+
+.prose table td {
+    padding: 0.75rem 0.75rem;
+    border: 1px solid hsl(0 0% 85%);
+    max-width: 300px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.dark .prose table td {
+    border-color: hsl(220 13% 35%);
+}
+
+.prose table tbody tr:nth-child(even) {
+    background-color: hsl(0 0% 97%);
+}
+
+.dark .prose table tbody tr:nth-child(even) {
+    background-color: hsl(220 13% 13%);
+}
+
+.prose table tbody tr:hover {
+    background-color: hsl(220 13% 91%);
+}
+
+.dark .prose table tbody tr:hover {
+    background-color: hsl(220 13% 26%);
+}
+
 /* Shared utility classes - extracted from components for reusability */
 @layer utilities {
     /* Line clamp utilities - used across blog components */
