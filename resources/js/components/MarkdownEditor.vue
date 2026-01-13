@@ -101,41 +101,70 @@ const validateMarkdownContent = (content: string): string[] => {
   const warnings: string[] = [];
   const lines = content.split('\n');
   
-  // Check for unclosed code blocks
+  // First, remove code blocks from validation to avoid false positives
+  let contentWithoutCodeBlocks = content;
+  const codeBlockRegex = /```[\s\S]*?```/g;
+  const inlineCodeRegex = /`[^`]+`/g;
+  
+  // Extract code blocks to check if they're closed
   const codeBlockMatches = content.match(/```/g);
   if (codeBlockMatches && codeBlockMatches.length % 2 !== 0) {
     warnings.push('Unclosed code block detected');
   }
   
-  // Check for unclosed emphasis/bold
-  const boldMatches = content.match(/\*\*/g);
+  // Remove code blocks and inline code for other validations
+  contentWithoutCodeBlocks = contentWithoutCodeBlocks.replace(codeBlockRegex, '');
+  contentWithoutCodeBlocks = contentWithoutCodeBlocks.replace(inlineCodeRegex, '');
+  
+  // Check for unclosed emphasis/bold (only outside code blocks)
+  const boldMatches = contentWithoutCodeBlocks.match(/\*\*/g);
   if (boldMatches && boldMatches.length % 2 !== 0) {
     warnings.push('Unclosed bold formatting (**) detected');
   }
   
-  const italicMatches = content.match(/(?<!\*)\*(?!\*)/g);
-  if (italicMatches && italicMatches.length % 2 !== 0) {
-    warnings.push('Unclosed italic formatting (*) detected');
+  // More lenient italic check - only warn if there's a clear markdown italic pattern
+  // that's unclosed (e.g., *text at start or end of line without closing)
+  const italicPattern = /(?:^|\s)\*[^\s*][^*]*\*(?:\s|$)/gm;
+  const potentialItalics = contentWithoutCodeBlocks.match(/\*/g);
+  if (potentialItalics && potentialItalics.length % 2 !== 0) {
+    // Only warn if it looks like intentional italic formatting
+    const lineWithUnmatchedItalic = contentWithoutCodeBlocks.split('\n').find(line => {
+      const asterisks = line.match(/\*/g);
+      return asterisks && asterisks.length % 2 !== 0 && line.match(/(?:^|\s)\*\w/);
+    });
+    if (lineWithUnmatchedItalic) {
+      warnings.push('Possible unclosed italic formatting (*) detected');
+    }
   }
   
-  // Check for malformed links
-  const malformedLinks = content.match(/\[[^\]]*\]\([^)]*$/gm);
+  // Check for malformed links (only outside code blocks)
+  const malformedLinks = contentWithoutCodeBlocks.match(/\[[^\]]*\]\([^)]*$/gm);
   if (malformedLinks && malformedLinks.length > 0) {
     warnings.push('Incomplete link formatting detected');
   }
   
-  // Check for malformed headers
+  // Check for malformed headers (these are always line-based, so code blocks don't affect them)
   lines.forEach((line, index) => {
+    // Skip lines that are inside code blocks
+    if (line.trim().startsWith('```')) return;
+    
     if (line.match(/^#{7,}/)) {
       warnings.push(`Invalid header level on line ${index + 1} (max 6 # allowed)`);
     }
-    if (line.match(/^#+[^\s]/)) {
+    if (line.match(/^#+[^\s#]/)) {
       warnings.push(`Missing space after # on line ${index + 1}`);
     }
   });
   
-  // Check for malformed lists
+  // Check for malformed lists (skip code block lines)
+  let inCodeBlock = false;
   lines.forEach((line, index) => {
+    if (line.trim().startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      return;
+    }
+    if (inCodeBlock) return;
+    
     // Check for numbered lists with invalid format
     if (line.match(/^\s*\d+[^\.\s]/)) {
       warnings.push(`Invalid numbered list format on line ${index + 1} (missing period and space)`);
@@ -147,8 +176,16 @@ const validateMarkdownContent = (content: string): string[] => {
     }
   });
   
-  // Check for inconsistent list markers
-  const bulletLines = lines.filter(line => line.match(/^\s*[-*+]\s+/));
+  // Check for inconsistent list markers (skip code blocks)
+  const bulletLines = lines.filter((line, index) => {
+    // Skip if in code block
+    const linesBeforeCurrent = lines.slice(0, index);
+    const codeBlockStartCount = linesBeforeCurrent.filter(l => l.trim().startsWith('```')).length;
+    const isInCodeBlock = codeBlockStartCount % 2 !== 0;
+    
+    return !isInCodeBlock && line.match(/^\s*[-*+]\s+/);
+  });
+  
   if (bulletLines.length > 1) {
     const markers = bulletLines.map(line => line.match(/^\s*([-*+])/)?.[1]);
     const uniqueMarkers = new Set(markers);
@@ -385,6 +422,13 @@ const switchToPreview = () => {
   renderMarkdown();
 };
 
+// Function to handle switching back to write mode
+const switchToWrite = () => {
+  tab.value = 'write';
+  // Clear validation warnings when switching to write mode
+  validationWarnings.value = [];
+};
+
 watch(() => props.modelValue, (v) => {
   value.value = v;
   if (tab.value === 'preview') {
@@ -542,7 +586,7 @@ onUnmounted(() => {
           'px-3 py-1.5 text-sm -mb-px border-b-2',
           tab === 'write' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'
         ]"
-        @click="tab = 'write'"
+        @click="switchToWrite"
       >
         Write
       </button>
