@@ -698,7 +698,7 @@ onUnmounted(() => {
     <!-- Preview -->
     <div
       v-else
-      class="prose prose-sm max-w-none bg-muted/30 border border-border rounded-md p-4 text-foreground relative"
+      class="prose prose-sm max-w-none bg-muted/30 border border-border rounded-md p-4 text-foreground relative prose-headings:text-foreground prose-h1:text-foreground prose-h2:text-foreground prose-h3:text-foreground prose-h4:text-foreground prose-h5:text-foreground prose-h6:text-foreground prose-a:text-foreground prose-strong:text-foreground"
     >
       <!-- Loading indicator -->
       <div v-if="isRendering" class="absolute top-2 right-2 flex items-center gap-1 text-xs text-muted-foreground">
