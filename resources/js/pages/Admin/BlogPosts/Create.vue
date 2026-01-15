@@ -3,7 +3,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { ref, onMounted, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ErrorDisplay from '@/components/ErrorDisplay.vue';
-import MarkdownEditor from '@/components/MarkdownEditor.vue';
+import ExpandableMarkdownEditor from '@/components/ExpandableMarkdownEditor.vue';
 import { 
   useImageValidation, 
   useFormValidation, 
@@ -288,7 +288,7 @@ const submit = async () => {
   <Head title="Create Blog Post" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="max-w-4xl mx-auto">
+    <div class="mx-auto" style="width: 896px; max-width: 100%;">
       <div class="mb-6">
         <div class="flex items-center justify-between">
           <div>
@@ -396,7 +396,7 @@ const submit = async () => {
 
           <!-- Content (Markdown) -->
           <div>
-            <MarkdownEditor
+            <ExpandableMarkdownEditor
               v-model="form.content"
               label="Content"
               placeholder="Write your post content in Markdown..."
