@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useMarkdown } from '@/composables/useMarkdown';
 
 interface Props {
@@ -41,6 +41,16 @@ const isDraggingOver = ref(false);
 // Keyboard navigation state
 const focusedButtonIndex = ref(-1);
 const toolbarRef = ref<HTMLElement | null>(null);
+
+// Character and word count
+const characterCount = computed(() => value.value.length);
+const wordCount = computed(() => {
+  const text = value.value.trim();
+  if (!text) return 0;
+  // Split by whitespace and filter out empty strings
+  return text.split(/\s+/).filter(word => word.length > 0).length;
+});
+const maxCharacters = 50000;
 
 // Enhanced debounce function with cancel capability
 const debounce = <T extends (...args: any[]) => any>(
@@ -896,6 +906,7 @@ onUnmounted(() => {
         ref="textareaRef"
         v-model="value"
         :rows="rows"
+        maxlength="50000"
         :class="[
           'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-y',
           isDraggingOver && 'ring-2 ring-primary'
@@ -950,6 +961,23 @@ onUnmounted(() => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         <p class="text-sm">Start typing to see your markdown preview</p>
+      </div>
+    </div>
+
+    <!-- Character and word count -->
+    <div class="mt-2 flex items-center justify-between text-xs">
+      <div class="text-muted-foreground">
+        {{ wordCount.toLocaleString() }} {{ wordCount === 1 ? 'word' : 'words' }}
+      </div>
+      <div 
+        :class="[
+          'font-medium',
+          characterCount > maxCharacters * 0.95 ? 'text-destructive' : 
+          characterCount > maxCharacters * 0.9 ? 'text-amber-600' : 
+          'text-muted-foreground'
+        ]"
+      >
+        {{ characterCount.toLocaleString() }} / {{ maxCharacters.toLocaleString() }} characters
       </div>
     </div>
 
