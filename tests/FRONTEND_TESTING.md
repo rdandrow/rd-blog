@@ -42,12 +42,18 @@ The following aspects require a JavaScript testing framework (Vitest recommended
    - Draft clearing on form submission
    - Timestamp management
    - Reactive state updates (`lastSavedText`, `lastSavedAt`)
+   - **CRITICAL: Form data reactivity** - Ensure current form state is saved, not initial snapshot
+     - Fixed bug: Composable now accepts `ComputedRef` or `Ref` for reactive form data
+     - Previously saved only the initial form state due to passing `.value` instead of ref
+     - Must test that changes to form fields are captured in auto-save
 
 2. **Component Integration**
    - Create.vue auto-save integration
    - Edit.vue auto-save integration with post-specific keys
    - Draft recovery banner display logic
    - User interactions (Restore/Dismiss buttons)
+   - **Restore draft applies all saved field values correctly**
+   - Draft data persists across page refreshes
 
 3. **Markdown Editor Component** (`resources/js/components/MarkdownEditor.vue`)
    - Tab switching behavior (Write/Preview)

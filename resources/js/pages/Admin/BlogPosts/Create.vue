@@ -80,7 +80,7 @@ const {
   startAutoSave,
   stopAutoSave,
   getLastSavedText
-} = useAutoSave('blog-post-create-draft', formDataForAutoSave.value, 30000);
+} = useAutoSave('blog-post-create-draft', formDataForAutoSave, 30000);
 
 const addTag = () => {
   tagInput.value = addTagToList(tagInput.value, form.tags);

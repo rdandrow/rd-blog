@@ -144,7 +144,7 @@ const {
   startAutoSave,
   stopAutoSave,
   getLastSavedText
-} = useAutoSave(`blog-post-edit-draft-${props.post.id}`, formDataForAutoSave.value, 30000);
+} = useAutoSave(`blog-post-edit-draft-${props.post.id}`, formDataForAutoSave, 30000);
 
 const addTag = () => {
   tagInput.value = addTagToList(tagInput.value, form.tags);

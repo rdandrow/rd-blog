@@ -1,14 +1,26 @@
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted, ComputedRef, Ref } from 'vue';
 
 interface AutoSaveData {
   timestamp: number;
   data: Record<string, any>;
 }
 
-export const useAutoSave = (storageKey: string, formData: Record<string, any>, intervalMs: number = 30000) => {
+type FormDataSource = Record<string, any> | Ref<Record<string, any>> | ComputedRef<Record<string, any>>;
+
+export const useAutoSave = (storageKey: string, formData: FormDataSource, intervalMs: number = 30000) => {
   const lastSaved = ref<Date | null>(null);
   const hasDraft = ref(false);
   let autoSaveInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Helper to get the current form data value
+  const getFormData = (): Record<string, any> => {
+    // Handle computed refs and regular refs
+    if ('value' in formData) {
+      return formData.value;
+    }
+    // Handle plain objects
+    return formData;
+  };
 
   // Check for existing draft on mount
   const checkForDraft = (): AutoSaveData | null => {
@@ -35,9 +47,10 @@ export const useAutoSave = (storageKey: string, formData: Record<string, any>, i
   // Save draft to localStorage
   const saveDraft = () => {
     try {
+      const currentData = getFormData();
       const dataToSave: AutoSaveData = {
         timestamp: Date.now(),
-        data: { ...formData }
+        data: { ...currentData }
       };
       localStorage.setItem(storageKey, JSON.stringify(dataToSave));
       lastSaved.value = new Date();
@@ -73,8 +86,9 @@ export const useAutoSave = (storageKey: string, formData: Record<string, any>, i
     if (autoSaveInterval) return;
 
     autoSaveInterval = setInterval(() => {
+      const currentData = getFormData();
       // Only save if there's content
-      const hasContent = Object.values(formData).some(value => {
+      const hasContent = Object.values(currentData).some(value => {
         if (typeof value === 'string') return value.trim().length > 0;
         if (Array.isArray(value)) return value.length > 0;
         return value != null;
