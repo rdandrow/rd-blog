@@ -7,7 +7,14 @@ interface AutoSaveData {
 
 type FormDataSource = Record<string, any> | Ref<Record<string, any>> | ComputedRef<Record<string, any>>;
 
-export const useAutoSave = (storageKey: string, formData: FormDataSource, intervalMs: number = 30000) => {
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+export const useAutoSave = (
+  storageKey: string, 
+  formData: FormDataSource, 
+  intervalMs: number = 30000,
+  expirationMs: number = SEVEN_DAYS_MS
+) => {
   const lastSaved = ref<Date | null>(null);
   const hasDraft = ref(false);
   let autoSaveInterval: ReturnType<typeof setInterval> | null = null;
@@ -29,9 +36,9 @@ export const useAutoSave = (storageKey: string, formData: FormDataSource, interv
       const savedData = localStorage.getItem(storageKey);
       if (savedData) {
         const parsed: AutoSaveData = JSON.parse(savedData);
-        // Check if draft is less than 7 days old
-        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-        if (parsed.timestamp > sevenDaysAgo) {
+        // Check if draft is within expiration time
+        const expirationThreshold = Date.now() - expirationMs;
+        if (parsed.timestamp > expirationThreshold) {
           return parsed;
         } else {
           // Remove stale draft
