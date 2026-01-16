@@ -138,7 +138,6 @@ const formDataForAutoSave = computed(() => ({
 
 const {
   lastSaved,
-  hasDraft,
   restoreDraft,
   clearDraft,
   startAutoSave,

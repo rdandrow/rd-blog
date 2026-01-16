@@ -139,7 +139,6 @@ const validateMarkdownContent = (content: string): string[] => {
   
   // More lenient italic check - only warn if there's a clear markdown italic pattern
   // that's unclosed (e.g., *text at start or end of line without closing)
-  const italicPattern = /(?:^|\s)\*[^\s*][^*]*\*(?:\s|$)/gm;
   const potentialItalics = contentWithoutCodeBlocks.match(/\*/g);
   if (potentialItalics && potentialItalics.length % 2 !== 0) {
     // Only warn if it looks like intentional italic formatting
