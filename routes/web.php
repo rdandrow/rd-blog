@@ -25,23 +25,31 @@ Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 // Blog Post Management Routes (Admin)
 Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
+    
     // Image upload for markdown content
     Route::post('blog-posts/upload-image', [BlogPostController::class, 'uploadImage'])
         ->middleware('throttle:20,1')
         ->name('blog-posts.upload-image');
-    // Rate limit blog post creation and updates to prevent abuse
+    
+    // Blog post resource routes with selective rate limiting
+    Route::resource('blog-posts', BlogPostController::class)
+        ->only(['index', 'create', 'show', 'edit', 'destroy'])
+        ->names([
+            'index' => 'blog-posts.index',
+            'create' => 'blog-posts.create',
+            'show' => 'blog-posts.show',
+            'edit' => 'blog-posts.edit',
+            'destroy' => 'blog-posts.destroy',
+        ]);
+    
+    // Rate-limited create and update routes
     Route::post('blog-posts', [BlogPostController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('blog-posts.store');
+    
     Route::match(['put', 'patch'], 'blog-posts/{blog_post}', [BlogPostController::class, 'update'])
         ->middleware('throttle:10,1')
         ->name('blog-posts.update');
-    // Other blog post routes without rate limiting
-    Route::get('blog-posts', [BlogPostController::class, 'index'])->name('blog-posts.index');
-    Route::get('blog-posts/create', [BlogPostController::class, 'create'])->name('blog-posts.create');
-    Route::get('blog-posts/{blog_post}', [BlogPostController::class, 'show'])->name('blog-posts.show');
-    Route::get('blog-posts/{blog_post}/edit', [BlogPostController::class, 'edit'])->name('blog-posts.edit');
-    Route::delete('blog-posts/{blog_post}', [BlogPostController::class, 'destroy'])->name('blog-posts.destroy');
 });
 
 // User Management Routes (Master Admin Only)
