@@ -601,8 +601,10 @@ const makeH3 = () => makeHeader(3);
 
 // Image upload functionality
 const uploadImage = async (file: File): Promise<void> => {
-  if (!file.type.startsWith('image/')) {
-    uploadProgress.value = 'Error: Only image files are allowed';
+  // Validate file type - must match backend accepted formats
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    uploadProgress.value = 'Error: Only JPEG, PNG, GIF, and WebP images are allowed';
     setTimeout(() => uploadProgress.value = '', 3000);
     return;
   }
