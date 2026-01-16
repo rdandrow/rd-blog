@@ -429,7 +429,7 @@ const submit = async () => {
   <Head title="Edit Blog Post" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="mx-auto" style="width: 896px; max-width: 100%;">
+    <div class="mx-auto max-w-form">
       <div class="mb-6">
         <div class="flex items-center justify-between">
           <div>
