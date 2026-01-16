@@ -6,6 +6,7 @@ import python from 'highlight.js/lib/languages/python';
 import php from 'highlight.js/lib/languages/php';
 import bash from 'highlight.js/lib/languages/bash';
 import ruby from 'highlight.js/lib/languages/ruby';
+import { MAX_BLOG_POST_CHARACTERS } from '@/constants/editor';
 
 // Register languages
 hljs.registerLanguage('javascript', javascript);
@@ -60,10 +61,10 @@ export const useMarkdown = () => {
       const inputContent = String(content ?? '');
       
       // Validate input before processing
-      if (inputContent.length > 50000) {
+      if (inputContent.length > MAX_BLOG_POST_CHARACTERS) {
         return `<div class="text-amber-600 p-4 border border-amber-200 bg-amber-50 rounded">
           <p class="font-medium">Content Too Large</p>
-          <p class="text-sm">Content exceeds 50,000 characters. Please reduce the size for better performance.</p>
+          <p class="text-sm">Content exceeds ${MAX_BLOG_POST_CHARACTERS.toLocaleString()} characters. Please reduce the size for better performance.</p>
         </div>`;
       }
       

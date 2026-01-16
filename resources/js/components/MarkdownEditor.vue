@@ -50,7 +50,9 @@ const wordCount = computed(() => {
   // Split by whitespace and filter out empty strings
   return text.split(/\s+/).filter(word => word.length > 0).length;
 });
-const maxCharacters = 50000;
+
+import { MAX_BLOG_POST_CHARACTERS } from '@/constants/editor';
+const maxCharacters = MAX_BLOG_POST_CHARACTERS;
 
 // Enhanced debounce function with cancel capability
 const debounce = <T extends (...args: any[]) => any>(

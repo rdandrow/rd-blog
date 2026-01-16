@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import MarkdownEditor from './MarkdownEditor.vue';
 import { useMarkdown } from '@/composables/useMarkdown';
+import { MAX_BLOG_POST_CHARACTERS } from '@/constants/editor';
 
 interface Props {
   modelValue: string;
@@ -149,13 +150,13 @@ onUnmounted(() => {
               <textarea
                 v-model="localValue"
                 :rows="rows"
-                maxlength="50000"
+                :maxlength="MAX_BLOG_POST_CHARACTERS"
                 class="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-y font-mono text-sm"
                 :placeholder="placeholder"
               ></textarea>
               <div class="flex justify-between text-xs text-muted-foreground">
                 <span>{{ localValue.trim() ? localValue.trim().split(/\s+/).filter(w => w.length > 0).length : 0 }} words</span>
-                <span>{{ localValue.length.toLocaleString() }} / 50,000 characters</span>
+                <span>{{ localValue.length.toLocaleString() }} / {{ MAX_BLOG_POST_CHARACTERS.toLocaleString() }} characters</span>
               </div>
             </div>
 
@@ -209,7 +210,7 @@ onUnmounted(() => {
               <span>{{ viewMode === 'tab' ? 'Split View' : 'Tab View' }}</span>
             </button>
             <div class="text-sm text-muted-foreground">
-              {{ localValue.length.toLocaleString() }} / 50,000
+              {{ localValue.length.toLocaleString() }} / {{ MAX_BLOG_POST_CHARACTERS.toLocaleString() }}
             </div>
           </div>
         </div>
@@ -234,13 +235,13 @@ onUnmounted(() => {
               <div class="text-sm font-medium text-foreground mb-3 flex-shrink-0">Editor</div>
               <textarea
                 v-model="localValue"
-                maxlength="50000"
+                :maxlength="MAX_BLOG_POST_CHARACTERS"
                 class="flex-1 w-full px-4 py-3 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none font-mono text-sm min-h-0"
                 :placeholder="placeholder"
               ></textarea>
               <div class="mt-2 flex justify-between text-xs text-muted-foreground flex-shrink-0">
                 <span>{{ localValue.trim() ? localValue.trim().split(/\s+/).filter(w => w.length > 0).length : 0 }} words</span>
-                <span>{{ localValue.length.toLocaleString() }} / 50,000 characters</span>
+                <span>{{ localValue.length.toLocaleString() }} / {{ MAX_BLOG_POST_CHARACTERS.toLocaleString() }} characters</span>
               </div>
             </div>
 
