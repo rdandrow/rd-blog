@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import { MAX_IMAGE_FILE_SIZE, ALLOWED_IMAGE_TYPES } from '@/constants/editor';
 
 // Debug flag - set to false for production
 const DEBUG_VALIDATION = import.meta.env.DEV || false;
@@ -8,14 +9,11 @@ export const useImageValidation = () => {
   const imagePreview = ref<string | null>(null);
 
   const validateImageFile = (file: File): void => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('Invalid file type. Please select a JPEG, PNG, JPG, GIF, or WebP image.');
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type as any)) {
+      throw new Error('Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.');
     }
     
-    if (file.size > maxSize) {
+    if (file.size > MAX_IMAGE_FILE_SIZE) {
       throw new Error('File size too large. Please select an image smaller than 2MB.');
     }
   };

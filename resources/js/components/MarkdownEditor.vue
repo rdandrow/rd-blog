@@ -51,7 +51,7 @@ const wordCount = computed(() => {
   return text.split(/\s+/).filter(word => word.length > 0).length;
 });
 
-import { MAX_BLOG_POST_CHARACTERS } from '@/constants/editor';
+import { MAX_BLOG_POST_CHARACTERS, MAX_IMAGE_FILE_SIZE, ALLOWED_IMAGE_TYPES } from '@/constants/editor';
 const maxCharacters = MAX_BLOG_POST_CHARACTERS;
 
 // Enhanced debounce function with cancel capability
@@ -604,14 +604,13 @@ const makeH3 = () => makeHeader(3);
 // Image upload functionality
 const uploadImage = async (file: File): Promise<void> => {
   // Validate file type - must match backend accepted formats
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  if (!allowedTypes.includes(file.type)) {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type as any)) {
     uploadProgress.value = 'Error: Only JPEG, PNG, GIF, and WebP images are allowed';
     setTimeout(() => uploadProgress.value = '', 3000);
     return;
   }
 
-  if (file.size > 2048 * 1024) { // 2MB
+  if (file.size > MAX_IMAGE_FILE_SIZE) {
     uploadProgress.value = 'Error: Image must be less than 2MB';
     setTimeout(() => uploadProgress.value = '', 3000);
     return;
