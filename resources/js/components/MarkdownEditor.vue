@@ -144,17 +144,17 @@ const validateMarkdownContent = (content: string): string[] => {
   let contentWithoutLists = contentWithoutCodeBlocks;
   contentWithoutLists = contentWithoutLists.replace(/^\s*[-*+]\s+/gm, ''); // Remove list markers
   
-  // Now check for unclosed italic formatting
-  // Look for asterisks that are clearly used for emphasis (surrounded by word characters)
-  // Pattern: *word* should have pairs, but *word without closing should warn
-  const italicAsterisks = contentWithoutLists.match(/\*/g);
-  if (italicAsterisks && italicAsterisks.length % 2 !== 0) {
-    // Only warn if there's a pattern that looks like intentional italic emphasis
-    // e.g., *word or word* but not * alone
-    const hasItalicPattern = contentWithoutLists.match(/\*\w+|\w+\*/);
-    if (hasItalicPattern) {
-      warnings.push('Possible unclosed italic formatting (*) detected');
-    }
+  // Count properly paired italic patterns (single asterisk pairs, not bold)
+  const pairedItalics = contentWithoutLists.match(/\*(?!\*)([^*]+?)\*/g);
+  const pairedCount = pairedItalics ? pairedItalics.length * 2 : 0;
+  
+  // Count all remaining single asterisks (not part of bold **)
+  const allSingleAsterisks = contentWithoutLists.match(/(?<!\*)\*(?!\*)/g);
+  const totalSingleAsterisks = allSingleAsterisks ? allSingleAsterisks.length : 0;
+  
+  // If there are unpaired single asterisks, warn
+  if (totalSingleAsterisks > pairedCount) {
+    warnings.push('Possible unclosed italic formatting (*) detected');
   }
   
   // Check for malformed links (only outside code blocks)
