@@ -918,7 +918,7 @@ onUnmounted(() => {
         ref="textareaRef"
         v-model="value"
         :rows="rows"
-        maxlength="50000"
+        :maxlength="maxCharacters"
         :class="[
           'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-y',
           isDraggingOver && 'ring-2 ring-primary'
