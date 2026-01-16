@@ -642,14 +642,27 @@ const uploadImage = async (file: File): Promise<void> => {
       let errorMessage = 'Upload failed';
       try {
         const error = await response.json();
-        errorMessage = error.error || error.message || errorMessage;
-        // Handle validation errors
-        if (error.errors && typeof error.errors === 'object') {
-          const firstError = Object.values(error.errors)[0];
-          errorMessage = Array.isArray(firstError) ? firstError[0] : String(firstError);
+        
+        // Validate that we received a valid error object
+        if (error && typeof error === 'object') {
+          // Try standard error message fields
+          errorMessage = error.error || error.message || errorMessage;
+          
+          // Handle validation errors (Laravel format)
+          if (error.errors && typeof error.errors === 'object') {
+            const errorValues = Object.values(error.errors);
+            if (errorValues.length > 0) {
+              const firstError = errorValues[0];
+              if (Array.isArray(firstError) && firstError.length > 0) {
+                errorMessage = String(firstError[0]);
+              } else if (firstError) {
+                errorMessage = String(firstError);
+              }
+            }
+          }
         }
       } catch {
-        // If JSON parsing fails, use status text
+        // If JSON parsing fails or any error occurs, use status text
         errorMessage = response.statusText || errorMessage;
       }
       throw new Error(errorMessage);
