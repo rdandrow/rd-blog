@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import MarkdownEditor from './MarkdownEditor.vue';
 import { useMarkdown } from '@/composables/useMarkdown';
 
@@ -53,23 +53,40 @@ const exitExpanded = () => {
   document.body.style.overflow = '';
 };
 
-// Handle Escape key to exit expanded mode
+// Handle keyboard shortcuts
 const handleKeydown = (e: KeyboardEvent) => {
+  // Escape key to exit expanded mode
   if (e.key === 'Escape' && isExpanded.value) {
+    e.preventDefault();
     exitExpanded();
+    return;
+  }
+  
+  // Ctrl/Cmd + Shift + S: Toggle split view
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    toggleViewMode();
+    return;
+  }
+  
+  // Ctrl/Cmd + Shift + E: Toggle expanded mode
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'e') {
+    e.preventDefault();
+    toggleExpanded();
+    return;
   }
 };
+
+// Add keyboard shortcuts listener on mount
+onMounted(() => {
+  document.addEventListener('keydown', handleKeydown);
+});
 
 // Cleanup on unmount
 onUnmounted(() => {
   document.body.style.overflow = '';
   document.removeEventListener('keydown', handleKeydown);
 });
-
-// Add escape key listener
-if (typeof window !== 'undefined') {
-  document.addEventListener('keydown', handleKeydown);
-}
 </script>
 
 <template>

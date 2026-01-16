@@ -274,6 +274,12 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
           makeTable();
         }
         break;
+      case 'q':
+        if (event.shiftKey) {
+          event.preventDefault();
+          makeQuote();
+        }
+        break;
     }
   }
 };
@@ -554,6 +560,7 @@ const makeCodeBlock = () => replaceSelection('\n```javascript\n', '\n```\n', 'co
 const makeLink = () => replaceSelection('[', '](https://)', 'link-text');
 const makeBulletedList = () => wrapLines('- ');
 const makeNumberedList = () => wrapLines('1. ', true);
+const makeQuote = () => wrapLines('> ');
 
 const makeTable = async () => {
   const el = textareaRef.value;
@@ -726,17 +733,18 @@ const handleDrop = async (event: DragEvent) => {
 
 // Toolbar button definitions for keyboard navigation
 const toolbarButtons = [
-  { action: makeH1, label: 'Heading 1', shortcut: 'Ctrl+1', category: 'headers' },
-  { action: makeH2, label: 'Heading 2', shortcut: 'Ctrl+2', category: 'headers' },
-  { action: makeH3, label: 'Heading 3', shortcut: 'Ctrl+3', category: 'headers' },
-  { action: makeBold, label: 'Bold', shortcut: 'Ctrl+B', category: 'format' },
-  { action: makeItalic, label: 'Italic', shortcut: 'Ctrl+I', category: 'format' },
-  { action: makeLink, label: 'Link', shortcut: 'Ctrl+K', category: 'format' },
-  { action: makeCodeInline, label: 'Inline Code', shortcut: 'Ctrl+`', category: 'format' },
-  { action: makeCodeBlock, label: 'Code Block', shortcut: 'Ctrl+Shift+`', category: 'format' },
-  { action: makeBulletedList, label: 'Bulleted List', shortcut: 'Ctrl+Shift+8', category: 'lists' },
-  { action: makeNumberedList, label: 'Numbered List', shortcut: 'Ctrl+Shift+7', category: 'lists' },
-  { action: makeTable, label: 'Table', shortcut: 'Ctrl+Shift+T', category: 'structure' },
+  { action: makeH1, label: 'Heading 1', shortcut: 'Ctrl/Cmd+1', category: 'headers' },
+  { action: makeH2, label: 'Heading 2', shortcut: 'Ctrl/Cmd+2', category: 'headers' },
+  { action: makeH3, label: 'Heading 3', shortcut: 'Ctrl/Cmd+3', category: 'headers' },
+  { action: makeBold, label: 'Bold', shortcut: 'Ctrl/Cmd+B', category: 'format' },
+  { action: makeItalic, label: 'Italic', shortcut: 'Ctrl/Cmd+I', category: 'format' },
+  { action: makeLink, label: 'Link', shortcut: 'Ctrl/Cmd+K', category: 'format' },
+  { action: makeCodeInline, label: 'Inline Code', shortcut: 'Ctrl/Cmd+`', category: 'format' },
+  { action: makeCodeBlock, label: 'Code Block', shortcut: 'Ctrl/Cmd+Shift+`', category: 'format' },
+  { action: makeBulletedList, label: 'Bulleted List', shortcut: 'Ctrl/Cmd+Shift+8', category: 'lists' },
+  { action: makeNumberedList, label: 'Numbered List', shortcut: 'Ctrl/Cmd+Shift+7', category: 'lists' },
+  { action: makeQuote, label: 'Quote', shortcut: 'Ctrl/Cmd+Shift+Q', category: 'format' },
+  { action: makeTable, label: 'Table', shortcut: 'Ctrl/Cmd+Shift+T', category: 'structure' },
 ];
 
 // Add keyboard event listeners
@@ -835,6 +843,7 @@ onUnmounted(() => {
           <span v-else-if="button.label === 'Link'">Link</span>
           <span v-else-if="button.label === 'Inline Code'">`code`</span>
           <span v-else-if="button.label === 'Code Block'">```</span>
+          <span v-else-if="button.label === 'Quote'">❝ Quote</span>
         </button>
       </div>
       
@@ -936,7 +945,7 @@ onUnmounted(() => {
     <!-- Preview -->
     <div
       v-else
-      class="prose prose-sm max-w-none bg-muted/30 border border-border rounded-md p-4 text-foreground relative prose-headings:text-foreground prose-h1:text-foreground prose-h2:text-foreground prose-h3:text-foreground prose-h4:text-foreground prose-h5:text-foreground prose-h6:text-foreground prose-a:text-foreground prose-strong:text-foreground"
+      class="prose prose-sm dark:prose-invert max-w-none bg-muted/30 border border-border rounded-md p-4 relative"
     >
       <!-- Loading indicator -->
       <div v-if="isRendering" class="absolute top-2 right-2 flex items-center gap-1 text-xs text-muted-foreground">
@@ -1014,7 +1023,7 @@ onUnmounted(() => {
           <div>
             <p class="font-medium text-foreground mb-1">Tips:</p>
             <ul class="ml-4 space-y-1">
-              <li>• Use <kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+T</kbd> to insert a template</li>
+              <li>• Use <kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+T</kbd> to insert a template</li>
               <li>• Pipes <code>|</code> separate columns</li>
               <li>• Second row defines the header separator</li>
               <li>• Alignment is optional (spaces for readability)</li>
@@ -1028,7 +1037,7 @@ onUnmounted(() => {
           <div>
             <p class="font-medium text-foreground mb-2">Upload images directly to your post:</p>
             <ul class="space-y-1 ml-4">
-              <li>• <kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+V</kbd> Paste images from your clipboard</li>
+              <li>• <kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+V</kbd> Paste images from your clipboard</li>
               <li>• Drag and drop image files into the editor</li>
               <li>• Add multiple images - each will be uploaded separately</li>
             </ul>
@@ -1068,29 +1077,36 @@ onUnmounted(() => {
         <div class="mt-2 text-xs bg-muted/30 p-3 rounded border">
           <div class="grid grid-cols-2 gap-x-4 gap-y-1 mb-3">
             <div class="font-medium text-foreground col-span-2 mb-1">Headers</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+1</kbd> Heading 1</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+2</kbd> Heading 2</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+3</kbd> Heading 3</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+1</kbd> Heading 1</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+2</kbd> Heading 2</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+3</kbd> Heading 3</div>
           </div>
           <div class="grid grid-cols-2 gap-x-4 gap-y-1 mb-3">
             <div class="font-medium text-foreground col-span-2 mb-1">Formatting</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+B</kbd> Bold</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+I</kbd> Italic</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+K</kbd> Link</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+`</kbd> Inline Code</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+B</kbd> Bold</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+I</kbd> Italic</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+K</kbd> Link</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+`</kbd> Inline Code</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+Q</kbd> Quote</div>
           </div>
           <div class="grid grid-cols-2 gap-x-4 gap-y-1 mb-3">
             <div class="font-medium text-foreground col-span-2 mb-1">Lists & Blocks</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+8</kbd> Bullet List</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+7</kbd> Number List</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+`</kbd> Code Block</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Shift+T</kbd> Table</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+8</kbd> Bullet List</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+7</kbd> Number List</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+`</kbd> Code Block</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+T</kbd> Table</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Enter</kbd> Continue List</div>
           </div>
           <div class="grid grid-cols-2 gap-x-4 gap-y-1">
             <div class="font-medium text-foreground col-span-2 mb-1">Navigation</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl+Tab</kbd> Focus Toolbar</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Tab</kbd> Focus Toolbar</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Arrow Keys</kbd> Navigate Toolbar</div>
+          </div>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-3">
+            <div class="font-medium text-foreground col-span-2 mb-1">View Modes</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+S</kbd> Toggle Split View</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+E</kbd> Toggle Expanded</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Esc</kbd> Exit Expanded</div>
           </div>
         </div>
       </details>
