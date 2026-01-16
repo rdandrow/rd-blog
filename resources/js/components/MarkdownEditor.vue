@@ -137,16 +137,20 @@ const validateMarkdownContent = (content: string): string[] => {
     warnings.push('Unclosed bold formatting (**) detected');
   }
   
-  // More lenient italic check - only warn if there's a clear markdown italic pattern
-  // that's unclosed (e.g., *text at start or end of line without closing)
-  const potentialItalics = contentWithoutCodeBlocks.match(/\*/g);
-  if (potentialItalics && potentialItalics.length % 2 !== 0) {
-    // Only warn if it looks like intentional italic formatting
-    const lineWithUnmatchedItalic = contentWithoutCodeBlocks.split('\n').find(line => {
-      const asterisks = line.match(/\*/g);
-      return asterisks && asterisks.length % 2 !== 0 && line.match(/(?:^|\s)\*\w/);
-    });
-    if (lineWithUnmatchedItalic) {
+  // Check for unclosed italic formatting, excluding list markers
+  // Remove list markers (*, -, +) at the start of lines to avoid false positives
+  let contentWithoutLists = contentWithoutCodeBlocks;
+  contentWithoutLists = contentWithoutLists.replace(/^\s*[-*+]\s+/gm, ''); // Remove list markers
+  
+  // Now check for unclosed italic formatting
+  // Look for asterisks that are clearly used for emphasis (surrounded by word characters)
+  // Pattern: *word* should have pairs, but *word without closing should warn
+  const italicAsterisks = contentWithoutLists.match(/\*/g);
+  if (italicAsterisks && italicAsterisks.length % 2 !== 0) {
+    // Only warn if there's a pattern that looks like intentional italic emphasis
+    // e.g., *word or word* but not * alone
+    const hasItalicPattern = contentWithoutLists.match(/\*\w+|\w+\*/);
+    if (hasItalicPattern) {
       warnings.push('Possible unclosed italic formatting (*) detected');
     }
   }
