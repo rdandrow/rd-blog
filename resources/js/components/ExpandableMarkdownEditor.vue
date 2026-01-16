@@ -36,13 +36,17 @@ const localValue = computed({
 const { render } = useMarkdown();
 const previewHtml = computed(() => render(localValue.value));
 
+/**
+ * Helper function to manage body overflow state
+ * Prevents background scrolling when editor is expanded
+ */
+const setBodyOverflow = (hidden: boolean) => {
+  document.body.style.overflow = hidden ? 'hidden' : '';
+};
+
 const toggleExpanded = () => {
   isExpanded.value = !isExpanded.value;
-  if (isExpanded.value) {
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.body.style.overflow = '';
-  }
+  setBodyOverflow(isExpanded.value);
 };
 
 const toggleViewMode = () => {
@@ -51,7 +55,7 @@ const toggleViewMode = () => {
 
 const exitExpanded = () => {
   isExpanded.value = false;
-  document.body.style.overflow = '';
+  setBodyOverflow(false);
 };
 
 // Handle keyboard shortcuts
@@ -85,7 +89,7 @@ onMounted(() => {
 
 // Cleanup on unmount
 onUnmounted(() => {
-  document.body.style.overflow = '';
+  setBodyOverflow(false);
   document.removeEventListener('keydown', handleKeydown);
 });
 </script>
