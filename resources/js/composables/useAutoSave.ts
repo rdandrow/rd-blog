@@ -11,6 +11,7 @@ export const useAutoSave = (storageKey: string, formData: FormDataSource, interv
   const lastSaved = ref<Date | null>(null);
   const hasDraft = ref(false);
   let autoSaveInterval: ReturnType<typeof setInterval> | null = null;
+  let lastSavedData: string | null = null;
 
   // Helper to get the current form data value
   const getFormData = (): Record<string, any> => {
@@ -52,7 +53,9 @@ export const useAutoSave = (storageKey: string, formData: FormDataSource, interv
         timestamp: Date.now(),
         data: { ...currentData }
       };
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+      const serialized = JSON.stringify(dataToSave);
+      localStorage.setItem(storageKey, serialized);
+      lastSavedData = JSON.stringify(currentData);
       lastSaved.value = new Date();
       hasDraft.value = true;
     } catch (error) {
@@ -65,6 +68,8 @@ export const useAutoSave = (storageKey: string, formData: FormDataSource, interv
     const draft = checkForDraft();
     if (draft) {
       hasDraft.value = true;
+      // Update lastSavedData to prevent immediate re-save
+      lastSavedData = JSON.stringify(draft.data);
       return draft.data;
     }
     return null;
@@ -76,6 +81,7 @@ export const useAutoSave = (storageKey: string, formData: FormDataSource, interv
       localStorage.removeItem(storageKey);
       hasDraft.value = false;
       lastSaved.value = null;
+      lastSavedData = null;
     } catch (error) {
       console.error('Error clearing draft:', error);
     }
@@ -84,6 +90,12 @@ export const useAutoSave = (storageKey: string, formData: FormDataSource, interv
   // Start auto-save interval
   const startAutoSave = () => {
     if (autoSaveInterval) return;
+
+    // Initialize lastSavedData with current form state to prevent immediate save
+    if (lastSavedData === null) {
+      const currentData = getFormData();
+      lastSavedData = JSON.stringify(currentData);
+    }
 
     autoSaveInterval = setInterval(() => {
       const currentData = getFormData();
@@ -95,7 +107,13 @@ export const useAutoSave = (storageKey: string, formData: FormDataSource, interv
       });
 
       if (hasContent) {
-        saveDraft();
+        // Check if data has changed since last save
+        const currentSerialized = JSON.stringify(currentData);
+        
+        // Only save if data is different from last saved state
+        if (currentSerialized !== lastSavedData) {
+          saveDraft();
+        }
       }
     }, intervalMs);
   };
