@@ -178,10 +178,6 @@ class BlogPostController extends Controller
             'image' => 'required|image|mimes:jpeg,png,gif,webp|max:2048',
         ]);
 
-        if (!$request->hasFile('image')) {
-            return response()->json(['error' => 'No image provided'], 400);
-        }
-
         try {
             $fullPath = $this->imageService->upload($request->file('image'));
             $url = asset($fullPath);

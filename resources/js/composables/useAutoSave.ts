@@ -17,6 +17,7 @@ export const useAutoSave = (
 ) => {
   const lastSaved = ref<Date | null>(null);
   const hasDraft = ref(false);
+  const error = ref<string | null>(null);
   let autoSaveInterval: ReturnType<typeof setInterval> | null = null;
   let lastSavedData: string | null = null;
 
@@ -39,15 +40,22 @@ export const useAutoSave = (
         // Check if draft is within expiration time
         const expirationThreshold = Date.now() - expirationMs;
         if (parsed.timestamp > expirationThreshold) {
+          error.value = null; // Clear any previous errors
           return parsed;
         } else {
           // Remove stale draft
           localStorage.removeItem(storageKey);
         }
       }
-    } catch (error) {
-      console.error('Error checking for draft:', error);
-      localStorage.removeItem(storageKey);
+    } catch (err) {
+      const errorMessage = 'Auto-save unavailable. Your changes may not be saved.';
+      error.value = errorMessage;
+      console.error('Error checking for draft:', err);
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {
+        // Silently fail cleanup if localStorage is completely unavailable
+      }
     }
     return null;
   };
@@ -65,8 +73,11 @@ export const useAutoSave = (
       lastSavedData = JSON.stringify(currentData);
       lastSaved.value = new Date();
       hasDraft.value = true;
-    } catch (error) {
-      console.error('Error saving draft:', error);
+      error.value = null; // Clear error on successful save
+    } catch (err) {
+      const errorMessage = 'Failed to auto-save. Please save your work manually.';
+      error.value = errorMessage;
+      console.error('Error saving draft:', err);
     }
   };
 
@@ -89,8 +100,10 @@ export const useAutoSave = (
       hasDraft.value = false;
       lastSaved.value = null;
       lastSavedData = null;
-    } catch (error) {
-      console.error('Error clearing draft:', error);
+      error.value = null; // Clear error when draft is cleared
+    } catch (err) {
+      // Clearing draft is not critical - don't set error state
+      console.error('Error clearing draft:', err);
     }
   };
 
@@ -158,6 +171,7 @@ export const useAutoSave = (
   });
 
   return {
+    error,
     lastSaved,
     hasDraft,
     checkForDraft,
