@@ -249,16 +249,24 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
         event.preventDefault();
         makeItalic();
         break;
+      case 'x':
+        if (event.shiftKey) {
+          event.preventDefault();
+          makeStrikethrough();
+        }
+        break;
       case 'k':
         event.preventDefault();
         makeLink();
         break;
-      case '`':
+      case 'e':
         event.preventDefault();
+        makeCodeInline();
+        break;
+      case 'c':
         if (event.shiftKey) {
+          event.preventDefault();
           makeCodeBlock();
-        } else {
-          makeCodeInline();
         }
         break;
       case '8':
@@ -279,7 +287,7 @@ const handleKeyboardShortcuts = (event: KeyboardEvent) => {
           makeTable();
         }
         break;
-      case 'q':
+      case '.':
         if (event.shiftKey) {
           event.preventDefault();
           makeQuote();
@@ -560,6 +568,7 @@ const wrapLines = async (prefix: string, ordered = false) => {
 // Toolbar actions
 const makeBold = () => replaceSelection('**', '**', 'bold');
 const makeItalic = () => replaceSelection('*', '*', 'italic');
+const makeStrikethrough = () => replaceSelection('~~', '~~', 'strikethrough');
 const makeCodeInline = () => replaceSelection('`', '`', 'code');
 const makeCodeBlock = () => replaceSelection('\n```javascript\n', '\n```\n', 'code');
 const makeLink = () => replaceSelection('[', '](https://)', 'link-text');
@@ -757,12 +766,13 @@ const toolbarButtons = [
   { action: makeH3, label: 'Heading 3', shortcut: 'Ctrl/Cmd+3', category: 'headers' },
   { action: makeBold, label: 'Bold', shortcut: 'Ctrl/Cmd+B', category: 'format' },
   { action: makeItalic, label: 'Italic', shortcut: 'Ctrl/Cmd+I', category: 'format' },
+  { action: makeStrikethrough, label: 'Strikethrough', shortcut: 'Ctrl/Cmd+Shift+X', category: 'format' },
   { action: makeLink, label: 'Link', shortcut: 'Ctrl/Cmd+K', category: 'format' },
-  { action: makeCodeInline, label: 'Inline Code', shortcut: 'Ctrl/Cmd+`', category: 'format' },
-  { action: makeCodeBlock, label: 'Code Block', shortcut: 'Ctrl/Cmd+Shift+`', category: 'format' },
+  { action: makeCodeInline, label: 'Inline Code', shortcut: 'Ctrl/Cmd+E', category: 'format' },
+  { action: makeCodeBlock, label: 'Code Block', shortcut: 'Ctrl/Cmd+Shift+C', category: 'format' },
   { action: makeBulletedList, label: 'Bulleted List', shortcut: 'Ctrl/Cmd+Shift+8', category: 'lists' },
   { action: makeNumberedList, label: 'Numbered List', shortcut: 'Ctrl/Cmd+Shift+7', category: 'lists' },
-  { action: makeQuote, label: 'Quote', shortcut: 'Ctrl/Cmd+Shift+Q', category: 'format' },
+  { action: makeQuote, label: 'Quote', shortcut: 'Ctrl/Cmd+Shift+.', category: 'format' },
   { action: makeTable, label: 'Table', shortcut: 'Ctrl/Cmd+Shift+T', category: 'structure' },
 ];
 
@@ -859,6 +869,7 @@ onUnmounted(() => {
         >
           <span v-if="button.label === 'Bold'" class="font-semibold">B</span>
           <span v-else-if="button.label === 'Italic'" class="italic">I</span>
+          <span v-else-if="button.label === 'Strikethrough'" class="line-through">S</span>
           <span v-else-if="button.label === 'Link'">Link</span>
           <span v-else-if="button.label === 'Inline Code'">`code`</span>
           <span v-else-if="button.label === 'Code Block'">```</span>
@@ -1104,15 +1115,16 @@ onUnmounted(() => {
             <div class="font-medium text-foreground col-span-2 mb-1">Formatting</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+B</kbd> Bold</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+I</kbd> Italic</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+X</kbd> Strikethrough</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+K</kbd> Link</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+`</kbd> Inline Code</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+Q</kbd> Quote</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+E</kbd> Inline Code</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+.</kbd> Quote</div>
           </div>
           <div class="grid grid-cols-2 gap-x-4 gap-y-1 mb-3">
             <div class="font-medium text-foreground col-span-2 mb-1">Lists & Blocks</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+8</kbd> Bullet List</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+7</kbd> Number List</div>
-            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+`</kbd> Code Block</div>
+            <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+C</kbd> Code Block</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Ctrl/Cmd+Shift+T</kbd> Table</div>
             <div><kbd class="px-1 py-0.5 bg-background rounded text-xs">Enter</kbd> Continue List</div>
           </div>

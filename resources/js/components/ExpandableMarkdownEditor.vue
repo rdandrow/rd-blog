@@ -68,14 +68,14 @@ const handleKeydown = (e: KeyboardEvent) => {
   }
   
   // Ctrl/Cmd + Shift + S: Toggle split view
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 's') {
     e.preventDefault();
     toggleViewMode();
     return;
   }
   
   // Ctrl/Cmd + Shift + E: Toggle expanded mode
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'e') {
     e.preventDefault();
     toggleExpanded();
     return;
