@@ -37,7 +37,7 @@ describe('Comment Creation', function () {
             ]));
     })->group('comments', 'creation', 'authenticated');
 
-    it('redirects guests to login when attempting to comment', function () {
+    it('redirects unauthenticated users to login when attempting to comment', function () {
         $response = $this->post(route('comments.store', $this->post->slug), [
             'content' => 'This is a test comment.',
         ]);
@@ -302,7 +302,7 @@ describe('Comment Deletion', function () {
         ]);
     })->with('admin_roles')->group('comments', 'deletion', 'admin');
 
-    it('redirects guests when attempting to delete comments', function () {
+    it('redirects unauthenticated users when attempting to delete comments', function () {
         $comment = Comment::factory()->create([
             'blog_post_id' => $this->post->id,
         ]);

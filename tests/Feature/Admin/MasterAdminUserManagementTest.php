@@ -46,13 +46,13 @@ describe('User Management Access Control', function () {
     })->with('unauthorized_for_master_admin')
       ->group('user-management', 'access-control', 'unauthorized');
 
-    it('redirects guests from admin users index', function () {
+    it('redirects unauthenticated users from admin users index', function () {
         expect($this->get(route('admin.users.admins')))->toRedirectToLogin();
-    })->group('user-management', 'access-control', 'guest');
+    })->group('user-management', 'access-control', 'unauthenticated');
 
-    it('redirects guests from member users index', function () {
+    it('redirects unauthenticated users from member users index', function () {
         expect($this->get(route('admin.users.members')))->toRedirectToLogin();
-    })->group('user-management', 'access-control', 'guest');
+    })->group('user-management', 'access-control', 'unauthenticated');
 });
 
 describe('Admin Users Listing', function () {
@@ -238,7 +238,7 @@ describe('User Creation', function () {
     })->with('unauthorized_for_master_admin')
       ->group('user-management', 'creation', 'unauthorized');
 
-    it('redirects guests from user creation', function () {
+    it('redirects unauthenticated users from user creation', function () {
         $response = $this->post(route('admin.users.store'), [
             'name' => 'New Member',
             'email' => 'newmember@test.com',
@@ -448,7 +448,7 @@ describe('Role Updates', function () {
     })->with('unauthorized_for_master_admin')
       ->group('user-management', 'role-updates', 'unauthorized');
 
-    it('redirects guests from role updates', function () {
+    it('redirects unauthenticated users from role updates', function () {
         $member = createTestMember();
         
         $response = $this->patch(route('admin.users.updateRole', $member), ['role' => 'admin']);
@@ -546,7 +546,7 @@ describe('User Deletion', function () {
     })->with('unauthorized_for_master_admin')
       ->group('user-management', 'deletion', 'unauthorized');
 
-    it('redirects guests from user deletion', function () {
+    it('redirects unauthenticated users from user deletion', function () {
         $member = createTestMember();
         
         $response = $this->delete(route('admin.users.destroy', $member));

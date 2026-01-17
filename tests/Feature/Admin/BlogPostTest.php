@@ -42,7 +42,7 @@ describe('Blog Post Listing', function () {
         expect($response)->toBeForbidden();
     })->group('blog-posts', 'listing', 'unauthorized');
 
-    it('redirects guests from blog post index', function () {
+    it('redirects unauthenticated users from blog post index', function () {
         $response = $this->get(route('admin.blog-posts.index'));
 
         expect($response)->toRedirectToLogin();

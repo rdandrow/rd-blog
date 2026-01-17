@@ -9,7 +9,7 @@
 use App\Models\User;
 
 describe('Dashboard Access', function () {
-    it('redirects guests to login page', function () {
+    it('redirects unauthenticated users to login page', function () {
         $response = $this->get(route('dashboard'));
         
         expect($response)->toRedirectToLogin();

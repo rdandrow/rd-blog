@@ -167,7 +167,7 @@ describe('Image Upload Authorization', function () {
         expect($response)->toBeForbidden();
     })->group('blog-posts', 'image-upload', 'authorization', 'denied');
 
-    it('redirects guests to login', function () {
+    it('redirects unauthenticated users to login', function () {
         $image = UploadedFile::fake()->image('test.jpg');
 
         $response = $this->post(route('admin.blog-posts.upload-image'), [
@@ -175,7 +175,7 @@ describe('Image Upload Authorization', function () {
         ]);
 
         expect($response)->toRedirectToLogin();
-    })->group('blog-posts', 'image-upload', 'authorization', 'guest');
+    })->group('blog-posts', 'image-upload', 'authorization', 'unauthenticated');
 });
 
 describe('Image Upload Rate Limiting', function () {
