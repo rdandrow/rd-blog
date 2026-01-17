@@ -175,7 +175,7 @@ class BlogPostController extends Controller
     public function uploadImage(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image' => 'required|image|mimes:jpeg,png,gif,webp|max:2048',
         ]);
 
         if (!$request->hasFile('image')) {

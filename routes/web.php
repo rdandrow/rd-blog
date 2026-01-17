@@ -33,14 +33,7 @@ Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')-
     
     // Blog post resource routes with selective rate limiting
     Route::resource('blog-posts', BlogPostController::class)
-        ->only(['index', 'create', 'show', 'edit', 'destroy'])
-        ->names([
-            'index' => 'blog-posts.index',
-            'create' => 'blog-posts.create',
-            'show' => 'blog-posts.show',
-            'edit' => 'blog-posts.edit',
-            'destroy' => 'blog-posts.destroy',
-        ]);
+        ->only(['index', 'create', 'show', 'edit', 'destroy']);
     
     // Rate-limited create and update routes
     Route::post('blog-posts', [BlogPostController::class, 'store'])

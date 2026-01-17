@@ -171,7 +171,7 @@ const validateMarkdownContent = (content: string): string[] => {
     if (line.match(/^#{7,}/)) {
       warnings.push(`Invalid header level on line ${index + 1} (max 6 # allowed)`);
     }
-    if (line.match(/^#+[^\s#]/)) {
+    if (line.match(/^#+\S/)) {
       warnings.push(`Missing space after # on line ${index + 1}`);
     }
   });
@@ -604,7 +604,7 @@ const makeH3 = () => makeHeader(3);
 // Image upload functionality
 const uploadImage = async (file: File): Promise<void> => {
   // Validate file type - must match backend accepted formats
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type as any)) {
+  if (!(ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
     uploadProgress.value = 'Error: Only JPEG, PNG, GIF, and WebP images are allowed';
     setTimeout(() => uploadProgress.value = '', 3000);
     return;
