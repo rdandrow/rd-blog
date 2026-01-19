@@ -228,19 +228,26 @@ const applyDraft = () => {
   }
   showDraftRecovery.value = false;
   draftData.value = null;
+  // Start auto-save after draft is restored
+  startAutoSave();
 };
 
 const dismissDraft = () => {
   clearDraft();
   showDraftRecovery.value = false;
   draftData.value = null;
+  // Start auto-save after draft is dismissed
+  startAutoSave();
 };
 
 onMounted(() => {
   // Check for existing draft
   loadDraft();
-  // Start auto-save
-  startAutoSave();
+  // Only start auto-save if no draft is pending
+  // (if draft exists, auto-save will start after user restores or dismisses it)
+  if (!showDraftRecovery.value) {
+    startAutoSave();
+  }
 });
 
 const submit = async () => {
