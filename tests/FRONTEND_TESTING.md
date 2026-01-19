@@ -92,6 +92,15 @@ The following aspects require a JavaScript testing framework (Vitest recommended
    - CSS custom properties for theming (--color-muted, --color-border, --color-accent)
    - Responsive table rendering
 
+7. **TODO: Markdown Table Rendering** (`resources/js/composables/useMarkdown.ts`)
+   - Removed useless PHP test (`tests/Unit/Composables/MarkdownTableHtmlRenderingTest.php`) that only asserted strings exist
+   - Need proper frontend tests that validate markdown-it actually converts table syntax to HTML
+   - Test table structure: `<table>`, `<thead>`, `<tbody>`, `<th>`, `<td>` elements
+   - Test inline markdown in table cells (bold, italic, code, links)
+   - Test special characters preservation in cells
+   - Test multiple tables in same content
+   - See example tests at bottom of this document
+
 ## Recommended Setup for Frontend Testing
 
 ### Step 1: Install Testing Dependencies
