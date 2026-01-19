@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\UserInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
@@ -29,6 +31,12 @@ class UserManagementController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
                 'created_at' => $user->created_at->format('M d, Y'),
+                'invitation_token' => $user->invitation_token,
+                'invitation_sent_at' => $user->invitation_sent_at?->toISOString(),
+                'invitation_accepted_at' => $user->invitation_accepted_at?->toISOString(),
+                'invitation_expired' => $user->invitation_sent_at && 
+                    !$user->invitation_accepted_at && 
+                    $user->invitation_sent_at->addHours(48)->isPast(),
             ]);
 
         return Inertia::render('Admin/Users/AdminUsers', [
@@ -50,6 +58,12 @@ class UserManagementController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
                 'created_at' => $user->created_at->format('M d, Y'),
+                'invitation_token' => $user->invitation_token,
+                'invitation_sent_at' => $user->invitation_sent_at?->toISOString(),
+                'invitation_accepted_at' => $user->invitation_accepted_at?->toISOString(),
+                'invitation_expired' => $user->invitation_sent_at && 
+                    !$user->invitation_accepted_at && 
+                    $user->invitation_sent_at->addHours(48)->isPast(),
             ]);
 
         return Inertia::render('Admin/Users/MemberUsers', [
@@ -113,25 +127,71 @@ class UserManagementController extends Controller
     }
 
     /**
-     * Create a new user.
+     * Create a new user and send invitation email.
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:users',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => ['required', Rule::in(['master_admin', 'admin', 'member'])],
         ]);
 
-        User::create([
+        // Generate invitation token
+        $invitationToken = Str::random(64);
+        
+        // Create user with temporary password and invitation token
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make(Str::random(32)), // Temporary random password
             'role' => $request->role,
-            'email_verified_at' => now(), // Mark email as verified for admin-created users
+            'invitation_token' => $invitationToken,
+            'invitation_sent_at' => now(),
         ]);
 
-        return back()->with('success', 'User created successfully.');
+        // Generate invitation URL
+        $invitationUrl = url("/invitation/accept/{$invitationToken}");
+        
+        // Send invitation email
+        $user->notify(new UserInvitation(
+            invitationUrl: $invitationUrl,
+            inviterName: auth()->user()->name
+        ));
+
+        return back()->with('success', 'User invited successfully. An invitation email has been sent.');
+    }
+
+    /**
+     * Resend invitation to a user.
+     */
+    public function resendInvitation(User $user): RedirectResponse
+    {
+        // Check if user has already accepted the invitation
+        if ($user->invitation_accepted_at) {
+            return back()->withErrors([
+                'error' => 'This user has already accepted their invitation.',
+            ]);
+        }
+
+        // Generate new invitation token
+        $invitationToken = Str::random(64);
+        
+        // Update user with new invitation token
+        $user->update([
+            'invitation_token' => $invitationToken,
+            'invitation_sent_at' => now(),
+        ]);
+
+        // Generate invitation URL
+        $invitationUrl = url("/invitation/accept/{$invitationToken}");
+        
+        // Send invitation email
+        $user->notify(new UserInvitation(
+            invitationUrl: $invitationUrl,
+            inviterName: auth()->user()->name
+        ));
+
+        return back()->with('success', 'Invitation email has been resent successfully.');
     }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -10,13 +11,29 @@ import AuthBase from '@/layouts/AuthLayout.vue';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, usePage } from '@inertiajs/vue3';
 
 defineProps<{
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
 }>();
+
+const page = usePage();
+const emailInput = ref<HTMLInputElement | null>(null);
+
+// Pre-fill email if coming from invitation
+onMounted(() => {
+    const flashEmail = page.props.flash?.email;
+    if (flashEmail && emailInput.value) {
+        emailInput.value.value = flashEmail;
+        // Focus on password field if email is pre-filled
+        const passwordInput = document.getElementById('password') as HTMLInputElement;
+        if (passwordInput) {
+            passwordInput.focus();
+        }
+    }
+});
 </script>
 
 <template>
@@ -44,6 +61,7 @@ defineProps<{
                     <Label for="email">Email address</Label>
                     <Input
                         id="email"
+                        ref="emailInput"
                         type="email"
                         name="email"
                         required

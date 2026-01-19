@@ -20,6 +20,10 @@ interface Member {
     email: string;
     role: string;
     created_at: string;
+    invitation_token: string | null;
+    invitation_sent_at: string | null;
+    invitation_accepted_at: string | null;
+    invitation_expired: boolean;
 }
 
 interface PaginatedMembers {
@@ -39,8 +43,6 @@ const selectedUser = ref<Member | null>(null);
 const createForm = ref({
     name: '',
     email: '',
-    password: '',
-    password_confirmation: '',
     role: 'member',
 });
 
@@ -48,8 +50,6 @@ function openCreateDialog() {
     createForm.value = {
         name: '',
         email: '',
-        password: '',
-        password_confirmation: '',
         role: 'member',
     };
     showCreateDialog.value = true;
@@ -77,6 +77,39 @@ function deleteUser() {
         },
     });
 }
+
+function getInvitationStatus(user: Member) {
+    if (user.invitation_accepted_at) {
+        return {
+            text: 'Accepted',
+            class: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+        };
+    }
+    if (user.invitation_expired) {
+        return {
+            text: 'Expired',
+            class: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+        };
+    }
+    if (user.invitation_sent_at) {
+        return {
+            text: 'Pending',
+            class: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+        };
+    }
+    return {
+        text: 'N/A',
+        class: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+    };
+}
+
+function resendInvitation(userId: number) {
+    router.post(`/admin/users/${userId}/resend-invitation`, {}, {
+        onSuccess: () => {
+            // Success message will be shown via flash message
+        },
+    });
+}
 </script>
 
 <template>
@@ -93,7 +126,7 @@ function deleteUser() {
                         </p>
                     </div>
                     <Button @click="openCreateDialog">
-                        Create Member User
+                        Invite Member User
                     </Button>
                 </div>
 
@@ -107,6 +140,9 @@ function deleteUser() {
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                                         Email
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                        Invitation Status
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                                         Created
@@ -124,10 +160,27 @@ function deleteUser() {
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ member.email }}
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span
+                                            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                                            :class="getInvitationStatus(member).class"
+                                        >
+                                            {{ getInvitationStatus(member).text }}
+                                        </span>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ member.created_at }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <Button
+                                            v-if="member.invitation_expired && !member.invitation_accepted_at"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="resendInvitation(member.id)"
+                                            class="mr-2"
+                                        >
+                                            Resend Invitation
+                                        </Button>
                                         <Button
                                             variant="destructive"
                                             size="sm"
@@ -148,9 +201,9 @@ function deleteUser() {
         <Dialog v-model:open="showCreateDialog">
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Create Member User</DialogTitle>
+                    <DialogTitle>Invite Member User</DialogTitle>
                     <DialogDescription>
-                        Add a new member user to the system.
+                        Send an invitation email to a new member user. They will receive a link to set their password.
                     </DialogDescription>
                 </DialogHeader>
                 <div class="grid gap-4 py-4">
@@ -171,30 +224,12 @@ function deleteUser() {
                             placeholder="email@example.com"
                         />
                     </div>
-                    <div class="grid gap-2">
-                        <Label for="password">Password</Label>
-                        <Input
-                            id="password"
-                            v-model="createForm.password"
-                            type="password"
-                            placeholder="Password"
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="password_confirmation">Confirm Password</Label>
-                        <Input
-                            id="password_confirmation"
-                            v-model="createForm.password_confirmation"
-                            type="password"
-                            placeholder="Confirm password"
-                        />
-                    </div>
                 </div>
                 <DialogFooter>
                     <Button variant="outline" @click="showCreateDialog = false">
                         Cancel
                     </Button>
-                    <Button @click="createUser">Create User</Button>
+                    <Button @click="createUser">Send Invitation</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
