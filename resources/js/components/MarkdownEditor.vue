@@ -628,6 +628,15 @@ const uploadImage = async (file: File): Promise<void> => {
   isUploadingImage.value = true;
   uploadProgress.value = `Uploading ${file.name}...`;
 
+  // Validate CSRF token exists
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+  if (!csrfToken) {
+    uploadProgress.value = 'Error: Security token not found. Please refresh the page.';
+    isUploadingImage.value = false;
+    setTimeout(() => uploadProgress.value = '', 3000);
+    return;
+  }
+
   const formData = new FormData();
   formData.append('image', file);
 
@@ -636,7 +645,7 @@ const uploadImage = async (file: File): Promise<void> => {
       method: 'POST',
       body: formData,
       headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'X-CSRF-TOKEN': csrfToken,
         'X-Requested-With': 'XMLHttpRequest',
       },
       credentials: 'same-origin',
