@@ -1,17 +1,17 @@
 import { ref, onUnmounted, ComputedRef, Ref } from 'vue';
 
-interface AutoSaveData {
+interface AutoSaveData<T = Record<string, unknown>> {
   timestamp: number;
-  data: Record<string, any>;
+  data: T;
 }
 
-type FormDataSource = Record<string, any> | Ref<Record<string, any>> | ComputedRef<Record<string, any>>;
+type FormDataSource<T> = T | Ref<T> | ComputedRef<T>;
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
-export const useAutoSave = (
+export const useAutoSave = <T extends Record<string, unknown>>(
   storageKey: string, 
-  formData: FormDataSource, 
+  formData: FormDataSource<T>, 
   intervalMs: number = 30000,
   expirationMs: number = SEVEN_DAYS_MS
 ) => {
@@ -22,21 +22,21 @@ export const useAutoSave = (
   let lastSavedData: string | null = null;
 
   // Helper to get the current form data value
-  const getFormData = (): Record<string, any> => {
+  const getFormData = (): T => {
     // Handle computed refs and regular refs
-    if ('value' in formData) {
-      return formData.value;
+    if ('value' in formData && (formData as Ref<T> | ComputedRef<T>).value !== undefined) {
+      return (formData as Ref<T> | ComputedRef<T>).value;
     }
     // Handle plain objects
-    return formData;
+    return formData as T;
   };
 
   // Check for existing draft on mount
-  const checkForDraft = (): AutoSaveData | null => {
+  const checkForDraft = (): AutoSaveData<T> | null => {
     try {
       const savedData = localStorage.getItem(storageKey);
       if (savedData) {
-        const parsed: AutoSaveData = JSON.parse(savedData);
+        const parsed: AutoSaveData<T> = JSON.parse(savedData);
         // Check if draft is within expiration time
         const expirationThreshold = Date.now() - expirationMs;
         if (parsed.timestamp > expirationThreshold) {
@@ -64,9 +64,9 @@ export const useAutoSave = (
   const saveDraft = () => {
     try {
       const currentData = getFormData();
-      const dataToSave: AutoSaveData = {
+      const dataToSave: AutoSaveData<T> = {
         timestamp: Date.now(),
-        data: { ...currentData }
+        data: { ...currentData } as T
       };
       const serialized = JSON.stringify(dataToSave);
       localStorage.setItem(storageKey, serialized);
@@ -82,7 +82,7 @@ export const useAutoSave = (
   };
 
   // Restore draft from localStorage
-  const restoreDraft = (): Record<string, any> | null => {
+  const restoreDraft = (): T | null => {
     const draft = checkForDraft();
     if (draft) {
       hasDraft.value = true;
