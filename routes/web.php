@@ -31,11 +31,11 @@ Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')-
         ->middleware('throttle:20,1')
         ->name('blog-posts.upload-image');
     
-    // Blog post resource routes with selective rate limiting
+    // Blog post resource routes (store and update have custom rate limiting below)
     Route::resource('blog-posts', BlogPostController::class)
-        ->only(['index', 'create', 'show', 'edit', 'destroy']);
+        ->except(['store', 'update']);
     
-    // Rate-limited create and update routes
+    // Store and update routes with stricter rate limiting (10 requests per minute)
     Route::post('blog-posts', [BlogPostController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('blog-posts.store');
