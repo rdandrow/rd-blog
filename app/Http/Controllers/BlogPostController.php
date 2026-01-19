@@ -188,9 +188,16 @@ class BlogPostController extends Controller
                 'path' => $fullPath,
             ]);
         } catch (\Exception $e) {
+            \Log::error('Failed to upload blog post image', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to upload image: ' . $e->getMessage()
+                'error' => config('app.debug') 
+                    ? 'Failed to upload image: ' . $e->getMessage()
+                    : 'Failed to upload image. Please try again.'
             ], 500);
         }
     }
