@@ -65,9 +65,9 @@ describe('Dashboard Access', function () {
         expect($response)->toBeForbidden(); // Forbidden - members don't have dashboard access
     })->group('dashboard', 'access-control', 'unauthorized');
 
-    it('redirects guests from dashboard', function () {
+    it('redirects unauthenticated users from dashboard', function () {
         expect($this->get(route('dashboard')))->toRedirectToLogin();
-    })->group('dashboard', 'access-control', 'guest');
+    })->group('dashboard', 'access-control', 'unauthenticated');
 });
 
 describe('Blog Post Management Access', function () {
@@ -126,9 +126,9 @@ describe('Blog Post Management Access', function () {
         ]],
     ])->group('blog-posts', 'access-control', 'unauthorized');
 
-    it('redirects guests from blog post management', function () {
+    it('redirects unauthenticated users from blog post management', function () {
         expect($this->get(route('admin.blog-posts.index')))->toRedirectToLogin();
-    })->group('blog-posts', 'access-control', 'guest');
+    })->group('blog-posts', 'access-control', 'unauthenticated');
 });
 
 describe('Blog Post Editing Authorization', function () {
@@ -271,9 +271,9 @@ describe('User Management Access (Master Admin Only)', function () {
     })->with('unauthorized_for_master_admin')
       ->group('user-management', 'crud', 'unauthorized');
 
-    it('redirects guests from user management', function () {
+    it('redirects unauthenticated users from user management', function () {
         expect($this->get(route('admin.users.admins')))->toRedirectToLogin();
-    })->group('user-management', 'access-control', 'guest');
+    })->group('user-management', 'access-control', 'unauthenticated');
 });
 
 describe('Public Access', function () {
@@ -377,11 +377,11 @@ describe('Like Permissions', function () {
     })->with('user_roles')
       ->group('likes', 'permissions', 'authorized');
 
-    it('redirects guests when attempting to like blog posts', function () {
+    it('redirects unauthenticated users when attempting to like blog posts', function () {
         $post = createPublishedPost();
         
         expect($this->post(route('blog.like.toggle', $post->slug)))->toRedirectToLogin();
-    })->group('likes', 'permissions', 'guest');
+    })->group('likes', 'permissions', 'unauthenticated');
 });
 
 describe('Follow Permissions', function () {
@@ -405,11 +405,11 @@ describe('Follow Permissions', function () {
         expect($admin1->following()->where('following_id', $admin2->id)->exists())->toBeTrue();
     })->group('follows', 'permissions', 'authorized');
 
-    it('redirects guests when attempting to follow authors', function () {
+    it('redirects unauthenticated users when attempting to follow authors', function () {
         $author = createTestAdmin();
         
         expect($this->post(route('user.follow.toggle', $author->id)))->toRedirectToLogin();
-    })->group('follows', 'permissions', 'guest');
+    })->group('follows', 'permissions', 'unauthenticated');
 });
 
 describe('Edge Cases and Mixed Scenarios', function () {
@@ -507,5 +507,5 @@ describe('Edge Cases and Mixed Scenarios', function () {
         foreach ($routes as $route) {
             expect($this->get($route))->toRedirectToLogin();
         }
-    })->group('roles', 'edge-cases', 'guest');
+    })->group('roles', 'edge-cases', 'unauthenticated');
 });

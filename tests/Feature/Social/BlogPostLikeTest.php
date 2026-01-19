@@ -27,12 +27,12 @@ describe('Liking Blog Posts', function () {
         ]);
     })->group('likes', 'toggle', 'authenticated');
 
-    it('denies guests from liking blog posts', function () {
+    it('denies unauthenticated users from liking blog posts', function () {
         $response = $this->post(route('blog.like.toggle', $this->post->slug));
 
         expect($response)->toRedirectToLogin();
         $this->assertDatabaseCount('blog_post_likes', 0);
-    })->group('likes', 'toggle', 'guest');
+    })->group('likes', 'toggle', 'unauthenticated');
 
     it('returns 404 for non-existent blog posts', function () {
         $response = authenticatedPost($this->user, route('blog.like.toggle', 'non-existent-slug'));

@@ -6,7 +6,10 @@ use App\Models\BlogPost;
 use App\Http\Requests\StoreBlogPostRequest;
 use App\Http\Requests\UpdateBlogPostRequest;
 use App\Services\BlogImageService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -167,5 +170,38 @@ class BlogPostController extends Controller
         return redirect()
             ->route('admin.blog-posts.index')
             ->with('success', 'Blog post deleted successfully!');
+    }
+
+    /**
+     * Upload an image for markdown content
+     */
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,gif,webp|max:2048',
+        ]);
+
+        try {
+            $fullPath = $this->imageService->upload($request->file('image'));
+            $url = asset($fullPath);
+            
+            return response()->json([
+                'success' => true,
+                'url' => $url,
+                'path' => $fullPath,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to upload blog post image', [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => config('app.debug') 
+                    ? 'Failed to upload image: ' . $e->getMessage()
+                    : 'Failed to upload image. Please try again.'
+            ], 500);
+        }
     }
 }

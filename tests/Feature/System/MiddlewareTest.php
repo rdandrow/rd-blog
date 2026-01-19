@@ -244,7 +244,7 @@ describe('Authorization Middleware', function () {
         expect($response->status())->toBe(HTTP_OK);
     })->group('middleware', 'authorization');
 
-    it('redirects guests from protected routes', function () {
+    it('redirects unauthenticated users from protected routes', function () {
         $response = $this->get(route('dashboard'));
         
         expect($response)->toRedirectToLogin();

@@ -25,7 +25,24 @@ Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 // Blog Post Management Routes (Admin)
 Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
-    Route::resource('blog-posts', BlogPostController::class);
+    
+    // Image upload for markdown content
+    Route::post('blog-posts/upload-image', [BlogPostController::class, 'uploadImage'])
+        ->middleware('throttle:20,1')
+        ->name('blog-posts.upload-image');
+    
+    // Blog post resource routes (store and update have custom rate limiting below)
+    Route::resource('blog-posts', BlogPostController::class)
+        ->except(['store', 'update']);
+    
+    // Store and update routes with stricter rate limiting (10 requests per minute)
+    Route::post('blog-posts', [BlogPostController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('blog-posts.store');
+    
+    Route::match(['put', 'patch'], 'blog-posts/{blog_post}', [BlogPostController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('blog-posts.update');
 });
 
 // User Management Routes (Master Admin Only)

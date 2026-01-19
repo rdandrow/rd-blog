@@ -22,11 +22,11 @@ describe('Following Authors', function () {
         expect($this->member->following()->where('following_id', $this->author->id)->exists())->toBeTrue();
     })->group('follows', 'toggle', 'authenticated');
 
-    it('redirects guests attempting to follow authors', function () {
+    it('redirects unauthenticated users attempting to follow authors', function () {
         $response = $this->post(route('user.follow.toggle', $this->author->id));
 
         expect($response)->toRedirectToLogin();
-    })->group('follows', 'toggle', 'guest');
+    })->group('follows', 'toggle', 'unauthenticated');
 
     it('returns 404 for non-existent users', function () {
         $response = authenticatedPost($this->member, route('user.follow.toggle', TEST_NONEXISTENT_ID));

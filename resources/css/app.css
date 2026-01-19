@@ -61,6 +61,14 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /*
+     * Custom max-width for blog post forms and content editors.
+     * 896px (~56rem) provides optimal line length for content editing
+     * while maintaining readability and fitting comfortably on most screens.
+     * Based on optimal reading width of 60-75 characters per line.
+     */
+    --breakpoint-form: 896px;
 }
 
 /*
@@ -88,6 +96,15 @@
             'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
             'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
             'Noto Color Emoji';
+    }
+
+    /**
+     * Custom container width for blog post forms.
+     * Provides optimal content editing width while remaining responsive.
+     */
+    .max-w-form {
+        max-width: min(var(--breakpoint-form), 100%);
+        width: var(--breakpoint-form);
     }
 }
 
@@ -117,6 +134,10 @@
     --chart-4: hsl(43 74% 66%);
     --chart-5: hsl(27 87% 67%);
     --radius: 0.5rem;
+    --table-border: hsl(0 0% 85%);
+    --table-header-bg: hsl(0 0% 94%);
+    --table-stripe-bg: hsl(0 0% 97%);
+    --table-hover-bg: hsl(220 13% 91%);
     --sidebar-background: hsl(0 0% 98%);
     --sidebar-foreground: hsl(240 5.3% 26.1%);
     --sidebar-primary: hsl(0 0% 10%);
@@ -153,6 +174,10 @@
     --chart-3: hsl(30 80% 55%);
     --chart-4: hsl(280 65% 60%);
     --chart-5: hsl(340 75% 55%);
+    --table-border: hsl(220 13% 35%);
+    --table-header-bg: hsl(220 13% 22%);
+    --table-stripe-bg: hsl(220 13% 13%);
+    --table-hover-bg: hsl(220 13% 26%);
     --sidebar-background: hsl(0 0% 7%);
     --sidebar-foreground: hsl(0 0% 95.9%);
     --sidebar-primary: hsl(360, 100%, 100%);
@@ -223,6 +248,61 @@
 .prose .hljs {
     /* background-color: transparent !important; */
     padding: 0.5rem !important;
+}
+
+/* Markdown table wrapper for responsive scrolling */
+.prose :where(table):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Markdown table styling */
+.prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+    min-width: 100%;
+}
+
+.prose table thead {
+    border-bottom: 2px solid var(--color-border);
+}
+
+.prose table th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid var(--table-border);
+    background-color: var(--table-header-bg);
+    /* Allow text wrapping on mobile for better accessibility */
+    white-space: normal;
+}
+
+/* Prevent header wrapping on larger screens for cleaner table layout */
+@media (min-width: 768px) {
+    .prose table th {
+        white-space: nowrap;
+    }
+}
+
+.prose table td {
+    padding: 0.75rem;
+    border: 1px solid var(--table-border);
+    max-width: 300px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.prose table tbody tr:nth-child(even) {
+    background-color: var(--table-stripe-bg);
+}
+
+.prose table tbody tr:hover {
+    background-color: var(--table-hover-bg);
 }
 
 /* Shared utility classes - extracted from components for reusability */

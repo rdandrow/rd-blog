@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ErrorDisplay from '@/components/ErrorDisplay.vue';
-import MarkdownEditor from '@/components/MarkdownEditor.vue';
+import ExpandableMarkdownEditor from '@/components/ExpandableMarkdownEditor.vue';
 import { 
   useImageValidation, 
   useFormValidation, 
   useTagManagement 
 } from '@/composables/useBlogPostForm';
+import { useAutoSave } from '@/composables/useAutoSave';
 
 // Debug flag - set to false for production
 const DEBUG_VALIDATION = import.meta.env.DEV || false;
@@ -56,6 +57,30 @@ const {
 // Form state
 const tagInput = ref('');
 const imageInputType = ref<'url' | 'file'>('url');
+const showDraftRecovery = ref(false);
+const draftData = ref<Record<string, any> | null>(null);
+
+// Auto-save composable
+const formDataForAutoSave = computed(() => ({
+  title: form.title,
+  excerpt: form.excerpt,
+  content: form.content,
+  featured_image: form.featured_image,
+  tags: form.tags,
+  is_featured: form.is_featured,
+  is_published: form.is_published,
+  published_at: form.published_at
+}));
+
+const {
+  error,
+  lastSaved,
+  restoreDraft,
+  clearDraft,
+  startAutoSave,
+  stopAutoSave,
+  getLastSavedText
+} = useAutoSave('blog-post-create-draft', formDataForAutoSave, 30000);
 
 const addTag = () => {
   tagInput.value = addTagToList(tagInput.value, form.tags);
@@ -116,6 +141,43 @@ const removeImage = () => {
   form.featured_image_file = null;
   resetImage();
 };
+
+// Auto-save functions
+const loadDraft = () => {
+  const draft = restoreDraft();
+  if (draft) {
+    draftData.value = draft;
+    showDraftRecovery.value = true;
+  }
+};
+
+const applyDraft = () => {
+  if (draftData.value) {
+    form.title = draftData.value.title || '';
+    form.excerpt = draftData.value.excerpt || '';
+    form.content = draftData.value.content || '';
+    form.featured_image = draftData.value.featured_image || '';
+    form.tags = draftData.value.tags || [];
+    form.is_featured = draftData.value.is_featured || false;
+    form.is_published = draftData.value.is_published || false;
+    form.published_at = draftData.value.published_at || null;
+  }
+  showDraftRecovery.value = false;
+  draftData.value = null;
+};
+
+const dismissDraft = () => {
+  clearDraft();
+  showDraftRecovery.value = false;
+  draftData.value = null;
+};
+
+onMounted(() => {
+  // Check for existing draft
+  loadDraft();
+  // Start auto-save
+  startAutoSave();
+});
 
 const submit = async () => {
   try {
@@ -200,6 +262,12 @@ const submit = async () => {
     }
 
     await form.post('/admin/blog-posts', submitOptions);
+    
+    // Clear draft on successful submission
+    if (!form.hasErrors) {
+      clearDraft();
+      stopAutoSave();
+    }
 
   } catch (error) {
     console.error('Form submission error:', error);
@@ -220,10 +288,63 @@ const submit = async () => {
   <Head title="Create Blog Post" />
 
   <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="max-w-4xl mx-auto">
+    <div class="mx-auto max-w-form">
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-foreground">Create New Blog Post</h1>
-        <p class="text-muted-foreground">Write and publish a new article for your blog</p>
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-foreground">Create New Blog Post</h1>
+            <p class="text-muted-foreground">Write and publish a new article for your blog</p>
+          </div>
+          <div v-if="lastSaved" class="text-sm text-muted-foreground">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Draft saved {{ getLastSavedText() }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto-save Error Alert -->
+      <div v-if="error" class="mb-6 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 rounded-lg p-4">
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <span class="text-sm font-medium">{{ error }}</span>
+        </div>
+      </div>
+
+      <!-- Draft Recovery Banner -->
+      <div v-if="showDraftRecovery" class="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="flex-1">
+            <h3 class="text-sm font-medium text-blue-900 dark:text-blue-100">Draft Found</h3>
+            <p class="mt-1 text-sm text-blue-700 dark:text-blue-300">
+              We found an auto-saved draft from your previous session. Would you like to restore it?
+            </p>
+            <div class="mt-3 flex gap-3">
+              <button
+                type="button"
+                @click="applyDraft"
+                class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Restore Draft
+              </button>
+              <button
+                type="button"
+                @click="dismissDraft"
+                class="px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 text-sm border border-blue-200 dark:border-blue-700 rounded-md hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- General Error Display -->
@@ -285,7 +406,7 @@ const submit = async () => {
 
           <!-- Content (Markdown) -->
           <div>
-            <MarkdownEditor
+            <ExpandableMarkdownEditor
               v-model="form.content"
               label="Content"
               placeholder="Write your post content in Markdown..."
