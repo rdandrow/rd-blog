@@ -134,6 +134,10 @@
     --chart-4: hsl(43 74% 66%);
     --chart-5: hsl(27 87% 67%);
     --radius: 0.5rem;
+    --table-border: hsl(0 0% 85%);
+    --table-header-bg: hsl(0 0% 94%);
+    --table-stripe-bg: hsl(0 0% 97%);
+    --table-hover-bg: hsl(220 13% 91%);
     --sidebar-background: hsl(0 0% 98%);
     --sidebar-foreground: hsl(240 5.3% 26.1%);
     --sidebar-primary: hsl(0 0% 10%);
@@ -170,6 +174,10 @@
     --chart-3: hsl(30 80% 55%);
     --chart-4: hsl(280 65% 60%);
     --chart-5: hsl(340 75% 55%);
+    --table-border: hsl(220 13% 35%);
+    --table-header-bg: hsl(220 13% 22%);
+    --table-stripe-bg: hsl(220 13% 13%);
+    --table-hover-bg: hsl(220 13% 26%);
     --sidebar-background: hsl(0 0% 7%);
     --sidebar-foreground: hsl(0 0% 95.9%);
     --sidebar-primary: hsl(360, 100%, 100%);
@@ -267,8 +275,8 @@
     padding: 0.75rem;
     text-align: left;
     font-weight: 600;
-    border: 1px solid hsl(0 0% 85%);
-    background-color: hsl(0 0% 94%);
+    border: 1px solid var(--table-border);
+    background-color: var(--table-header-bg);
     /* Allow text wrapping on mobile for better accessibility */
     white-space: normal;
 }
@@ -280,38 +288,21 @@
     }
 }
 
-.dark .prose table th {
-    background-color: hsl(220 13% 22%);
-    border-color: hsl(220 13% 35%);
-}
-
 .prose table td {
     padding: 0.75rem;
-    border: 1px solid hsl(0 0% 85%);
+    border: 1px solid var(--table-border);
     max-width: 300px;
     overflow-wrap: break-word;
     word-wrap: break-word;
     word-break: break-word;
 }
 
-.dark .prose table td {
-    border-color: hsl(220 13% 35%);
-}
-
 .prose table tbody tr:nth-child(even) {
-    background-color: hsl(0 0% 97%);
-}
-
-.dark .prose table tbody tr:nth-child(even) {
-    background-color: hsl(220 13% 13%);
+    background-color: var(--table-stripe-bg);
 }
 
 .prose table tbody tr:hover {
-    background-color: hsl(220 13% 91%);
-}
-
-.dark .prose table tbody tr:hover {
-    background-color: hsl(220 13% 26%);
+    background-color: var(--table-hover-bg);
 }
 
 /* Shared utility classes - extracted from components for reusability */
