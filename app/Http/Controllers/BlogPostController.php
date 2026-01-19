@@ -6,7 +6,10 @@ use App\Models\BlogPost;
 use App\Http\Requests\StoreBlogPostRequest;
 use App\Http\Requests\UpdateBlogPostRequest;
 use App\Services\BlogImageService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
@@ -172,7 +175,7 @@ class BlogPostController extends Controller
     /**
      * Upload an image for markdown content
      */
-    public function uploadImage(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    public function uploadImage(Request $request): JsonResponse
     {
         $request->validate([
             'image' => 'required|image|mimes:jpeg,png,gif,webp|max:2048',
@@ -188,7 +191,7 @@ class BlogPostController extends Controller
                 'path' => $fullPath,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Failed to upload blog post image', [
+            Log::error('Failed to upload blog post image', [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
