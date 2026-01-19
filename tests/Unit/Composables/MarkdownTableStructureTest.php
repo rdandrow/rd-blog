@@ -1,14 +1,15 @@
 <?php
 
 /**
- * Markdown Table Rendering Test Suite
+ * Markdown Table Structure Test Suite
  *
- * Tests table rendering functionality in the markdown editor,
- * including syntax validation and HTML output.
- * 
- * Note: The actual markdown rendering is done by markdown-it in JavaScript.
- * These tests verify the expected behavior and server-side markdown processing.
- * For full frontend testing, see FRONTEND_TESTING.md for Vitest examples.
+ * Tests markdown table syntax and structural correctness for use in the
+ * markdown editor, including header, separator, and row layout.
+ *
+ * Note: The actual markdown-to-HTML rendering is done by markdown-it
+ * in JavaScript. These tests verify expected markdown structure and
+ * server-side markdown preparation. For full frontend rendering tests,
+ * see FRONTEND_TESTING.md for Vitest examples.
  */
 
 describe('Markdown Table Syntax', function () {
