@@ -66,8 +66,9 @@ const breadcrumbItems: BreadcrumbItem[] = [
                             type="password"
                             class="mt-1 block w-full"
                             autocomplete="new-password"
-                            placeholder="New password"
+                            placeholder="New password (minimum 14 characters)"
                         />
+                        <p class="text-xs text-muted-foreground">Must be at least 14 characters long</p>
                         <InputError :message="errors.password" />
                     </div>
 

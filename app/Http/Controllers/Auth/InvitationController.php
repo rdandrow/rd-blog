@@ -48,7 +48,7 @@ class InvitationController extends Controller
     public function accept(Request $request, string $token): RedirectResponse
     {
         $request->validate([
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', Rules\Password::min(14)],
         ]);
 
         $user = User::where('invitation_token', $token)

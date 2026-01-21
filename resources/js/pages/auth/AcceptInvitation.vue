@@ -76,7 +76,7 @@ function submit() {
                             type="password"
                             required
                             autocomplete="new-password"
-                            placeholder="Enter your password"
+                            placeholder="Enter your password (minimum 14 characters)"
                             class="mt-1"
                             :class="{ 'border-red-500': errors.password }"
                         />
@@ -115,8 +115,7 @@ function submit() {
                                 </h3>
                                 <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
                                     <ul class="list-disc pl-5 space-y-1">
-                                        <li>At least 8 characters long</li>
-                                        <li>Contains letters and numbers</li>
+                                        <li>At least 14 characters long</li>
                                     </ul>
                                 </div>
                             </div>
