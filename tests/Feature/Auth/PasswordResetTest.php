@@ -57,8 +57,8 @@ describe('Password Reset', function () {
             $response = $this->post(route('password.update'), [
                 'token' => $notification->token,
                 'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                'password' => 'new-secure-password-123',
+                'password_confirmation' => 'new-secure-password-123',
             ]);
 
             $response->assertSessionHasNoErrors()

@@ -75,8 +75,8 @@ describe('File System Errors', function () {
         $response = $this->post(route('register'), [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'secure-password-12345',
+            'password_confirmation' => 'secure-password-12345',
         ]);
         
         // User should be created even if email fails

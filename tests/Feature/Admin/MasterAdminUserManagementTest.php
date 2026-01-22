@@ -185,12 +185,10 @@ describe('User Creation', function () {
         $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
             'name' => "New {$role}",
             'email' => "new{$role}@test.com",
-            'password' => 'password123', // Min 8 chars required
-            'password_confirmation' => 'password123',
             'role' => $role, // Valid roles: member, admin, master_admin
         ]);
 
-        expect($response)->toHaveSuccessMessage('User created successfully.');
+        expect($response)->toHaveSuccessMessage('User invited successfully. An invitation email has been sent.');
         $this->assertDatabaseHas('users', [
             'name' => "New {$role}",
             'email' => "new{$role}@test.com",
@@ -198,7 +196,6 @@ describe('User Creation', function () {
         ]);
         
         $user = User::where('email', "new{$role}@test.com")->first();
-        expect(Hash::check('password123', $user->password))->toBeTrue();
     })->with('valid_user_roles')
       ->group('user-management', 'creation', 'authorized');
 
@@ -208,12 +205,10 @@ describe('User Creation', function () {
         $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
             'name' => 'New User',
             'email' => 'newuser@test.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
             'role' => 'member',
         ]);
 
-        expect($response)->toHaveSuccessMessage('User created successfully.');
+        expect($response)->toHaveSuccessMessage('User invited successfully. An invitation email has been sent.');
         $this->assertDatabaseHas('users', [
             'email' => 'newuser@test.com',
             'role' => 'member',
@@ -260,8 +255,6 @@ describe('User Creation Validation', function () {
         $this->validUserData = [
             'name' => 'New User',
             'email' => 'newuser@test.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
             'role' => 'member',
         ];
     });
@@ -275,8 +268,6 @@ describe('User Creation Validation', function () {
             'name',
             [
                 'email' => 'newuser@test.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'role' => 'member',
             ],
         ],
@@ -284,16 +275,6 @@ describe('User Creation Validation', function () {
             'email',
             [
                 'name' => 'New User',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
-                'role' => 'member',
-            ],
-        ],
-        'password is required' => [
-            'password',
-            [
-                'name' => 'New User',
-                'email' => 'newuser@test.com',
                 'role' => 'member',
             ],
         ],
@@ -302,8 +283,6 @@ describe('User Creation Validation', function () {
             [
                 'name' => 'New User',
                 'email' => 'newuser@test.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
             ],
         ],
     ])->group('user-management', 'creation', 'validation');
@@ -324,26 +303,11 @@ describe('User Creation Validation', function () {
         $response = authenticatedPost($this->masterAdmin, route('admin.users.store'), [
             'name' => 'New User',
             'email' => 'existing@test.com', // Duplicate email - must be unique
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
             'role' => 'member',
         ]);
 
         expect($response)->toHaveValidationError('email');
     })->group('user-management', 'creation', 'validation');
-
-    it('validates password confirmation', function (string $password, string $confirmation) {
-        $data = array_merge($this->validUserData, [
-            'password' => $password,
-            'password_confirmation' => $confirmation,
-        ]);
-        $response = authenticatedPost($this->masterAdmin, route('admin.users.store'), $data);
-
-        expect($response)->toHaveValidationError('password');
-    })->with([
-        'missing confirmation' => ['password123', ''],
-        'mismatched confirmation' => ['password123', 'different'],
-    ])->group('user-management', 'creation', 'validation');
 
     it('requires valid role', function () {
         $data = array_merge($this->validUserData, ['role' => 'invalid_role']);
@@ -657,6 +621,10 @@ describe('Edge Cases and Complex Scenarios', function () {
                 ->has('email')
                 ->has('role')
                 ->has('created_at')
+                ->has('invitation_token')
+                ->has('invitation_sent_at')
+                ->has('invitation_accepted_at')
+                ->has('invitation_expired')
             )
         );
     })->group('user-management', 'edge-cases', 'data-integrity');
@@ -674,6 +642,10 @@ describe('Edge Cases and Complex Scenarios', function () {
                 ->has('email')
                 ->has('role')
                 ->has('created_at')
+                ->has('invitation_token')
+                ->has('invitation_sent_at')
+                ->has('invitation_accepted_at')
+                ->has('invitation_expired')
             )
         );
     })->group('user-management', 'edge-cases', 'data-integrity');

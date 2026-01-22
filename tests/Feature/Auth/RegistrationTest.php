@@ -18,8 +18,8 @@ describe('User Registration', function () {
         $response = $this->post(route('register.store'), [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => 'secure-test-password-123',
+            'password_confirmation' => 'secure-test-password-123',
         ]);
 
         $this->assertAuthenticated();

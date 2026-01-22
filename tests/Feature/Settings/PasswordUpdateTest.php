@@ -29,14 +29,14 @@ describe('Password Change', function () {
             ->from(route('user-password.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => 'new-secure-password-456',
+                'password_confirmation' => 'new-secure-password-456',
             ]);
 
         $response->assertSessionHasNoErrors()
             ->assertRedirect(route('user-password.edit'));
 
-        expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
+        expect(Hash::check('new-secure-password-456', $user->refresh()->password))->toBeTrue();
     })->group('settings', 'password', 'authenticated');
 
     it('requires correct current password to update', function () {
@@ -47,8 +47,8 @@ describe('Password Change', function () {
             ->from(route('user-password.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'wrong-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => 'new-secure-password-789',
+                'password_confirmation' => 'new-secure-password-789',
             ]);
 
         expect($response)->toHaveValidationError('current_password');
