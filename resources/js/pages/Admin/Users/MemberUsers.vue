@@ -20,7 +20,6 @@ interface Member {
     email: string;
     role: string;
     created_at: string;
-    invitation_token: string | null;
     invitation_sent_at: string | null;
     invitation_accepted_at: string | null;
     invitation_expired: boolean;

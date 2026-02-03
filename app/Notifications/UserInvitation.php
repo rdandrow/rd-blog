@@ -6,10 +6,25 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class UserInvitation extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    /**
+     * Number of times the job may be attempted.
+     *
+     * @var int
+     */
+    public $tries = 3;
+
+    /**
+     * Number of seconds to wait before retrying.
+     *
+     * @var array<int>
+     */
+    public $backoff = [60, 300, 900]; // 1min, 5min, 15min
 
     /**
      * Create a new notification instance.
@@ -55,5 +70,18 @@ class UserInvitation extends Notification implements ShouldQueue
             'invitation_url' => $this->invitationUrl,
             'inviter_name' => $this->inviterName,
         ];
+    }
+
+    /**
+     * Handle a job failure.
+     */
+    public function failed(\Throwable $exception): void
+    {
+        Log::error('User invitation email failed', [
+            'invitation_url' => $this->invitationUrl,
+            'inviter_name' => $this->inviterName,
+            'exception' => $exception->getMessage(),
+            'exception_trace' => $exception->getTraceAsString(),
+        ]);
     }
 }

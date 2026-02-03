@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,7 +31,7 @@ class InvitationController extends Controller
         }
 
         // Check if invitation has expired (48 hours)
-        if ($user->invitation_sent_at->diffInHours(now()) > 48) {
+        if ($user->hasInvitationExpired()) {
             return redirect()->route('login')
                 ->with('error', 'This invitation has expired. Please contact an administrator.');
         }
@@ -63,7 +64,7 @@ class InvitationController extends Controller
         }
 
         // Check if invitation has expired (48 hours)
-        if ($user->invitation_sent_at->diffInHours(now()) > 48) {
+        if ($user->hasInvitationExpired()) {
             return redirect()->route('login')
                 ->with('error', 'This invitation has expired. Please contact an administrator.');
         }
@@ -74,6 +75,15 @@ class InvitationController extends Controller
             'invitation_accepted_at' => now(),
             'invitation_token' => null, // Clear the token
             'email_verified_at' => now(), // Mark email as verified
+        ]);
+
+        // Log security event
+        Log::info('User invitation accepted', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'user_role' => $user->role,
+            'invitation_sent_at' => $user->invitation_sent_at?->toISOString(),
+            'ip_address' => $request->ip(),
         ]);
 
         // Redirect to login with pre-filled email

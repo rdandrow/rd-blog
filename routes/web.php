@@ -23,10 +23,12 @@ Route::get('admin/dashboard', function () {
 
 Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 
-// Invitation acceptance routes (public, no auth required)
+// Invitation acceptance routes (public, guest-only)
 Route::get('/invitation/accept/{token}', [InvitationController::class, 'show'])
+    ->middleware(['guest', 'throttle:10,1'])
     ->name('invitation.show');
 Route::post('/invitation/accept/{token}', [InvitationController::class, 'accept'])
+    ->middleware(['guest', 'throttle:5,1'])
     ->name('invitation.accept');
 
 // Blog Post Management Routes (Admin)

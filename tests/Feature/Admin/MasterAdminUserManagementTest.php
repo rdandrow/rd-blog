@@ -621,10 +621,10 @@ describe('Edge Cases and Complex Scenarios', function () {
                 ->has('email')
                 ->has('role')
                 ->has('created_at')
-                ->has('invitation_token')
                 ->has('invitation_sent_at')
                 ->has('invitation_accepted_at')
                 ->has('invitation_expired')
+                ->missing('invitation_token') // Should not expose token
             )
         );
     })->group('user-management', 'edge-cases', 'data-integrity');
@@ -642,10 +642,10 @@ describe('Edge Cases and Complex Scenarios', function () {
                 ->has('email')
                 ->has('role')
                 ->has('created_at')
-                ->has('invitation_token')
                 ->has('invitation_sent_at')
                 ->has('invitation_accepted_at')
                 ->has('invitation_expired')
+                ->missing('invitation_token') // Should not expose token
             )
         );
     })->group('user-management', 'edge-cases', 'data-integrity');

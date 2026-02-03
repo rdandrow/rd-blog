@@ -39,6 +39,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'invitation_token',
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
@@ -116,5 +117,28 @@ class User extends Authenticatable
     public function isMember(): bool
     {
         return $this->role === 'member';
+    }
+
+    /**
+     * Check if the user's invitation has expired.
+     * Invitations expire 48 hours after being sent.
+     */
+    public function hasInvitationExpired(): bool
+    {
+        if (!$this->invitation_sent_at) {
+            return false;
+        }
+
+        return $this->invitation_sent_at->diffInHours(now()) > 48;
+    }
+
+    /**
+     * Check if the user has a pending invitation.
+     */
+    public function hasPendingInvitation(): bool
+    {
+        return $this->invitation_token !== null 
+            && $this->invitation_accepted_at === null 
+            && !$this->hasInvitationExpired();
     }
 }

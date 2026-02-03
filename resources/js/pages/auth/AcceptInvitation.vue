@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,19 @@ const form = ref({
 
 const errors = ref<Record<string, string>>({});
 const processing = ref(false);
+
+const isPasswordValid = computed(() => {
+    return form.value.password.length >= 14;
+});
+
+const isPasswordConfirmed = computed(() => {
+    return form.value.password === form.value.password_confirmation && 
+           form.value.password_confirmation.length > 0;
+});
+
+const isFormValid = computed(() => {
+    return isPasswordValid.value && isPasswordConfirmed.value;
+});
 
 function submit() {
     processing.value = true;
@@ -83,6 +96,12 @@ function submit() {
                         <p v-if="errors.password" class="mt-1 text-sm text-red-600 dark:text-red-400">
                             {{ errors.password }}
                         </p>
+                        <p v-else-if="form.password.length > 0 && !isPasswordValid" class="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                            Password must be at least 14 characters
+                        </p>
+                        <p v-else-if="isPasswordValid" class="mt-1 text-sm text-green-600 dark:text-green-400">
+                            ✓ Password meets requirements
+                        </p>
                     </div>
 
                     <div>
@@ -101,6 +120,12 @@ function submit() {
                         />
                         <p v-if="errors.password_confirmation" class="mt-1 text-sm text-red-600 dark:text-red-400">
                             {{ errors.password_confirmation }}
+                        </p>
+                        <p v-else-if="form.password_confirmation.length > 0 && !isPasswordConfirmed" class="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                            Passwords do not match
+                        </p>
+                        <p v-else-if="isPasswordConfirmed" class="mt-1 text-sm text-green-600 dark:text-green-400">
+                            ✓ Passwords match
                         </p>
                     </div>
 
@@ -124,7 +149,7 @@ function submit() {
 
                     <Button
                         type="submit"
-                        :disabled="processing"
+                        :disabled="processing || !isFormValid"
                         class="w-full"
                     >
                         <svg v-if="processing" class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
