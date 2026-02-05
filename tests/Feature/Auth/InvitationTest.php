@@ -90,6 +90,7 @@ describe('Invitation Acceptance', function () {
         expect(Hash::check('secure-password-12345', $user->password))->toBeTrue();
         expect($user->invitation_accepted_at)->not->toBeNull();
         expect($user->invitation_token)->toBeNull();
+        expect($user->email_verified_at)->not->toBeNull();
     })->group('invitation', 'guest');
 
     it('requires password confirmation to match', function () {
