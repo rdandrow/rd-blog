@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'master.admin' => \App\Http\Middleware\EnsureUserIsMasterAdmin::class,
         ]);
+    })
+    ->withSchedule(function (Schedule $schedule): void {
+        // Cleanup expired invitations daily at 2am
+        $schedule->command('invitations:cleanup')->dailyAt('02:00');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
