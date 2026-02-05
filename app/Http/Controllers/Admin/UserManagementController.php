@@ -19,34 +19,12 @@ use Inertia\Response;
 class UserManagementController extends Controller
 {
     /**
-     * Get database-specific SQL for invitation expiration check.
-     */
-    protected function getInvitationExpiredExpression(): string
-    {
-        return match (config('database.default')) {
-            'mysql', 'mariadb' => 'TIMESTAMPDIFF(HOUR, invitation_sent_at, NOW()) >= 48',
-            'pgsql' => 'EXTRACT(EPOCH FROM (NOW() - invitation_sent_at)) / 3600 >= 48',
-            default => '(JULIANDAY("now") - JULIANDAY(invitation_sent_at)) * 24 >= 48', // SQLite
-        };
-    }
-
-    /**
      * Display a listing of admin users.
      */
     public function indexAdmins(): Response
     {
-        $expiredExpression = $this->getInvitationExpiredExpression();
-        
         $admins = User::whereIn('role', ['admin', 'master_admin'])
             ->orderBy('created_at', 'desc')
-            ->selectRaw("*, 
-                CASE 
-                    WHEN invitation_sent_at IS NOT NULL 
-                    AND invitation_accepted_at IS NULL 
-                    AND {$expiredExpression}
-                    THEN 1 
-                    ELSE 0 
-                END as invitation_expired")
             ->paginate(20)
             ->through(fn($user) => [
                 'id' => $user->id,
@@ -56,7 +34,7 @@ class UserManagementController extends Controller
                 'created_at' => $user->created_at->format('M d, Y'),
                 'invitation_sent_at' => $user->invitation_sent_at?->toISOString(),
                 'invitation_accepted_at' => $user->invitation_accepted_at?->toISOString(),
-                'invitation_expired' => (bool) $user->invitation_expired,
+                'invitation_expired' => $user->hasInvitationExpired(),
             ]);
 
         return Inertia::render('Admin/Users/AdminUsers', [
@@ -69,18 +47,8 @@ class UserManagementController extends Controller
      */
     public function indexMembers(): Response
     {
-        $expiredExpression = $this->getInvitationExpiredExpression();
-        
         $members = User::where('role', 'member')
             ->orderBy('created_at', 'desc')
-            ->selectRaw("*, 
-                CASE 
-                    WHEN invitation_sent_at IS NOT NULL 
-                    AND invitation_accepted_at IS NULL 
-                    AND {$expiredExpression}
-                    THEN 1 
-                    ELSE 0 
-                END as invitation_expired")
             ->paginate(20)
             ->through(fn($user) => [
                 'id' => $user->id,
@@ -90,7 +58,7 @@ class UserManagementController extends Controller
                 'created_at' => $user->created_at->format('M d, Y'),
                 'invitation_sent_at' => $user->invitation_sent_at?->toISOString(),
                 'invitation_accepted_at' => $user->invitation_accepted_at?->toISOString(),
-                'invitation_expired' => (bool) $user->invitation_expired,
+                'invitation_expired' => $user->hasInvitationExpired(),
             ]);
 
         return Inertia::render('Admin/Users/MemberUsers', [
