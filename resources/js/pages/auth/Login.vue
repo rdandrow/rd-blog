@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -20,18 +20,15 @@ defineProps<{
 }>();
 
 const page = usePage();
-const emailInput = ref<HTMLInputElement | null>(null);
+const passwordInput = ref<HTMLInputElement | null>(null);
 
-// Pre-fill email if coming from invitation
+// Pre-fill email from flash data (e.g., after invitation acceptance)
+const prefilledEmail = computed(() => page.props.flash?.email as string | undefined);
+
+// Focus password field if email is pre-filled
 onMounted(() => {
-    const flashEmail = page.props.flash?.email;
-    if (flashEmail && emailInput.value) {
-        emailInput.value.value = flashEmail;
-        // Focus on password field if email is pre-filled
-        const passwordInput = document.getElementById('password') as HTMLInputElement;
-        if (passwordInput) {
-            passwordInput.focus();
-        }
+    if (prefilledEmail.value && passwordInput.value) {
+        passwordInput.value.focus();
     }
 });
 </script>
@@ -61,9 +58,9 @@ onMounted(() => {
                     <Label for="email">Email address</Label>
                     <Input
                         id="email"
-                        ref="emailInput"
                         type="email"
                         name="email"
+                        :model-value="prefilledEmail"
                         required
                         autofocus
                         :tabindex="1"
@@ -87,6 +84,7 @@ onMounted(() => {
                     </div>
                     <Input
                         id="password"
+                        ref="passwordInput"
                         type="password"
                         name="password"
                         required
