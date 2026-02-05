@@ -121,7 +121,7 @@ class User extends Authenticatable
 
     /**
      * Check if the user's invitation has expired.
-     * Invitations expire 48 hours after being sent.
+     * Invitations expire after 48 hours (>= 48 hours old).
      */
     public function hasInvitationExpired(): bool
     {
@@ -129,7 +129,7 @@ class User extends Authenticatable
             return false;
         }
 
-        return $this->invitation_sent_at->diffInHours(now()) > 48;
+        return $this->invitation_sent_at->diffInHours(now()) >= 48;
     }
 
     /**

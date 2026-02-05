@@ -24,9 +24,9 @@ class UserManagementController extends Controller
     protected function getInvitationExpiredExpression(): string
     {
         return match (config('database.default')) {
-            'mysql', 'mariadb' => 'TIMESTAMPDIFF(HOUR, invitation_sent_at, NOW()) > 48',
-            'pgsql' => 'EXTRACT(EPOCH FROM (NOW() - invitation_sent_at)) / 3600 > 48',
-            default => '(JULIANDAY("now") - JULIANDAY(invitation_sent_at)) * 24 > 48', // SQLite
+            'mysql', 'mariadb' => 'TIMESTAMPDIFF(HOUR, invitation_sent_at, NOW()) >= 48',
+            'pgsql' => 'EXTRACT(EPOCH FROM (NOW() - invitation_sent_at)) / 3600 >= 48',
+            default => '(JULIANDAY("now") - JULIANDAY(invitation_sent_at)) * 24 >= 48', // SQLite
         };
     }
 
