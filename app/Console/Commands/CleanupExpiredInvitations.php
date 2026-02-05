@@ -62,6 +62,9 @@ class CleanupExpiredInvitations extends Command
         // Clean up expired invitations
         $cleaned = 0;
         foreach ($expiredUsers as $user) {
+            // Capture original timestamp before clearing
+            $originalSentAt = $user->invitation_sent_at;
+            
             $user->update([
                 'invitation_token' => null,
                 'invitation_sent_at' => null,
@@ -72,7 +75,8 @@ class CleanupExpiredInvitations extends Command
                 'user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_role' => $user->role,
-                'invitation_expired_at' => $user->invitation_sent_at?->toISOString(),
+                'invitation_sent_at' => $originalSentAt?->toISOString(),
+                'expired_hours_ago' => $originalSentAt ? now()->diffInHours($originalSentAt) : null,
             ]);
         }
 
