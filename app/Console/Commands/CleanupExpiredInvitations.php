@@ -14,7 +14,8 @@ class CleanupExpiredInvitations extends Command
      * @var string
      */
     protected $signature = 'invitations:cleanup
-                          {--dry-run : Display what would be cleaned up without making changes}';
+                          {--dry-run : Display what would be cleaned up without making changes}
+                          {--force : Force cleanup without confirmation prompt}';
 
     /**
      * The console command description.
@@ -53,8 +54,8 @@ class CleanupExpiredInvitations extends Command
             return self::SUCCESS;
         }
 
-        // Confirm cleanup
-        if (!$this->confirm("Found {$count} expired invitations. Proceed with cleanup?", true)) {
+        // Confirm cleanup (skip if --force is used)
+        if (!$this->option('force') && !$this->confirm("Found {$count} expired invitations. Proceed with cleanup?", true)) {
             $this->info('Cleanup cancelled.');
             return self::SUCCESS;
         }

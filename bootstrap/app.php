@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         // Cleanup expired invitations daily at 2am
-        $schedule->command('invitations:cleanup')->dailyAt('02:00');
+        $schedule->command('invitations:cleanup --force')->dailyAt('02:00');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
