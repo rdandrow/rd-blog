@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -133,41 +132,46 @@ class UserManagementController extends Controller
         ]);
 
         try {
-            return DB::transaction(function () use ($request) {
+            $invitationData = DB::transaction(function () use ($request) {
                 // Generate invitation token
                 $invitationToken = Str::random(64);
-                
-                // Create user with temporary password and invitation token
+
+                // Create user with temporary password and hashed invitation token
                 $user = User::create([
                     'name' => $request->name,
                     'email' => $request->email,
                     'password' => Hash::make(Str::random(32)), // Temporary random password
                     'role' => $request->role,
-                    'invitation_token' => $invitationToken,
+                    'invitation_token' => hash('sha256', $invitationToken),
                     'invitation_sent_at' => now(),
                 ]);
 
-                // Generate invitation URL
-                $invitationUrl = url("/invitation/accept/{$invitationToken}");
-                
-                // Send invitation email synchronously so that failures roll back the transaction
-                $user->notifyNow(new UserInvitation(
-                    invitationUrl: $invitationUrl,
-                    inviterName: auth()->user()->name
-                ));
-
-                // Log security event
-                Log::info('User invitation sent', [
-                    'invited_user_id' => $user->id,
-                    'invited_user_email' => $user->email,
-                    'invited_user_role' => $user->role,
-                    'inviter_id' => auth()->id(),
-                    'inviter_email' => auth()->user()->email,
-                    'ip_address' => request()->ip(),
-                ]);
-
-                return back()->with('success', 'User invited successfully. An invitation email has been sent.');
+                return [
+                    'user' => $user,
+                    'invitationUrl' => url("/invitation/accept/{$invitationToken}"),
+                ];
             });
+
+            $user = $invitationData['user'];
+            $invitationUrl = $invitationData['invitationUrl'];
+
+            // Send invitation email after commit to avoid long-running transactions
+            $user->notify(new UserInvitation(
+                invitationUrl: $invitationUrl,
+                inviterName: auth()->user()->name
+            ));
+
+            // Log security event
+            Log::info('User invitation sent', [
+                'invited_user_id' => $user->id,
+                'invited_user_email' => $user->email,
+                'invited_user_role' => $user->role,
+                'inviter_id' => auth()->id(),
+                'inviter_email' => auth()->user()->email,
+                'ip_address' => request()->ip(),
+            ]);
+
+            return back()->with('success', 'User invited successfully. An invitation email has been sent.');
         } catch (\Exception $e) {
             // Log the error
             Log::error('Failed to create user and send invitation', [
@@ -200,9 +204,9 @@ class UserManagementController extends Controller
                 // Generate new invitation token
                 $invitationToken = Str::random(64);
                 
-                // Update user with new invitation token
+                // Update user with new hashed invitation token
                 $user->update([
-                    'invitation_token' => $invitationToken,
+                    'invitation_token' => hash('sha256', $invitationToken),
                     'invitation_sent_at' => now(),
                 ]);
 

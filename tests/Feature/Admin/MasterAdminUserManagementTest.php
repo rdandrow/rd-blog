@@ -712,7 +712,7 @@ describe('Rate Limiting', function () {
     it('rate limits invitation resend attempts', function () {
         $masterAdmin = createTestMasterAdmin();
         $user = User::factory()->create([
-            'invitation_token' => 'test_token',
+            'invitation_token' => hash('sha256', 'test_token'),
             'invitation_sent_at' => now()->subHours(1),
             'invitation_accepted_at' => null,
         ]);

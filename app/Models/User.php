@@ -30,7 +30,6 @@ class User extends Authenticatable
         'invitation_token',
         'invitation_sent_at',
         'invitation_accepted_at',
-        'email_verified_at',
     ];
 
     /**

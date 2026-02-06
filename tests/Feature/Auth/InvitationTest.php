@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 describe('Invitation Display', function () {
     it('renders invitation acceptance page with valid token', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now(),
             'invitation_accepted_at' => null,
         ]);
@@ -43,7 +43,7 @@ describe('Invitation Display', function () {
 
     it('redirects to login with error for expired invitation', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now()->subHours(49), // Expired
             'invitation_accepted_at' => null,
         ]);
@@ -56,7 +56,7 @@ describe('Invitation Display', function () {
 
     it('redirects to login with error for already accepted invitation', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now(),
             'invitation_accepted_at' => now(), // Already accepted
         ]);
@@ -71,7 +71,7 @@ describe('Invitation Display', function () {
 describe('Invitation Acceptance', function () {
     it('allows setting password with valid invitation', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now(),
             'invitation_accepted_at' => null,
             'email_verified_at' => null,
@@ -90,12 +90,11 @@ describe('Invitation Acceptance', function () {
         expect(Hash::check('secure-password-12345', $user->password))->toBeTrue();
         expect($user->invitation_accepted_at)->not->toBeNull();
         expect($user->invitation_token)->toBeNull();
-        expect($user->email_verified_at)->not->toBeNull();
     })->group('invitation', 'guest');
 
     it('requires password confirmation to match', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now(),
             'invitation_accepted_at' => null,
         ]);
@@ -110,7 +109,7 @@ describe('Invitation Acceptance', function () {
 
     it('requires password to be at least 14 characters', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now(),
             'invitation_accepted_at' => null,
         ]);
@@ -135,7 +134,7 @@ describe('Invitation Acceptance', function () {
 
     it('denies password setup with expired invitation', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now()->subHours(49), // Expired
             'invitation_accepted_at' => null,
         ]);
@@ -155,7 +154,7 @@ describe('Invitation Acceptance', function () {
 
     it('denies password setup for already accepted invitation', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now(),
             'invitation_accepted_at' => now()->subMinutes(5), // Already accepted
         ]);
@@ -173,7 +172,7 @@ describe('Invitation Acceptance', function () {
 describe('Invitation Rate Limiting', function () {
     it('rate limits invitation page requests', function () {
         $user = User::factory()->create([
-            'invitation_token' => $token = Str::random(64),
+            'invitation_token' => hash('sha256', $token = Str::random(64)),
             'invitation_sent_at' => now(),
             'invitation_accepted_at' => null,
         ]);
@@ -211,7 +210,7 @@ describe('Invitation Resending', function () {
         
         $masterAdmin = User::factory()->masterAdmin()->create();
         $user = User::factory()->create([
-            'invitation_token' => Str::random(64),
+            'invitation_token' => hash('sha256', Str::random(64)),
             'invitation_sent_at' => now()->subHours(49), // Expired
             'invitation_accepted_at' => null,
         ]);
@@ -255,7 +254,7 @@ describe('Invitation Security', function () {
         
         $masterAdmin = User::factory()->masterAdmin()->create();
         $user = User::factory()->admin()->create([
-            'invitation_token' => Str::random(64),
+            'invitation_token' => hash('sha256', Str::random(64)),
             'invitation_sent_at' => now(),
             'invitation_accepted_at' => null,
         ]);

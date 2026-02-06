@@ -19,7 +19,9 @@ class InvitationController extends Controller
      */
     public function show(string $token): Response|RedirectResponse
     {
-        $user = User::where('invitation_token', $token)
+        $hashedToken = hash('sha256', $token);
+
+        $user = User::where('invitation_token', $hashedToken)
             ->whereNotNull('invitation_sent_at')
             ->whereNull('invitation_accepted_at')
             ->first();
@@ -52,7 +54,9 @@ class InvitationController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::min(14)],
         ]);
 
-        $user = User::where('invitation_token', $token)
+        $hashedToken = hash('sha256', $token);
+
+        $user = User::where('invitation_token', $hashedToken)
             ->whereNotNull('invitation_sent_at')
             ->whereNull('invitation_accepted_at')
             ->first();

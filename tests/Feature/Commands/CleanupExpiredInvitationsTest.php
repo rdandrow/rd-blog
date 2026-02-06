@@ -13,13 +13,13 @@ describe('Cleanup Command Execution', function () {
     it('cleans up expired invitations with --force flag without prompting', function () {
         // Create users with expired invitations (> 48 hours old)
         $expiredUser1 = User::factory()->create([
-            'invitation_token' => 'expired_token_1',
+            'invitation_token' => hash('sha256', 'expired_token_1'),
             'invitation_sent_at' => now()->subHours(49),
             'invitation_accepted_at' => null,
         ]);
 
         $expiredUser2 = User::factory()->create([
-            'invitation_token' => 'expired_token_2',
+            'invitation_token' => hash('sha256', 'expired_token_2'),
             'invitation_sent_at' => now()->subHours(50),
             'invitation_accepted_at' => null,
         ]);
@@ -37,7 +37,7 @@ describe('Cleanup Command Execution', function () {
     it('skips non-expired invitations', function () {
         // Create user with recent invitation (< 48 hours)
         $recentUser = User::factory()->create([
-            'invitation_token' => 'recent_token',
+            'invitation_token' => hash('sha256', 'recent_token'),
             'invitation_sent_at' => now()->subHours(24),
             'invitation_accepted_at' => null,
         ]);
@@ -45,7 +45,7 @@ describe('Cleanup Command Execution', function () {
         $exitCode = Artisan::call('invitations:cleanup', ['--force' => true]);
 
         expect($exitCode)->toBe(0)
-            ->and($recentUser->fresh()->invitation_token)->toBe('recent_token')
+            ->and($recentUser->fresh()->invitation_token)->toBe(hash('sha256', 'recent_token'))
             ->and($recentUser->fresh()->invitation_sent_at)->not->toBeNull();
     })->group('cleanup-command', 'filtering');
 
@@ -68,7 +68,7 @@ describe('Cleanup Command Execution', function () {
         $expiredUser = User::factory()->create([
             'email' => 'expired@test.com',
             'role' => 'member',
-            'invitation_token' => 'expired_token',
+            'invitation_token' => hash('sha256', 'expired_token'),
             'invitation_sent_at' => now()->subHours(50),
             'invitation_accepted_at' => null,
         ]);
@@ -76,7 +76,7 @@ describe('Cleanup Command Execution', function () {
         $exitCode = Artisan::call('invitations:cleanup', ['--dry-run' => true]);
 
         expect($exitCode)->toBe(0)
-            ->and($expiredUser->fresh()->invitation_token)->toBe('expired_token')
+            ->and($expiredUser->fresh()->invitation_token)->toBe(hash('sha256', 'expired_token'))
             ->and($expiredUser->fresh()->invitation_sent_at)->not->toBeNull();
 
         $output = Artisan::output();
@@ -87,7 +87,7 @@ describe('Cleanup Command Execution', function () {
     it('handles no expired invitations gracefully', function () {
         // Create only recent invitations
         User::factory()->create([
-            'invitation_token' => 'recent_token',
+            'invitation_token' => hash('sha256', 'recent_token'),
             'invitation_sent_at' => now()->subHours(24),
             'invitation_accepted_at' => null,
         ]);
@@ -103,7 +103,7 @@ describe('Cleanup Command Execution', function () {
     it('cleans up exactly at 48-hour threshold', function () {
         // Create user with invitation exactly 48 hours old (should be cleaned)
         $exactlyExpired = User::factory()->create([
-            'invitation_token' => 'exact_token',
+            'invitation_token' => hash('sha256', 'exact_token'),
             'invitation_sent_at' => now()->subHours(48),
             'invitation_accepted_at' => null,
         ]);

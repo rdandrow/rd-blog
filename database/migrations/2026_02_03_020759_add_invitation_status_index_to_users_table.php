@@ -12,9 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            // Index for fast token lookup during invitation acceptance
-            $table->index('invitation_token', 'idx_invitation_token');
-            
             // Composite index for cleanup queries: sent_at first (range condition), then accepted_at
             $table->index(['invitation_sent_at', 'invitation_accepted_at'], 'idx_invitation_status');
         });
@@ -27,7 +24,6 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropIndex('idx_invitation_status');
-            $table->dropIndex('idx_invitation_token');
         });
     }
 };
