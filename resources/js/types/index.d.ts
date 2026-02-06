@@ -24,6 +24,10 @@ export type AppPageProps<
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    flash?: {
+        email?: string;
+        [key: string]: unknown;
+    };
 };
 
 export interface User {

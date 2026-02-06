@@ -27,6 +27,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropIndex('idx_invitation_status');
+            $table->dropIndex('idx_invitation_token');
         });
     }
 };

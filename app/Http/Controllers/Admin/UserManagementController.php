@@ -150,8 +150,8 @@ class UserManagementController extends Controller
                 // Generate invitation URL
                 $invitationUrl = url("/invitation/accept/{$invitationToken}");
                 
-                // Send invitation email (queued with retry logic)
-                $user->notify(new UserInvitation(
+                // Send invitation email synchronously so that failures roll back the transaction
+                $user->notifyNow(new UserInvitation(
                     invitationUrl: $invitationUrl,
                     inviterName: auth()->user()->name
                 ));
