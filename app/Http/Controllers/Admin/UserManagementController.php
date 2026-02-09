@@ -152,29 +152,9 @@ class UserManagementController extends Controller
                 ];
             });
 
-            $user = $invitationData['user'];
-            $invitationUrl = $invitationData['invitationUrl'];
-
-            // Send invitation email after commit to avoid long-running transactions
-            $user->notify(new UserInvitation(
-                invitationUrl: $invitationUrl,
-                inviterName: auth()->user()->name
-            ));
-
-            // Log security event
-            Log::info('User invitation sent', [
-                'invited_user_id' => $user->id,
-                'invited_user_email' => $user->email,
-                'invited_user_role' => $user->role,
-                'inviter_id' => auth()->id(),
-                'inviter_email' => auth()->user()->email,
-                'ip_address' => request()->ip(),
-            ]);
-
-            return back()->with('success', 'User invited successfully. An invitation email has been sent.');
         } catch (\Exception $e) {
             // Log the error
-            Log::error('Failed to create user and send invitation', [
+            Log::error('Failed to create user invitation', [
                 'email' => $request->email,
                 'role' => $request->role,
                 'error' => $e->getMessage(),
@@ -182,9 +162,48 @@ class UserManagementController extends Controller
             ]);
 
             return back()->withErrors([
-                'error' => 'Failed to create user and send invitation. Please try again or contact support if the issue persists.',
+                'error' => 'Failed to create user invitation. Please try again or contact support if the issue persists.',
             ]);
         }
+
+        $user = $invitationData['user'];
+        $invitationUrl = $invitationData['invitationUrl'];
+
+        try {
+            // Send invitation email after commit to avoid long-running transactions
+            $user->notify(new UserInvitation(
+                invitationUrl: $invitationUrl,
+                inviterName: auth()->user()->name,
+                inviterId: auth()->id(),
+                notifiableId: $user->id,
+                notifiableEmail: $user->email
+            ));
+        } catch (\Exception $e) {
+            Log::error('Failed to send invitation email', [
+                'invited_user_id' => $user->id,
+                'invited_user_email' => $user->email,
+                'invited_user_role' => $user->role,
+                'inviter_id' => auth()->id(),
+                'inviter_email' => auth()->user()->email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withErrors([
+                'error' => 'User created, but the invitation email failed to send. Please resend the invitation.',
+            ]);
+        }
+
+        // Log security event
+        Log::info('User invitation sent', [
+            'invited_user_id' => $user->id,
+            'invited_user_email' => $user->email,
+            'invited_user_role' => $user->role,
+            'inviter_id' => auth()->id(),
+            'inviter_email' => auth()->user()->email,
+            'ip_address' => request()->ip(),
+        ]);
+
+        return back()->with('success', 'User invited successfully. An invitation email has been sent.');
     }
 
     /**
@@ -200,40 +219,24 @@ class UserManagementController extends Controller
         }
 
         try {
-            return DB::transaction(function () use ($user) {
+            $invitationData = DB::transaction(function () use ($user) {
                 // Generate new invitation token
                 $invitationToken = Str::random(64);
-                
+
                 // Update user with new hashed invitation token
                 $user->update([
                     'invitation_token' => hash('sha256', $invitationToken),
                     'invitation_sent_at' => now(),
                 ]);
 
-                // Generate invitation URL
-                $invitationUrl = url("/invitation/accept/{$invitationToken}");
-                
-                // Send invitation email (queued with retry logic)
-                $user->notify(new UserInvitation(
-                    invitationUrl: $invitationUrl,
-                    inviterName: auth()->user()->name
-                ));
-
-                // Log security event
-                Log::info('User invitation resent', [
-                    'invited_user_id' => $user->id,
-                    'invited_user_email' => $user->email,
-                    'invited_user_role' => $user->role,
-                    'inviter_id' => auth()->id(),
-                    'inviter_email' => auth()->user()->email,
-                    'ip_address' => request()->ip(),
-                ]);
-
-                return back()->with('success', 'Invitation email has been resent successfully.');
+                return [
+                    'user' => $user,
+                    'invitationUrl' => url("/invitation/accept/{$invitationToken}"),
+                ];
             });
         } catch (\Exception $e) {
             // Log the error
-            Log::error('Failed to resend invitation', [
+            Log::error('Failed to update invitation for resend', [
                 'user_id' => $user->id,
                 'user_email' => $user->email,
                 'error' => $e->getMessage(),
@@ -244,5 +247,43 @@ class UserManagementController extends Controller
                 'error' => 'Failed to resend invitation. Please try again or contact support if the issue persists.',
             ]);
         }
+
+        $invitationUrl = $invitationData['invitationUrl'];
+
+        try {
+            // Send invitation email (queued with retry logic)
+            $user->notify(new UserInvitation(
+                invitationUrl: $invitationUrl,
+                inviterName: auth()->user()->name,
+                inviterId: auth()->id(),
+                notifiableId: $user->id,
+                notifiableEmail: $user->email
+            ));
+        } catch (\Exception $e) {
+            Log::error('Failed to send invitation resend email', [
+                'invited_user_id' => $user->id,
+                'invited_user_email' => $user->email,
+                'invited_user_role' => $user->role,
+                'inviter_id' => auth()->id(),
+                'inviter_email' => auth()->user()->email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withErrors([
+                'error' => 'Invitation updated, but the email failed to send. Please try again.',
+            ]);
+        }
+
+        // Log security event
+        Log::info('User invitation resent', [
+            'invited_user_id' => $user->id,
+            'invited_user_email' => $user->email,
+            'invited_user_role' => $user->role,
+            'inviter_id' => auth()->id(),
+            'inviter_email' => auth()->user()->email,
+            'ip_address' => request()->ip(),
+        ]);
+
+        return back()->with('success', 'Invitation email has been resent successfully.');
     }
 }

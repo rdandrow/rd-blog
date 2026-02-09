@@ -31,7 +31,10 @@ class UserInvitation extends Notification implements ShouldQueue
      */
     public function __construct(
         public string $invitationUrl,
-        public string $inviterName
+        public string $inviterName,
+        public int $inviterId,
+        public int $notifiableId,
+        public string $notifiableEmail
     ) {}
 
     /**
@@ -67,8 +70,8 @@ class UserInvitation extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
-            'invitation_url' => $this->invitationUrl,
             'inviter_name' => $this->inviterName,
+            'inviter_id' => $this->inviterId,
         ];
     }
 
@@ -78,9 +81,10 @@ class UserInvitation extends Notification implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         Log::error('User invitation email failed', [
-            'notifiable_id' => $this->notifiable?->id ?? null,
-            'notifiable_email' => $this->notifiable?->email ?? null,
+            'notifiable_id' => $this->notifiableId,
+            'notifiable_email' => $this->notifiableEmail,
             'inviter_name' => $this->inviterName,
+            'inviter_id' => $this->inviterId,
             'exception_class' => $exception::class,
             'exception' => $exception->getMessage(),
         ]);
