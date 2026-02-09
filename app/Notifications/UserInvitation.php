@@ -78,10 +78,11 @@ class UserInvitation extends Notification implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         Log::error('User invitation email failed', [
-            'invitation_url' => $this->invitationUrl,
+            'notifiable_id' => $this->notifiable?->id ?? null,
+            'notifiable_email' => $this->notifiable?->email ?? null,
             'inviter_name' => $this->inviterName,
+            'exception_class' => $exception::class,
             'exception' => $exception->getMessage(),
-            'exception_trace' => $exception->getTraceAsString(),
         ]);
     }
 }

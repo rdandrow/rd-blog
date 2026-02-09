@@ -31,14 +31,15 @@ class CleanupExpiredInvitations extends Command
     {
         $dryRun = $this->option('dry-run');
 
+        $now = now();
+
         // Find users with expired invitations (48+ hours old, not accepted)
-        $expiredUsers = User::whereNotNull('invitation_token')
+        $expiredUsersQuery = User::whereNotNull('invitation_token')
             ->whereNull('invitation_accepted_at')
             ->whereNotNull('invitation_sent_at')
-            ->where('invitation_sent_at', '<=', now()->subHours(48))
-            ->get();
+            ->where('invitation_sent_at', '<=', $now->copy()->subHours(48));
 
-        $count = $expiredUsers->count();
+        $count = $expiredUsersQuery->count();
 
         if ($count === 0) {
             $this->info('No expired invitations found.');
@@ -47,9 +48,11 @@ class CleanupExpiredInvitations extends Command
 
         if ($dryRun) {
             $this->warn("DRY RUN: Would clean up {$count} expired invitations:");
-            $expiredUsers->each(function ($user) {
-                $expiredHours = now()->diffInHours($user->invitation_sent_at);
-                $this->line("  - {$user->email} ({$user->role}) - Expired {$expiredHours}h ago");
+            $expiredUsersQuery->chunkById(500, function ($users) use ($now) {
+                foreach ($users as $user) {
+                    $expiredHours = $now->diffInHours($user->invitation_sent_at);
+                    $this->line("  - {$user->email} ({$user->role}) - Expired {$expiredHours}h ago");
+                }
             });
             return self::SUCCESS;
         }
@@ -62,24 +65,26 @@ class CleanupExpiredInvitations extends Command
 
         // Clean up expired invitations
         $cleaned = 0;
-        foreach ($expiredUsers as $user) {
-            // Capture original timestamp before clearing
-            $originalSentAt = $user->invitation_sent_at;
-            
-            $user->update([
-                'invitation_token' => null,
-                'invitation_sent_at' => null,
-            ]);
-            $cleaned++;
+        $expiredUsersQuery->chunkById(500, function ($users) use (&$cleaned, $now) {
+            foreach ($users as $user) {
+                // Capture original timestamp before clearing
+                $originalSentAt = $user->invitation_sent_at;
 
-            Log::info('Expired invitation cleaned up', [
-                'user_id' => $user->id,
-                'user_email' => $user->email,
-                'user_role' => $user->role,
-                'invitation_sent_at' => $originalSentAt?->toISOString(),
-                'expired_hours_ago' => $originalSentAt ? now()->diffInHours($originalSentAt) : null,
-            ]);
-        }
+                $user->update([
+                    'invitation_token' => null,
+                    'invitation_sent_at' => null,
+                ]);
+                $cleaned++;
+
+                Log::info('Expired invitation cleaned up', [
+                    'user_id' => $user->id,
+                    'user_email' => $user->email,
+                    'user_role' => $user->role,
+                    'invitation_sent_at' => $originalSentAt?->toISOString(),
+                    'expired_hours_ago' => $originalSentAt ? $now->diffInHours($originalSentAt) : null,
+                ]);
+            }
+        });
 
         $this->info("Successfully cleaned up {$cleaned} expired invitations.");
         

@@ -25,10 +25,10 @@ Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 
 // Invitation acceptance routes (public, guest-only)
 Route::get('/invitation/accept/{token}', [InvitationController::class, 'show'])
-    ->middleware(['guest', 'throttle:10,1'])
+    ->middleware(['guest', 'throttle:invitation-show'])
     ->name('invitation.show');
 Route::post('/invitation/accept/{token}', [InvitationController::class, 'accept'])
-    ->middleware(['guest', 'throttle:5,1'])
+    ->middleware(['guest', 'throttle:invitation-accept'])
     ->name('invitation.accept');
 
 // Blog Post Management Routes (Admin)
@@ -66,7 +66,7 @@ Route::middleware(['auth', 'verified', 'ensure.2fa', 'master.admin'])->prefix('a
         ->middleware('throttle:20,1')
         ->name('store');
     Route::post('{user}/resend-invitation', [UserManagementController::class, 'resendInvitation'])
-        ->middleware('throttle:20,1')
+        ->middleware('throttle:admin-invitation-resend')
         ->name('resendInvitation');
 });
 
