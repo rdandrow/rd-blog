@@ -20,15 +20,15 @@ defineProps<{
 }>();
 
 const page = usePage();
-const passwordInput = ref<HTMLInputElement | null>(null);
+const passwordInput = ref<{ input: HTMLInputElement | null } | null>(null);
 
 // Pre-fill email from flash data (e.g., after invitation acceptance)
 const prefilledEmail = computed(() => page.props.flash?.email as string | undefined);
 
 // Focus password field if email is pre-filled
 onMounted(() => {
-    if (prefilledEmail.value && passwordInput.value) {
-        passwordInput.value.focus();
+    if (prefilledEmail.value) {
+        passwordInput.value?.input?.focus();
     }
 });
 </script>

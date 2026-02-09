@@ -148,7 +148,7 @@ class UserManagementController extends Controller
 
                 return [
                     'user' => $user,
-                    'invitationUrl' => url("/invitation/accept/{$invitationToken}"),
+                    'invitationUrl' => route('invitation.show', $invitationToken),
                 ];
             });
 
@@ -231,7 +231,7 @@ class UserManagementController extends Controller
 
                 return [
                     'user' => $user,
-                    'invitationUrl' => url("/invitation/accept/{$invitationToken}"),
+                    'invitationUrl' => route('invitation.show', $invitationToken),
                 ];
             });
         } catch (\Exception $e) {

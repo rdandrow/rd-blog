@@ -57,7 +57,7 @@ function submit() {
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                    Welcome to {{ $page.props.appName || 'the platform' }}
+                    Welcome to {{ $page.props.name || 'the platform' }}
                 </h2>
                 <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
                     Hi {{ name }}, set up your password to get started
