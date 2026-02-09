@@ -25,6 +25,10 @@ class LoginResponse implements LoginResponseContract, TwoFactorLoginResponseCont
         }
 
         // Redirect based on user role
+        if (!$user->hasEnabledTwoFactorAuthentication()) {
+            return redirect()->route('register.setup-two-factor');
+        }
+
         if ($user->isMasterAdmin() || $user->isRegularAdmin()) {
             return redirect()->intended('/admin/dashboard');
         }
