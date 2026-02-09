@@ -20,6 +20,9 @@ interface Admin {
     email: string;
     role: string;
     created_at: string;
+    invitation_sent_at: string | null;
+    invitation_accepted_at: string | null;
+    invitation_expired: boolean;
 }
 
 interface PaginatedAdmins {
@@ -40,8 +43,6 @@ const selectedUser = ref<Admin | null>(null);
 const createForm = ref({
     name: '',
     email: '',
-    password: '',
-    password_confirmation: '',
     role: 'admin',
 });
 
@@ -53,8 +54,6 @@ function openCreateDialog() {
     createForm.value = {
         name: '',
         email: '',
-        password: '',
-        password_confirmation: '',
         role: 'admin',
     };
     showCreateDialog.value = true;
@@ -109,6 +108,39 @@ function getRoleBadgeClass(role: string) {
 function formatRole(role: string) {
     return role === 'master_admin' ? 'Master Admin' : 'Admin';
 }
+
+function getInvitationStatus(user: Admin) {
+    if (user.invitation_accepted_at) {
+        return {
+            text: 'Accepted',
+            class: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+        };
+    }
+    if (user.invitation_expired) {
+        return {
+            text: 'Expired',
+            class: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+        };
+    }
+    if (user.invitation_sent_at) {
+        return {
+            text: 'Pending',
+            class: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+        };
+    }
+    return {
+        text: 'N/A',
+        class: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+    };
+}
+
+function resendInvitation(userId: number) {
+    router.post(`/admin/users/${userId}/resend-invitation`, {}, {
+        onSuccess: () => {
+            // Success message will be shown via flash message
+        },
+    });
+}
 </script>
 
 <template>
@@ -125,7 +157,7 @@ function formatRole(role: string) {
                         </p>
                     </div>
                     <Button @click="openCreateDialog">
-                        Create Admin User
+                        Invite Admin User
                     </Button>
                 </div>
 
@@ -142,6 +174,9 @@ function formatRole(role: string) {
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                                         Role
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                        Invitation Status
                                     </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
                                         Created
@@ -167,10 +202,27 @@ function formatRole(role: string) {
                                             {{ formatRole(admin.role) }}
                                         </span>
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span
+                                            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                                            :class="getInvitationStatus(admin).class"
+                                        >
+                                            {{ getInvitationStatus(admin).text }}
+                                        </span>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ admin.created_at }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <Button
+                                            v-if="admin.invitation_expired && !admin.invitation_accepted_at"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="resendInvitation(admin.id)"
+                                            class="mr-2"
+                                        >
+                                            Resend Invitation
+                                        </Button>
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -199,9 +251,9 @@ function formatRole(role: string) {
         <Dialog v-model:open="showCreateDialog">
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Create Admin User</DialogTitle>
+                    <DialogTitle>Invite Admin User</DialogTitle>
                     <DialogDescription>
-                        Add a new admin or master admin user to the system.
+                        Send an invitation email to a new admin or master admin user. They will receive a link to set their password.
                     </DialogDescription>
                 </DialogHeader>
                 <div class="grid gap-4 py-4">
@@ -223,24 +275,6 @@ function formatRole(role: string) {
                         />
                     </div>
                     <div class="grid gap-2">
-                        <Label for="password">Password</Label>
-                        <Input
-                            id="password"
-                            v-model="createForm.password"
-                            type="password"
-                            placeholder="Password"
-                        />
-                    </div>
-                    <div class="grid gap-2">
-                        <Label for="password_confirmation">Confirm Password</Label>
-                        <Input
-                            id="password_confirmation"
-                            v-model="createForm.password_confirmation"
-                            type="password"
-                            placeholder="Confirm password"
-                        />
-                    </div>
-                    <div class="grid gap-2">
                         <Label for="role">Role</Label>
                         <select
                             id="role"
@@ -256,7 +290,7 @@ function formatRole(role: string) {
                     <Button variant="outline" @click="showCreateDialog = false">
                         Cancel
                     </Button>
-                    <Button @click="createUser">Create User</Button>
+                    <Button @click="createUser">Send Invitation</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

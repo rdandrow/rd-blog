@@ -11,6 +11,7 @@ use App\Http\Controllers\BlogPostLikeController;
 use App\Http\Controllers\UserFollowController;
 use App\Http\Controllers\AuthorProfileController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Admin\UserManagementController;
 
 Route::get('/', [PublicBlogController::class, 'index'])->name('home');
@@ -21,6 +22,14 @@ Route::get('admin/dashboard', function () {
 })->middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->name('dashboard');
 
 Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
+
+// Invitation acceptance routes (public, guest-only)
+Route::get('/invitation/accept/{token}', [InvitationController::class, 'show'])
+    ->middleware(['guest', 'throttle:invitation-show'])
+    ->name('invitation.show');
+Route::post('/invitation/accept/{token}', [InvitationController::class, 'accept'])
+    ->middleware(['guest', 'throttle:invitation-accept'])
+    ->name('invitation.accept');
 
 // Blog Post Management Routes (Admin)
 Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -49,9 +58,16 @@ Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')-
 Route::middleware(['auth', 'verified', 'ensure.2fa', 'master.admin'])->prefix('admin/users')->name('admin.users.')->group(function () {
     Route::get('admins', [UserManagementController::class, 'indexAdmins'])->name('admins');
     Route::get('members', [UserManagementController::class, 'indexMembers'])->name('members');
-    Route::post('/', [UserManagementController::class, 'store'])->name('store');
     Route::patch('{user}/role', [UserManagementController::class, 'updateRole'])->name('updateRole');
     Route::delete('{user}', [UserManagementController::class, 'destroy'])->name('destroy');
+    
+    // User creation and invitation routes with rate limiting (email-sending operations)
+    Route::post('/', [UserManagementController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('store');
+    Route::post('{user}/resend-invitation', [UserManagementController::class, 'resendInvitation'])
+        ->middleware('throttle:admin-invitation-resend')
+        ->name('resendInvitation');
 });
 
 // Public blog post route (individual post viewing by slug)

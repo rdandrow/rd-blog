@@ -326,7 +326,7 @@ describe('Image Upload Error Handling', function () {
         expect($data)
             ->toHaveKey('success', false)
             ->toHaveKey('error');
-    })->group('blog-posts', 'image-upload', 'error-handling')->skip('Requires complex mocking');
+    })->skip('Requires complex mocking')->group('blog-posts', 'image-upload', 'error-handling');
 
     it('returns error when no file is provided', function () {
         $admin = createTestAdmin();

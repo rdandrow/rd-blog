@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -10,13 +11,26 @@ import AuthBase from '@/layouts/AuthLayout.vue';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, usePage } from '@inertiajs/vue3';
 
 defineProps<{
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
 }>();
+
+const page = usePage();
+const passwordInput = ref<{ input: HTMLInputElement | null } | null>(null);
+
+// Pre-fill email from flash data (e.g., after invitation acceptance)
+const prefilledEmail = computed(() => page.props.flash?.email as string | undefined);
+
+// Focus password field if email is pre-filled
+onMounted(() => {
+    if (prefilledEmail.value) {
+        passwordInput.value?.input?.focus();
+    }
+});
 </script>
 
 <template>
@@ -46,6 +60,7 @@ defineProps<{
                         id="email"
                         type="email"
                         name="email"
+                        :model-value="prefilledEmail"
                         required
                         autofocus
                         :tabindex="1"
@@ -69,6 +84,7 @@ defineProps<{
                     </div>
                     <Input
                         id="password"
+                        ref="passwordInput"
                         type="password"
                         name="password"
                         required

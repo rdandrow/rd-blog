@@ -27,7 +27,7 @@ describe('Login', function () {
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('register.setup-two-factor', absolute: false));
     })->group('auth', 'login', 'guest');
 
     it('redirects users with two factor enabled to two factor challenge', function () {

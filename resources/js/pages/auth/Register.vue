@@ -63,8 +63,9 @@ import { Form, Head } from '@inertiajs/vue3';
                         :tabindex="3"
                         autocomplete="new-password"
                         name="password"
-                        placeholder="Password"
+                        placeholder="Password (minimum 14 characters)"
                     />
+                    <p class="text-xs text-muted-foreground">Must be at least 14 characters long</p>
                     <InputError :message="errors.password" />
                 </div>
 
