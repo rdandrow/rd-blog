@@ -4,11 +4,11 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ## Current Test Status
 
-**Total: 708 tests passing across 28 test files**
+**Total: 787 tests passing across 30 test files**
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
-- ✅ **Form Components** (111 tests): Input (32), Button (38), Checkbox (41)
+- ✅ **Form Components** (190 tests): Input (32), Button (38), Checkbox (41), Textarea (42), Label (37)
 - ✅ **Feedback Components** (44 tests): AlertError (21), ErrorDisplay (23)
 - ✅ **Content Components** (83 tests): MarkdownEditor (52), MarkdownRender (31)
 - ✅ **Layout Components** (23 tests): AppShell (23)

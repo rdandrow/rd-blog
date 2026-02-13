@@ -626,7 +626,7 @@ Once frontend testing is set up, aim for these improved targets:
 - **useAutoSave Composable**: 100% (data persistence, work preservation)
 - **useMarkdown Composable**: 100% (security, content rendering)
 - **MarkdownEditor Component**: 95%+ (core editing, image upload, tables)
-- **Form Components**: 90%+ (Input, Checkbox, Button - used everywhere)
+- **Form Components**: 90%+ (Input, Checkbox, Button, Textarea, Label - used everywhere)
 - **Utility Functions**: 95%+ (pure logic, high reuse)
 
 ### Admin Features
@@ -647,7 +647,7 @@ Once frontend testing is set up, aim for these improved targets:
 - **Comments/Likes**: 80%+ (user engagement)
 
 ### Shared Components
-- **Form Components**: 90%+ (Input 32 tests, Button 38 tests, Checkbox 41 tests) ✅
+- **Form Components**: 90%+ (Input 32 tests, Button 38 tests, Checkbox 41 tests, Textarea 42 tests, Label 37 tests) ✅
 - **Layout Components**: 85%+ (AppShell 23 tests) ✅
 - **Feedback Components**: 85%+ (AlertError 21 tests, ErrorDisplay 23 tests) ✅
 
