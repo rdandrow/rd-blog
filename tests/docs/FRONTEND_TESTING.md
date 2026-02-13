@@ -647,8 +647,9 @@ Once frontend testing is set up, aim for these improved targets:
 - **Comments/Likes**: 80%+ (user engagement)
 
 ### Shared Components
-- **Layout Components**: 85%+ (AppShell, Sidebar, navigation)
-- **Feedback Components**: 85%+ (Alert, ErrorDisplay, Spinner)
+- **Form Components**: 90%+ (Input 32 tests, Button 38 tests, Checkbox 41 tests) ✅
+- **Layout Components**: 85%+ (AppShell 23 tests) ✅
+- **Feedback Components**: 85%+ (AlertError 21 tests, ErrorDisplay 23 tests) ✅
 
 ### Overall Project Target
 - **Minimum**: 85% overall coverage

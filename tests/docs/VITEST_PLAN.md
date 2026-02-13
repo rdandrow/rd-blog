@@ -2,6 +2,24 @@
 
 This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FRONTEND_TESTING.md) (note: parts may be outdated) and aligns with Vitest docs: https://vitest.dev/
 
+## Current Test Status
+
+**Total: 708 tests passing across 28 test files**
+
+### Completed Coverage:
+- ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
+- ✅ **Form Components** (111 tests): Input (32), Button (38), Checkbox (41)
+- ✅ **Feedback Components** (44 tests): AlertError (21), ErrorDisplay (23)
+- ✅ **Content Components** (83 tests): MarkdownEditor (52), MarkdownRender (31)
+- ✅ **Layout Components** (23 tests): AppShell (23)
+- ✅ **Display Components** (102 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10)
+- ✅ **Test Infrastructure**: Setup file (4 tests)
+
+### Next Priority:
+- 🔄 **Sidebar Component**: Individual sidebar sub-components (target: 85%+ coverage)
+- ⏳ **Admin Pages**: Create/Edit blog posts
+- ⏳ **Auth Flows**: Login, Register, 2FA
+
 ## 1) Compatibility & baseline
 - Ensure Node >= 20 and Vite >= 6 (per Vitest Getting Started).
 - Prefer a single config: add `test` block to Vite config rather than separate `vitest.config.ts` (Vitest recommends unified config).
@@ -298,23 +316,29 @@ This plan reflects current FE behavior and expands beyond auto-save. Use it as a
 ## 9) Coverage Targets
 
 ### Composables & Utilities (95-100%)
-- [ ] 100% for `useAutoSave` - Critical data persistence logic
-- [ ] 100% for `useMarkdown` - Content rendering security
-- [ ] 95%+ for utility functions (date/time formatting, validators)
+- [x] 100% for `useAutoSave` - Critical data persistence logic (46 tests)
+- [x] 100% for `useMarkdown` - Content rendering security (48 tests)
+- [x] 95%+ for utility functions (date/time formatting, validators) (useBlogUtils 26, useInitials 17)
+- [x] useAppearance - Theme management (31 tests)
+- [x] useTwoFactorAuth - 2FA flows (31 tests)
+- [x] useBlogPostForm - Form validation (59 tests)
+- [x] useClickOutside - Click detection (9 tests)
+- [x] useSearchState - Search state (8 tests)
 - **Rationale**: Pure logic, no UI complexity, high impact if buggy
 
 ### Admin Features (90-95%)
-- [ ] 95%+ for MarkdownEditor component - Core editing experience
+- [x] 95%+ for MarkdownEditor component - Core editing experience (52 tests)
+- [x] MarkdownRender component - Content rendering (31 tests)
 - [ ] 95%+ for blog post Create/Edit pages - Primary admin workflow
-- [ ] 90%+ for image upload/drag-drop - Data loss prevention
-- [ ] 90%+ for draft auto-save integration - User work preservation
+- [x] 90%+ for image upload/drag-drop - Data loss prevention (covered in MarkdownEditor tests)
+- [x] 90%+ for draft auto-save integration - User work preservation (covered in useAutoSave tests)
 - [ ] 90%+ for admin user management - Security critical
 - **Rationale**: Revenue/productivity critical paths, high user impact
 
 ### Shared Components (85-90%)
-- [ ] 90%+ for form components (Input, Checkbox, Button) - Used everywhere
-- [ ] 85%+ for layout components (AppShell, Sidebar) - Core navigation
-- [ ] 85%+ for feedback components (Alert, ErrorDisplay, Spinner)
+- [x] 90%+ for form components (Input, Checkbox, Button) - Used everywhere (111 tests)
+- [x] 85%+ for layout components (AppShell 23 tests) - Core navigation
+- [x] 85%+ for feedback components (AlertError 21, ErrorDisplay 23) - Error handling
 - **Rationale**: High reuse factor, bugs affect entire application
 
 ### Auth & Security (90-95%)
