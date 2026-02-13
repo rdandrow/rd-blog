@@ -257,29 +257,9 @@ const submit = async () => {
     clearImageError();
     clearTagError();
     
-    if (DEBUG_VALIDATION) {
-      console.log('Starting form submission...');
-      console.log('Form data:', {
-        title: form.title,
-        excerpt: form.excerpt,
-        content: form.content,
-        postId: props.post?.id
-      });
-
-      console.log('Form values before submission:', {
-        title: form.title,
-        excerpt: form.excerpt, 
-        content: form.content,
-        titleLength: String(form.title || '').trim().length,
-        excerptLength: String(form.excerpt || '').trim().length,
-        contentLength: String(form.content || '').trim().length
-      });
-    }
-    
     // Client-side validation as a safety net (server-side validation is authoritative)
     try {
       validateRequiredFields(form);
-      if (DEBUG_VALIDATION) console.log('Client-side validation passed');
     } catch (validationError) {
       console.error('Client-side validation failed:', validationError);
       
@@ -287,10 +267,6 @@ const submit = async () => {
       const hasTitle = form.title && String(form.title).trim().length > 0;
       const hasExcerpt = form.excerpt && String(form.excerpt).trim().length > 0;
       const hasContent = form.content && String(form.content).trim().length > 0;
-      
-      if (DEBUG_VALIDATION) {
-        console.log('Form state check:', { hasTitle, hasExcerpt, hasContent });
-      }
       
       // If we actually have all required fields, log this as a validation bug but continue
       if (hasTitle && hasExcerpt && hasContent) {
@@ -303,72 +279,28 @@ const submit = async () => {
 
     // Validate image file if uploaded
     if (form.featured_image_file) {
-      if (DEBUG_VALIDATION) console.log('Validating image file...');
       validateImageFile(form.featured_image_file);
     }
 
     // Clear any previous errors
     form.clearErrors();
 
-    console.log('About to submit form with data:', {
-      url: `/admin/blog-posts/${props.post.id}`,
-      method: 'PUT',
-      data: {
-        title: form.title,
-        excerpt: form.excerpt,
-        content: form.content,
-        featured_image: form.featured_image,
-        featured_image_file: form.featured_image_file,
-        tags: form.tags,
-        is_featured: form.is_featured,
-        is_published: form.is_published,
-        published_at: form.published_at
-      }
-    });
-
-    // Additional debugging: check actual values and types
-    console.log('Detailed form field analysis:', {
-      title: { 
-        value: form.title, 
-        type: typeof form.title, 
-        length: form.title ? form.title.length : 0,
-        isEmpty: !form.title || form.title.toString().trim() === ''
-      },
-      excerpt: { 
-        value: form.excerpt, 
-        type: typeof form.excerpt, 
-        length: form.excerpt ? form.excerpt.length : 0,
-        isEmpty: !form.excerpt || form.excerpt.toString().trim() === ''
-      },
-      content: { 
-        value: form.content, 
-        type: typeof form.content, 
-        length: form.content ? form.content.length : 0,
-        isEmpty: !form.content || form.content.toString().trim() === ''
-      }
-    });
-
-    // Try without forceFormData first, only use it if we have a file upload
+    // Handle form submission with proper options
     const submitOptions = {
       onSuccess: (response: any) => {
-        console.log('Blog post updated successfully', response);
+        // Success callback
       },
       onError: (errors: any) => {
         console.error('Server validation errors:', errors);
-        console.log('Form errors object:', form.errors);
-        console.log('Raw error response:', JSON.stringify(errors, null, 2));
         // Inertia will automatically handle field-specific errors
       },
       onFinish: () => {
         // This runs regardless of success or failure
-        console.log('Form submission finished');
       }
     } as any;
 
     // Handle file uploads differently to ensure all fields are properly sent
     if (form.featured_image_file) {
-      console.log('Using FormData because file is present');
-      
       // When we have a file, we need to be extra careful about FormData serialization
       // Let's explicitly ensure all text fields are properly set
       const formDataToSend = new FormData();
@@ -395,20 +327,12 @@ const submit = async () => {
       // Add Laravel method spoofing for PUT request
       formDataToSend.append('_method', 'PUT');
       
-      console.log('FormData contents being sent:', {
-        title: formDataToSend.get('title'),
-        excerpt: formDataToSend.get('excerpt'),
-        content: formDataToSend.get('content'),
-        file: formDataToSend.get('featured_image_file')
-      });
-      
       // Use router.post with FormData for file uploads (Laravel will handle _method=PUT)
       await router.post(`/admin/blog-posts/${props.post.id}`, formDataToSend, {
         ...submitOptions,
         forceFormData: false, // We're already using FormData
       });
     } else {
-      console.log('Using regular JSON submission (no file upload)');
       await form.put(`/admin/blog-posts/${props.post.id}`, submitOptions);
     }
     

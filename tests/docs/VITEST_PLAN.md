@@ -4,7 +4,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ## Current Test Status
 
-**Total: 787 tests passing across 30 test files**
+**Total: 878 tests passing across 32 test files**
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
@@ -13,12 +13,13 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 - ✅ **Content Components** (83 tests): MarkdownEditor (52), MarkdownRender (31)
 - ✅ **Layout Components** (23 tests): AppShell (23)
 - ✅ **Display Components** (102 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10)
+- ✅ **Admin Pages** (91 tests): Blog Post Create (46), Blog Post Edit (45)
 - ✅ **Test Infrastructure**: Setup file (4 tests)
 
 ### Next Priority:
 - 🔄 **Sidebar Component**: Individual sidebar sub-components (target: 85%+ coverage)
-- ⏳ **Admin Pages**: Create/Edit blog posts
 - ⏳ **Auth Flows**: Login, Register, 2FA
+- ⏳ **Public Pages**: Blog list, Blog view
 
 ## 1) Compatibility & baseline
 - Ensure Node >= 20 and Vite >= 6 (per Vitest Getting Started).
@@ -275,10 +276,10 @@ This plan reflects current FE behavior and expands beyond auto-save. Use it as a
 - [ ] Author profile: published posts, empty state
 
 ## 2) Admin Blog Management
-- [ ] Create/Edit blog post: auto-save integration, validation, tags, featured image
+- [x] Create/Edit blog post: auto-save integration, validation, tags, featured image (46 + 45 = 91 tests)
 - [ ] Drafts list: pagination, published status, empty state
-- [ ] Image upload (markdown): success path, error path, rate limit feedback
-- [ ] Markdown editor: preview, tables, paste/drag image handling, progress UI
+- [x] Image upload (markdown): success path, error path, rate limit feedback (covered in MarkdownEditor: 52 tests)
+- [x] Markdown editor: preview, tables, paste/drag image handling, progress UI (52 tests)
 
 ## 3) Settings
 - [ ] Profile: update flow, validation errors, avatar display
@@ -329,7 +330,7 @@ This plan reflects current FE behavior and expands beyond auto-save. Use it as a
 ### Admin Features (90-95%)
 - [x] 95%+ for MarkdownEditor component - Core editing experience (52 tests)
 - [x] MarkdownRender component - Content rendering (31 tests)
-- [ ] 95%+ for blog post Create/Edit pages - Primary admin workflow
+- [x] 95%+ for blog post Create/Edit pages - Primary admin workflow (46 + 45 = 91 tests)
 - [x] 90%+ for image upload/drag-drop - Data loss prevention (covered in MarkdownEditor tests)
 - [x] 90%+ for draft auto-save integration - User work preservation (covered in useAutoSave tests)
 - [ ] 90%+ for admin user management - Security critical
