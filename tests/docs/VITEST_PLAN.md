@@ -4,7 +4,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ## Current Test Status
 
-**Total: 971 tests passing across 35 test files**
+**Total: 1,026 tests passing across 36 test files**
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
@@ -15,11 +15,13 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 - ✅ **Display Components** (102 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10)
 - ✅ **Admin Pages** (91 tests): Blog Post Create (46), Blog Post Edit (45)
 - ✅ **Auth Pages** (93 tests): Login (26), Register (29), TwoFactorChallenge (38)
+- ✅ **Public Pages - BlogPost** (55 tests): BlogPost view (55) - individual blog post with likes, comments, replies, follow functionality
 - ✅ **Test Infrastructure**: Setup file (4 tests)
+- 🔧 **Public Pages - In Progress** (tests created, mocking needs fix): Blog list (~30 tests), AuthorProfile (~40 tests)
 
 ### Next Priority:
+- 🔄 **Fix Blog & AuthorProfile Test Mocks**: Fix `$page` and `usePage` mocking patterns (tests created, need mock configuration updates)
 - 🔄 **Sidebar Component**: Individual sidebar sub-components (target: 85%+ coverage)
-- ⏳ **Public Pages**: Blog list, Blog view
 - ⏳ **Settings Pages**: Profile, Password, Appearance
 
 ## 1) Compatibility & baseline
