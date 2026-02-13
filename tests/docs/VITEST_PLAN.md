@@ -4,7 +4,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ## Current Test Status
 
-**Total: 878 tests passing across 32 test files**
+**Total: 971 tests passing across 35 test files**
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
@@ -14,12 +14,13 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 - ✅ **Layout Components** (23 tests): AppShell (23)
 - ✅ **Display Components** (102 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10)
 - ✅ **Admin Pages** (91 tests): Blog Post Create (46), Blog Post Edit (45)
+- ✅ **Auth Pages** (93 tests): Login (26), Register (29), TwoFactorChallenge (38)
 - ✅ **Test Infrastructure**: Setup file (4 tests)
 
 ### Next Priority:
 - 🔄 **Sidebar Component**: Individual sidebar sub-components (target: 85%+ coverage)
-- ⏳ **Auth Flows**: Login, Register, 2FA
 - ⏳ **Public Pages**: Blog list, Blog view
+- ⏳ **Settings Pages**: Profile, Password, Appearance
 
 ## 1) Compatibility & baseline
 - Ensure Node >= 20 and Vite >= 6 (per Vitest Getting Started).
@@ -266,8 +267,9 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 This plan reflects current FE behavior and expands beyond auto-save. Use it as a roadmap for adding Vitest coverage.
 
 ## 1) Core Pages (Auth & Public)
-- [ ] Login: prefilled email, focus handling, error rendering, remember‑me toggles
-- [ ] Register: validation errors, success flow, MFA setup redirection
+- [x] Login: prefilled email, focus handling, error rendering, remember‑me toggles (26 tests)
+- [x] Register: validation errors, success flow, MFA setup notice, password requirements (29 tests)
+- [x] TwoFactorChallenge: PIN input (6 digits), recovery code mode toggle, accessibility, security features (38 tests)
 - [ ] Invitation acceptance: password rules, error states, success redirect
 - [ ] Forgot/Reset Password: validation errors, success status message
 - [ ] Verify Email: status messages, resend flow
@@ -343,10 +345,11 @@ This plan reflects current FE behavior and expands beyond auto-save. Use it as a
 - **Rationale**: High reuse factor, bugs affect entire application
 
 ### Auth & Security (90-95%)
-- [ ] 95%+ for Login/Register flows - Security critical
+- [x] 95%+ for Login/Register flows - Security critical (26 + 29 = 55 tests)
+- [x] 95%+ for TwoFactorChallenge - Authentication critical (38 tests)
 - [ ] 90%+ for invitation acceptance - Security sensitive
-- [ ] 90%+ for 2FA setup/enforcement - Authentication critical
 - [ ] 85%+ for password reset - Account recovery
+- [ ] 85%+ for email verification - Account security
 - **Rationale**: Security vulnerabilities have severe consequences
 
 ### Public Pages (80-85%)
