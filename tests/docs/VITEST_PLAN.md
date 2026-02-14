@@ -4,7 +4,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ## Current Test Status
 
-**Total: 1,162 tests passing across 41 test files**
+**Total: 1,240 tests passing across 43 test files** (1 test skipped)
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
@@ -12,18 +12,18 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 - ✅ **Feedback Components** (44 tests): AlertError (21), ErrorDisplay (23)
 - ✅ **Content Components** (83 tests): MarkdownEditor (52), MarkdownRender (31)
 - ✅ **Layout Components** (23 tests): AppShell (23)
-- ✅ **Display Components** (121 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10), AppearanceTabs (19)
+- ✅ **Display Components** (140 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10), AppearanceTabs (19)
 - ✅ **Admin Pages** (91 tests): Blog Post Create (46), Blog Post Edit (45)
 - ✅ **Auth Pages** (93 tests): Login (26), Register (29), TwoFactorChallenge (38)
 - ✅ **Public Pages** (130 tests): BlogPost (55), Blog (25 passing, 1 skipped), AuthorProfile (50)
-- ✅ **Settings Pages** (42 tests): Appearance (11), Password (31)
+- ✅ **Settings Pages** (120 tests): Appearance (11), Password (31), Profile (42), TwoFactor (36)
 - ✅ **Test Infrastructure**: Setup file (4 tests)
 
 ### Next Priority:
-- ⏳ **Settings Pages - Profile**: Profile update page with avatar, name, email, verification (~35-40 tests)
-- ⏳ **Settings Pages - TwoFactor**: 2FA management page (~30-35 tests)
 - ⏳ **Sidebar Components**: Individual sidebar sub-components (target: 85%+ coverage, ~60-80 tests)
 - ⏳ **Public Pages - Invitation**: Invitation acceptance page (~20-25 tests)
+- ⏳ **Navigation Components**: NavBar, Footer components (~40-50 tests)
+- ⏳ **Notification/Toast Components**: User feedback system (~20-30 tests)
 
 ## 1) Compatibility & baseline
 - Ensure Node >= 20 and Vite >= 6 (per Vitest Getting Started).

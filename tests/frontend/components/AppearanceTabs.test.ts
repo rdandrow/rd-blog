@@ -5,7 +5,7 @@ import AppearanceTabs from '@/components/AppearanceTabs.vue';
 
 // Mock the composable
 const mockUpdateAppearance = vi.fn();
-let mockAppearance = ref('system');
+const mockAppearance = ref('system');
 
 vi.mock('@/composables/useAppearance', () => ({
     useAppearance: vi.fn(() => ({

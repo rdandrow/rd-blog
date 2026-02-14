@@ -78,7 +78,7 @@ describe('useSearchState', () => {
     it('should be reactive', () => {
         const { isSearchOpen, toggleSearch } = useSearchState();
         
-        let changeCount = 0;
+        const changeCount = 0;
         
         // Watch the ref for changes
         const stop = () => {};
