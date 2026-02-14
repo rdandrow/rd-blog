@@ -482,7 +482,7 @@ describe('useTwoFactorAuth', () => {
                 json: async () => ({}),
             });
 
-            const { fetchSetupData, qrCodeSvg, manualSetupKey, errors } = useTwoFactorAuth();
+            const { fetchSetupData, manualSetupKey, errors } = useTwoFactorAuth();
             
             await fetchSetupData();
             

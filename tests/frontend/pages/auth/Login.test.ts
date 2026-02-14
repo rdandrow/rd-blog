@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { nextTick } from 'vue';
+
 import Login from '@/pages/auth/Login.vue';
 import { usePage } from '@inertiajs/vue3';
 

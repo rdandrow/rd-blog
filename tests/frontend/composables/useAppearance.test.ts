@@ -144,7 +144,7 @@ describe('useAppearance', () => {
         it('should load saved appearance from localStorage on mount', async () => {
             localStorage.setItem('appearance', 'dark');
             
-            const { appearance } = useAppearance();
+            useAppearance();
             
             // Simulate mount
             await nextTick();
@@ -258,7 +258,7 @@ describe('useAppearance', () => {
             updateAppearance('dark');
             
             // Simulate page refresh by creating new instance
-            const { appearance: newAppearance } = useAppearance();
+            useAppearance();
             
             // After mount, it would load from localStorage
             expect(localStorage.getItem('appearance')).toBe('dark');

@@ -754,7 +754,7 @@ describe('useAutoSave', () => {
                 content: 'Plain Content',
             };
 
-            const { saveDraft, restoreDraft } = useAutoSave('plain-key', plainObject);
+            const { saveDraft } = useAutoSave('plain-key', plainObject);
             
             saveDraft();
             

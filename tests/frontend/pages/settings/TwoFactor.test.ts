@@ -1,6 +1,6 @@
 import TwoFactor from '@/pages/settings/TwoFactor.vue';
 import { mount } from '@vue/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies
 vi.mock('@inertiajs/vue3', () => ({

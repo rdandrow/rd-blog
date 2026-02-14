@@ -77,7 +77,7 @@ describe('useBlogPostForm', () => {
 
         describe('handleFileUpload', () => {
             it('should handle successful file upload', async () => {
-                const { handleFileUpload, imagePreview, imageError } = useImageValidation();
+                const { handleFileUpload, imageError } = useImageValidation();
                 const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
                 const mockOnSuccess = vi.fn();
                 

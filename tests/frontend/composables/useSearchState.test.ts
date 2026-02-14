@@ -78,11 +78,6 @@ describe('useSearchState', () => {
     it('should be reactive', () => {
         const { isSearchOpen, toggleSearch } = useSearchState();
         
-        const changeCount = 0;
-        
-        // Watch the ref for changes
-        const stop = () => {};
-        
         toggleSearch();
         expect(isSearchOpen.value).toBe(true);
         

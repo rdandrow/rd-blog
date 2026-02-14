@@ -11,9 +11,6 @@ import {
 } from '@/composables/useBlogPostForm';
 import { useAutoSave } from '@/composables/useAutoSave';
 
-// Debug flag - set to false for production
-const DEBUG_VALIDATION = import.meta.env.DEV || false;
-
 const breadcrumbs = [
   { title: 'Dashboard', href: '/dashboard' },
   { title: 'Blog Posts', href: '/admin/blog-posts' },

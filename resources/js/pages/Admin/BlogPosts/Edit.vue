@@ -7,9 +7,6 @@ import ExpandableMarkdownEditor from '@/components/ExpandableMarkdownEditor.vue'
 import { useImageValidation, useFormValidation, useTagManagement } from '@/composables/useBlogPostForm';
 import { useAutoSave } from '@/composables/useAutoSave';
 
-// Debug flag - set to false for production
-const DEBUG_VALIDATION = import.meta.env.DEV || false;
-
 // Composables
 const { 
   generalError,
@@ -287,7 +284,7 @@ const submit = async () => {
 
     // Handle form submission with proper options
     const submitOptions = {
-      onSuccess: (response: any) => {
+      onSuccess: () => {
         // Success callback
       },
       onError: (errors: any) => {

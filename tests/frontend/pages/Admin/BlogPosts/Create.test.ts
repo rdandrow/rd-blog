@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import Create from '@/pages/Admin/BlogPosts/Create.vue';
-import { router, useForm } from '@inertiajs/vue3';
+import { useForm } from '@inertiajs/vue3';
 
 // Mock dependencies
 vi.mock('@inertiajs/vue3', () => ({
