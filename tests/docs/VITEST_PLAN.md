@@ -4,7 +4,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ## Current Test Status
 
-**Total: 1,240 tests passing across 43 test files** (1 test skipped)
+**Total: 1,338 tests passing across 46 test files** (1 test skipped)
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
@@ -14,16 +14,16 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 - ✅ **Layout Components** (23 tests): AppShell (23)
 - ✅ **Display Components** (140 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10), AppearanceTabs (19)
 - ✅ **Admin Pages** (91 tests): Blog Post Create (46), Blog Post Edit (45)
-- ✅ **Auth Pages** (93 tests): Login (26), Register (29), TwoFactorChallenge (38)
+- ✅ **Auth Pages** (191 tests): Login (26), Register (29), TwoFactorChallenge (38), AcceptInvitation (38), ForgotPassword (25), ResetPassword (35)
 - ✅ **Public Pages** (130 tests): BlogPost (55), Blog (25 passing, 1 skipped), AuthorProfile (50)
 - ✅ **Settings Pages** (120 tests): Appearance (11), Password (31), Profile (42), TwoFactor (36)
 - ✅ **Test Infrastructure**: Setup file (4 tests)
 
 ### Next Priority:
+- ⏳ **Auth Pages - Additional**: VerifyEmail, ConfirmPassword (~30-40 tests)
 - ⏳ **Sidebar Components**: Individual sidebar sub-components (target: 85%+ coverage, ~60-80 tests)
-- ⏳ **Public Pages - Invitation**: Invitation acceptance page (~20-25 tests)
 - ⏳ **Navigation Components**: NavBar, Footer components (~40-50 tests)
-- ⏳ **Notification/Toast Components**: User feedback system (~20-30 tests)
+- ⏳ **Admin Pages**: User management (MemberUsers, AdminUsers), Drafts list (~60-80 tests)
 
 ## 1) Compatibility & baseline
 - Ensure Node >= 20 and Vite >= 6 (per Vitest Getting Started).
@@ -273,7 +273,7 @@ This plan reflects current FE behavior and expands beyond auto-save. Use it as a
 - [x] Login: prefilled email, focus handling, error rendering, remember‑me toggles (26 tests)
 - [x] Register: validation errors, success flow, MFA setup notice, password requirements (29 tests)
 - [x] TwoFactorChallenge: PIN input (6 digits), recovery code mode toggle, accessibility, security features (38 tests)
-- [ ] Invitation acceptance: password rules, error states, success redirect
+- [x] Invitation acceptance: password rules, error states, success redirect (38 tests)
 - [ ] Forgot/Reset Password: validation errors, success status message
 - [ ] Verify Email: status messages, resend flow
 - [x] Public blog list: filters (tags/authors/search), pagination, empty state (25 tests)
@@ -287,10 +287,10 @@ This plan reflects current FE behavior and expands beyond auto-save. Use it as a
 - [x] Markdown editor: preview, tables, paste/drag image handling, progress UI (52 tests)
 
 ## 3) Settings
-- [x] Profile: update flow, validation errors, avatar display (covered in Appearance: 11 tests)
+- [x] Profile: update flow, validation errors, avatar display (42 tests)
 - [x] Password: validation, error handling (31 tests)
 - [x] Appearance: theme toggle state (11 tests + AppearanceTabs: 19 tests)
-- [ ] Two‑factor: enable/confirm flow, recovery codes
+- [x] Two‑factor: enable/confirm flow, recovery codes (36 tests)
 
 ## 4) Shared Components
 - [x] Input/Checkbox/Button: v-model wiring, disabled/processing state (111 tests)
@@ -350,7 +350,7 @@ This plan reflects current FE behavior and expands beyond auto-save. Use it as a
 ### Auth & Security (90-95%)
 - [x] 95%+ for Login/Register flows - Security critical (26 + 29 = 55 tests)
 - [x] 95%+ for TwoFactorChallenge - Authentication critical (38 tests)
-- [ ] 90%+ for invitation acceptance - Security sensitive
+- [x] 90%+ for invitation acceptance - Security sensitive (38 tests)
 - [ ] 85%+ for password reset - Account recovery
 - [ ] 85%+ for email verification - Account security
 - **Rationale**: Security vulnerabilities have severe consequences
