@@ -4,7 +4,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ## Current Test Status
 
-**Total: 1,338 tests passing across 46 test files** (1 test skipped)
+**Total: 1,387 tests passing across 48 test files** (1 test skipped)
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
@@ -14,13 +14,12 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 - ✅ **Layout Components** (23 tests): AppShell (23)
 - ✅ **Display Components** (140 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10), AppearanceTabs (19)
 - ✅ **Admin Pages** (91 tests): Blog Post Create (46), Blog Post Edit (45)
-- ✅ **Auth Pages** (191 tests): Login (26), Register (29), TwoFactorChallenge (38), AcceptInvitation (38), ForgotPassword (25), ResetPassword (35)
+- ✅ **Auth Pages** (240 tests): Login (26), Register (29), TwoFactorChallenge (38), AcceptInvitation (38), ForgotPassword (25), ResetPassword (35), VerifyEmail (27), ConfirmPassword (22) - **95%+ coverage achieved**
 - ✅ **Public Pages** (130 tests): BlogPost (55), Blog (25 passing, 1 skipped), AuthorProfile (50)
 - ✅ **Settings Pages** (120 tests): Appearance (11), Password (31), Profile (42), TwoFactor (36)
 - ✅ **Test Infrastructure**: Setup file (4 tests)
 
 ### Next Priority:
-- ⏳ **Auth Pages - Additional**: VerifyEmail, ConfirmPassword (~30-40 tests)
 - ⏳ **Sidebar Components**: Individual sidebar sub-components (target: 85%+ coverage, ~60-80 tests)
 - ⏳ **Navigation Components**: NavBar, Footer components (~40-50 tests)
 - ⏳ **Admin Pages**: User management (MemberUsers, AdminUsers), Drafts list (~60-80 tests)
