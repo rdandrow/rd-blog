@@ -4,7 +4,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ## Current Test Status
 
-**Total: 1,525 tests passing across 59 test files** (1 test skipped)
+**Total: 1,613 tests passing across 62 test files** (1 test skipped)
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
@@ -14,7 +14,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 - ✅ **Layout Components** (23 tests): AppShell (23)
 - ✅ **Display Components** (140 tests): Icon (26), TextLink (26), UserInfo (20), Breadcrumbs (15), Heading (13), HeadingSmall (15), AppLogo (8), AppLogoIcon (13), PlaceholderPattern (22), InputError (10), AppearanceTabs (19)
 - ✅ **Sidebar Components** (138 tests): SidebarHeader (11), SidebarFooter (11), SidebarMenuItem (10), SidebarMenuBadge (17), SidebarTrigger (16), SidebarGroup (13), SidebarGroupContent (10), SidebarMenu (12), SidebarMenuSubItem (10), SidebarSeparator (11), SidebarGroupLabel (17) - **85%+ coverage achieved**
-- ✅ **Admin Pages** (91 tests): Blog Post Create (46), Blog Post Edit (45)
+- ✅ **Admin Pages** (179 tests): Blog Post Create (47), Blog Post Edit (44), AdminUsers (30), MemberUsers (27), Drafts (31) - **User management & drafts fully tested**
 - ✅ **Auth Pages** (240 tests): Login (26), Register (29), TwoFactorChallenge (38), AcceptInvitation (38), ForgotPassword (25), ResetPassword (35), VerifyEmail (27), ConfirmPassword (22) - **95%+ coverage achieved**
 - ✅ **Public Pages** (130 tests): BlogPost (55), Blog (25 passing, 1 skipped), AuthorProfile (50)
 - ✅ **Settings Pages** (120 tests): Appearance (11), Password (31), Profile (42), TwoFactor (36)
@@ -22,7 +22,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 
 ### Next Priority:
 - ⏳ **Navigation Components**: NavBar, Footer components (~40-50 tests)
-- ⏳ **Admin Pages**: User management (MemberUsers, AdminUsers), Drafts list (~60-80 tests)
+- ⏳ **Admin Pages - Additional**: Index (blog list), Show (blog detail) (~40-60 tests)
 - ⏳ **Sidebar Components - Additional**: SidebarMenuButton, SidebarMenuButtonChild, remaining components (~40-50 tests)
 
 ## 1) Compatibility & baseline
@@ -281,8 +281,10 @@ This plan reflects current FE behavior and expands beyond auto-save. Use it as a
 - [x] Author profile: published posts, empty state (50 tests)
 
 ## 2) Admin Blog Management
-- [x] Create/Edit blog post: auto-save integration, validation, tags, featured image (46 + 45 = 91 tests)
-- [ ] Drafts list: pagination, published status, empty state
+- [x] Create/Edit blog post: auto-save integration, validation, tags, featured image (47 + 44 = 91 tests)
+- [x] Drafts list: pagination, published status, empty state (31 tests)
+- [x] AdminUsers: User management with role assignment, invitations, CRUD dialogs (30 tests)
+- [x] MemberUsers: Member-only user management, invitations, deletion (27 tests)
 - [x] Image upload (markdown): success path, error path, rate limit feedback (covered in MarkdownEditor: 52 tests)
 - [x] Markdown editor: preview, tables, paste/drag image handling, progress UI (52 tests)
 
