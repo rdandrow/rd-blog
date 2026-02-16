@@ -5,23 +5,23 @@ import { formatDate, useActiveFilters } from '@/composables/useBlogUtils';
 describe('useBlogUtils', () => {
     describe('formatDate', () => {
         it('should format date string correctly', () => {
-            // Use a date with explicit timezone to avoid timezone issues
-            const result = formatDate('2024-01-15T12:00:00');
+            // Use UTC timezone (Z suffix) to avoid timezone issues
+            const result = formatDate('2024-01-15T12:00:00Z');
             expect(result).toBe('January 15, 2024');
         });
 
         it('should handle different month', () => {
-            const result = formatDate('2024-12-25T12:00:00');
+            const result = formatDate('2024-12-25T12:00:00Z');
             expect(result).toBe('December 25, 2024');
         });
 
         it('should handle single digit day', () => {
-            const result = formatDate('2024-03-05T12:00:00');
+            const result = formatDate('2024-03-05T12:00:00Z');
             expect(result).toBe('March 5, 2024');
         });
 
         it('should handle different year', () => {
-            const result = formatDate('2023-06-10T12:00:00');
+            const result = formatDate('2023-06-10T12:00:00Z');
             expect(result).toBe('June 10, 2023');
         });
 
@@ -32,28 +32,28 @@ describe('useBlogUtils', () => {
         });
 
         it('should handle timestamp format', () => {
-            const result = formatDate('2024-01-15T12:00:00.000');
+            const result = formatDate('2024-01-15T12:00:00.000Z');
             expect(result).toBe('January 15, 2024');
         });
 
         it('should handle leap year date', () => {
-            const result = formatDate('2024-02-29T12:00:00');
+            const result = formatDate('2024-02-29T12:00:00Z');
             expect(result).toBe('February 29, 2024');
         });
 
         it('should handle first day of year', () => {
-            const result = formatDate('2024-01-01T12:00:00');
+            const result = formatDate('2024-01-01T12:00:00Z');
             expect(result).toBe('January 1, 2024');
         });
 
         it('should handle last day of year', () => {
-            const result = formatDate('2024-12-31T12:00:00');
+            const result = formatDate('2024-12-31T12:00:00Z');
             expect(result).toBe('December 31, 2024');
         });
 
         it('should handle date object conversion', () => {
             // Test that Date objects work correctly
-            const date = new Date('2024-06-15T12:00:00');
+            const date = new Date('2024-06-15T12:00:00Z');
             const result = formatDate(date.toISOString());
             expect(result).toBe('June 15, 2024');
         });

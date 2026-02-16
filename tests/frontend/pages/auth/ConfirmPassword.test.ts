@@ -175,11 +175,27 @@ describe('ConfirmPassword Page', () => {
 
 
 
-        it('should be disabled when processing', () => {
+        it('should not be disabled by default', () => {
             const wrapper = mount(ConfirmPassword);
 
             const button = wrapper.findComponent({ name: 'Button' });
             expect(button.props('disabled')).toBe(false);
+        });
+
+        it('should be disabled when processing', () => {
+            const wrapper = mount(ConfirmPassword, {
+                global: {
+                    stubs: {
+                        Form: {
+                            name: 'Form',
+                            template: '<form @submit.prevent><slot :errors="{}" :processing="true" /></form>',
+                        },
+                    },
+                },
+            });
+
+            const button = wrapper.findComponent({ name: 'Button' });
+            expect(button.props('disabled')).toBe(true);
         });
 
         it('should have full width styling', () => {
@@ -254,9 +270,13 @@ describe('ConfirmPassword Page', () => {
         it('should use correct form endpoint', async () => {
             const { store } = await import('@/routes/password/confirm');
             
-            mount(ConfirmPassword);
+            const wrapper = mount(ConfirmPassword);
 
             expect(store.form).toHaveBeenCalled();
+            
+            const form = wrapper.findComponent({ name: 'Form' });
+            expect(form.props('url')).toBe('/user/confirm-password');
+            expect(form.props('method')).toBe('post');
         });
     });
 });

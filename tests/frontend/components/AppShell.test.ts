@@ -1,14 +1,15 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import AppShell from '@/components/AppShell.vue';
+import { usePage } from '@inertiajs/vue3';
 
 // Mock Inertia usePage
 vi.mock('@inertiajs/vue3', () => ({
-    usePage: () => ({
+    usePage: vi.fn(() => ({
         props: {
             sidebarOpen: true,
         },
-    }),
+    })),
 }));
 
 // Mock SidebarProvider
@@ -127,11 +128,11 @@ describe('AppShell', () => {
 
         it('should pass sidebarOpen prop to SidebarProvider as defaultOpen', () => {
             // Mock with sidebarOpen: true
-            vi.mocked(vi.importActual('@inertiajs/vue3') as any).usePage = () => ({
+            vi.mocked(usePage).mockReturnValue({
                 props: {
                     sidebarOpen: true,
                 },
-            });
+            } as any);
 
             const wrapper = mount(AppShell, {
                 props: {
