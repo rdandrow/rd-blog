@@ -1,8 +1,8 @@
 import { ref } from 'vue';
 import { MAX_IMAGE_FILE_SIZE, ALLOWED_IMAGE_TYPES } from '@/constants/editor';
 
-// Debug flag - set to false for production
-const DEBUG_VALIDATION = import.meta.env.DEV || false;
+// Debug flag - set to false for production and tests
+const DEBUG_VALIDATION = import.meta.env.DEV && !import.meta.env.VITEST;
 
 export const useImageValidation = () => {
   const imageError = ref<string | null>(null);

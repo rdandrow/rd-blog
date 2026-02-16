@@ -109,22 +109,52 @@ The following aspects require a JavaScript testing framework (Vitest recommended
 npm install -D vitest @vue/test-utils jsdom @testing-library/vue @testing-library/user-event happy-dom
 ```
 
-### Step 2: Create Vitest Configuration
+### Step 2: Update Vite Configuration
 
-Create `vitest.config.ts` in the project root:
+**IMPORTANT**: Add test configuration to your existing `vite.config.ts` (unified config approach):
 
 ```typescript
-import { defineConfig } from 'vitest/config';
+/// <reference types="vitest" />
+import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
 
 export default defineConfig({
   plugins: [vue()],
+  
+  // Add test configuration block
   test: {
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./tests/frontend/setup.ts'],
+    restoreMocks: true,
+    clearMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json'],
+      include: ['resources/js/**/*.{ts,tsx,js,vue}'],
+      exclude: [
+        '**/*.d.ts',
+        '**/*.spec.ts',
+        '**/*.test.ts',
+        '**/types/**',
+        '**/index.ts',
+      ],
+      all: true,
+      thresholds: {
+        lines: 85,
+        functions: 85,
+        branches: 80,
+        statements: 85,
+      },
+      // Per-file thresholds for critical files (optional)
+      perFile: true,
+      thresholdAutoUpdate: false,
+    },
   },
+  
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './resources/js'),
@@ -132,6 +162,8 @@ export default defineConfig({
   },
 });
 ```
+
+**Note**: If your existing `vite.config.ts` uses a different structure, merge the `test` block into it.
 
 ### Step 3: Create Test Setup File
 
@@ -588,11 +620,49 @@ npm run test:coverage    # Run tests with coverage report
 
 ## Test Coverage Goals
 
-Once frontend testing is set up, aim for:
+Once frontend testing is set up, aim for these improved targets:
 
-- **Auto-Save Composable**: 100% coverage (all functions and branches)
-- **Component Integration**: 80%+ coverage (critical paths)
-- **Markdown Editor**: 70%+ coverage (core functionality)
+### Critical Components & Composables
+- **useAutoSave Composable**: 100% (data persistence, work preservation)
+- **useMarkdown Composable**: 100% (security, content rendering)
+- **MarkdownEditor Component**: 95%+ (core editing, image upload, tables)
+- **Form Components**: 90%+ (Input, Checkbox, Button, Textarea, Label - used everywhere)
+- **Utility Functions**: 95%+ (pure logic, high reuse)
+
+### Admin Features
+- **Blog Post Create/Edit Pages**: 95%+ (primary admin workflow)
+- **Draft Auto-Save Integration**: 90%+ (prevent data loss)
+- **Image Upload Flows**: 90%+ (paste, drag-drop, validation)
+- **Admin User Management**: 90%+ (security critical)
+
+### Auth & Security
+- **Login/Register Flows**: 95%+ (security critical)
+- **Invitation Acceptance**: 90%+ (security sensitive)
+- **2FA Flows**: 90%+ (authentication critical)
+- **Password Reset**: 85%+ (account recovery)
+
+### Public Features
+- **Blog Post View**: 85%+ (primary user experience)
+- **Blog List/Filters**: 80%+ (content discovery)
+- **Comments/Likes**: 80%+ (user engagement)
+
+### Shared Components
+- **Form Components**: 90%+ (Input 32 tests, Button 38 tests, Checkbox 41 tests, Textarea 42 tests, Label 37 tests) ✅
+- **Layout Components**: 85%+ (AppShell 23 tests) ✅
+- **Feedback Components**: 85%+ (AlertError 21 tests, ErrorDisplay 23 tests) ✅
+
+### Overall Project Target
+- **Minimum**: 85% overall coverage
+- **Target**: 90% overall coverage  
+- **Stretch**: 95% overall coverage
+- **Critical paths**: 95%+ required
+
+### Rationale for High Coverage
+1. **Admin features** (90-95%): Revenue-critical, prevent data loss, high user impact
+2. **Auth/security** (90-95%): Vulnerabilities have severe consequences
+3. **Composables** (95-100%): Pure logic, no UI complexity, easy to achieve
+4. **Shared components** (85-90%): High reuse, bugs affect entire app
+5. **Public features** (80-85%): User-facing, SEO-critical, first impressions
 
 ## Integration with CI/CD
 

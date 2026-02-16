@@ -11,9 +11,6 @@ import {
 } from '@/composables/useBlogPostForm';
 import { useAutoSave } from '@/composables/useAutoSave';
 
-// Debug flag - set to false for production
-const DEBUG_VALIDATION = import.meta.env.DEV || false;
-
 const breadcrumbs = [
   { title: 'Dashboard', href: '/dashboard' },
   { title: 'Blog Posts', href: '/admin/blog-posts' },
@@ -186,28 +183,9 @@ const submit = async () => {
     clearImageError();
     clearTagError();
     
-    if (DEBUG_VALIDATION) {
-      console.log('Starting form submission...');
-      console.log('Form data:', {
-        title: form.title,
-        excerpt: form.excerpt,
-        content: form.content
-      });
-
-      console.log('Form values before submission:', {
-        title: form.title,
-        excerpt: form.excerpt, 
-        content: form.content,
-        titleLength: String(form.title || '').trim().length,
-        excerptLength: String(form.excerpt || '').trim().length,
-        contentLength: String(form.content || '').trim().length
-      });
-    }
-    
     // Client-side validation as a safety net (server-side validation is authoritative)
     try {
       validateRequiredFields(form);
-      if (DEBUG_VALIDATION) console.log('Client-side validation passed');
     } catch (validationError) {
       console.error('Client-side validation failed:', validationError);
       
@@ -215,10 +193,6 @@ const submit = async () => {
       const hasTitle = form.title && String(form.title).trim().length > 0;
       const hasExcerpt = form.excerpt && String(form.excerpt).trim().length > 0;
       const hasContent = form.content && String(form.content).trim().length > 0;
-      
-      if (DEBUG_VALIDATION) {
-        console.log('Form state check:', { hasTitle, hasExcerpt, hasContent });
-      }
       
       // If we actually have all required fields, log this as a validation bug but continue
       if (hasTitle && hasExcerpt && hasContent) {
@@ -231,7 +205,6 @@ const submit = async () => {
 
     // Validate image file if uploaded
     if (imageInputType.value === 'file' && form.featured_image_file) {
-      if (DEBUG_VALIDATION) console.log('Validating image file...');
       validateImageFile(form.featured_image_file);
     }
 
@@ -241,7 +214,7 @@ const submit = async () => {
     // Handle form submission based on whether we have a file upload
     const submitOptions = {
       onSuccess: () => {
-        if (DEBUG_VALIDATION) console.log('Blog post created successfully');
+        // Success callback
       },
       onError: (errors: any) => {
         console.error('Validation errors:', errors);
@@ -249,16 +222,12 @@ const submit = async () => {
       },
       onFinish: () => {
         // This runs regardless of success or failure
-        if (DEBUG_VALIDATION) console.log('Form submission finished');
       }
     } as any;
 
     // Only use FormData if we actually have a file to upload
     if (imageInputType.value === 'file' && form.featured_image_file) {
       submitOptions.forceFormData = true;
-      if (DEBUG_VALIDATION) console.log('Using FormData because file is present');
-    } else {
-      if (DEBUG_VALIDATION) console.log('Using regular JSON submission (no file upload)');
     }
 
     await form.post('/admin/blog-posts', submitOptions);
