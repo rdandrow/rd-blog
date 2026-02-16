@@ -51,3 +51,5 @@ jobs:
 
       - name: Frontend Tests
         run: npm run test:run
+        env: 
+          LARAVEL_BYPASS_ENV_CHECK: 1
