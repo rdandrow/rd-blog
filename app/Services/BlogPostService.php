@@ -14,12 +14,12 @@ class BlogPostService
      */
     public function applyFilters(Builder $query, array $filters): Builder
     {
-        // Apply search filter
+        // Apply search filter (case-insensitive)
         if (!empty($filters['search'])) {
             $query->where(function (Builder $q) use ($filters) {
-                $q->where('title', 'like', "%{$filters['search']}%")
-                  ->orWhere('excerpt', 'like', "%{$filters['search']}%")
-                  ->orWhere('content', 'like', "%{$filters['search']}%");
+                $q->where('title', 'ilike', "%{$filters['search']}%")
+                  ->orWhere('excerpt', 'ilike', "%{$filters['search']}%")
+                  ->orWhere('content', 'ilike', "%{$filters['search']}%");
             });
         }
 

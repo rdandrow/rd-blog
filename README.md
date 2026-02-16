@@ -1,25 +1,53 @@
 # Blog Application
 
-A modern full-stack blog platform built with Laravel 11 and Vue.js 3, featuring enterprise-grade architecture, type safety, and comprehensive authentication.
+A modern full-stack blog platform built with Laravel 12 and Vue.js 3, featuring enterprise-grade architecture, type safety, and comprehensive authentication.
 
 ## Tech Stack
 
-**Backend:** Laravel 11 • PHP 8.2+ • Inertia.js • SQLite/MySQL  
-**Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite  
-**Testing:** Pest PHP • Feature & Unit Tests
+**Backend:** Laravel 12 • PHP 8.2+ • Inertia.js • PostgreSQL 16  
+**Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 6  
+**Testing:** Pest PHP (799 tests) • Vitest (1,773 tests) • Feature & Unit Tests
 
 ## Key Features
 
-- Full authentication system with 2FA support
-- Complete blog CMS with CRUD operations
+### Authentication & Security
+- Full authentication with Laravel Fortify (login, register, 2FA)
+- User invitation system with email tokens
+- Role-based access control (Master Admin, Admin, Member)
+- Rate limiting on sensitive endpoints
+- CSRF protection and secure session management
+
+### Content Management
+- Rich markdown editor with live preview
+- Toolbar shortcuts for formatting (bold, italic, headers, lists, tables)
+- Image upload with drag-and-drop support
+- Auto-save drafts (every 30 seconds)
+- Featured images with URL or file upload
+- Tag management and filtering
+- SEO-friendly slugs and reading time calculation
+
+### Social Features
+- Comment system with threaded replies
+- Like/unlike blog posts
+- Follow/unfollow authors
+- Author profiles with bios and websites
+
+### Search & Discovery
+- Full-text search (case-insensitive)
+- Filter by tags and authors
+- Featured posts showcase
+- Recent posts feed
+
+### UI/UX
 - Responsive design with dark mode
-- Search and filtering capabilities
 - Type-safe routing with Laravel Wayfinder
 - WCAG-compliant accessibility
+- Optimized performance (lazy loading, v-memo directives)
+- Expandable markdown editor with tab/split view modes
 
 ## Architecture & Best Practices
 
-### Backend (Laravel 11)
+### Backend (Laravel 12)
 
 **Service Layer Pattern** - Business logic extracted from controllers
 ```php
@@ -137,64 +165,111 @@ composer install && npm install
 # Setup environment
 cp .env.example .env && php artisan key:generate
 
-# Database & seed
-php artisan migrate --seed
+# Create PostgreSQL databases
+psql postgres -c "CREATE DATABASE rd_blog_dev;"
+psql postgres -c "CREATE DATABASE rd_blog_test;"
+
+# Grant permissions
+psql rd_blog_dev -c "GRANT ALL ON SCHEMA public TO rd_blog_user;"
+psql rd_blog_test -c "GRANT ALL ON SCHEMA public TO rd_blog_user;"
+
+# Configure .env for PostgreSQL
+# DB_CONNECTION=pgsql
+# DB_HOST=127.0.0.1
+# DB_PORT=5432
+# DB_DATABASE=rd_blog_dev
+# DB_USERNAME=rd_blog_user
+# DB_PASSWORD=your_secure_password
+
+# Run migrations & seed
+php artisan migrate:fresh --seed
 
 # Build assets & serve
-npm run build
-php artisan serve
+npm run dev          # Development with hot reload
+php artisan serve    # In a separate terminal
 ```
 
 Visit `http://localhost:8000`
 
 **Default credentials after seeding:**
-- Email: `admin@example.com`
-- Password: `password`
+- Master Admin: `ryan@example.com` / `password`
+- Admin: `sarah@example.com` / `password`
+- Admin: `emily@example.com` / `password`
+- Admin: `james@example.com` / `password`
 
 ## Testing
 
-**Test Suite:** 359 tests • 1,757 assertions • 3.5s execution (parallel)
+**Backend Test Suite:** 799 tests • 3,093 assertions • ~24s execution  
+**Frontend Test Suite:** 1,773 tests • 5,000+ assertions • ~35s execution
+
+### Backend Tests (Pest PHP)
 
 ```bash
-# Run all tests (parallel - fastest)
-composer test
+# Run all backend tests
+./vendor/bin/pest
 
-# Sequential execution
-composer test:sequential
-
-# With coverage report
-composer test:coverage
-
-# Direct Pest commands
-./vendor/bin/pest --parallel      # Parallel (68% faster)
-./vendor/bin/pest                 # Sequential
+# Compact output
+./vendor/bin/pest --compact
 
 # Specific test suites
 ./vendor/bin/pest tests/Feature/Auth/
-./vendor/bin/pest tests/Feature/PerformanceTest.php
+./vendor/bin/pest tests/Feature/BlogPosts/
+./vendor/bin/pest tests/Unit/
+
+# Legacy PHPUnit commands also work
+composer test
+composer test:sequential
 ```
 
-**Performance:**
-- Parallel execution: **3.5 seconds** (12 processes)
-- Sequential execution: 11.3 seconds
-- 68% faster with `--parallel` flag
+### Frontend Tests (Vitest)
 
-**Test Coverage:**
-- Authentication flows (login, register, 2FA, password reset)
-- Blog CRUD operations (create, read, update, delete)
-- Authorization policies (admin, member, guest access)
-- Comment system (nested replies, deletion)
+```bash
+# Run all frontend tests
+npm run test
+
+# Watch mode (re-run on file changes)
+npm run test:watch
+
+# UI mode (interactive browser interface)
+npm run test:ui
+
+# Coverage report
+npm run test:coverage
+
+# Specific test files
+npm run test -- BlogPost.test.ts
+npm run test -- pages/Admin/
+```
+
+**Backend Test Coverage:**
+- Authentication flows (login, register, 2FA, password reset, invitations)
+- Blog CRUD operations (create, read, update, delete, drafts)
+- Authorization policies (admin, member, guest access, ownership)
+- Comment system (nested replies, deletion, threading)
 - Social features (likes, follows, author profiles)
-- Search & filtering (tags, authors, content)
+- Search & filtering (tags, authors, content, case-insensitive)
+- Image uploads (validation, storage, transformations)
 - Error handling (database failures, validation, security)
 - Rate limiting (login attempts, spam prevention)
 - Middleware (execution order, CSRF, authorization)
 - Performance (N+1 queries, large datasets, memory usage)
 
+**Frontend Test Coverage:**
+- Page components (Welcome, Blog, BlogPost, Dashboard)
+- Admin CRUD interfaces (Create, Edit, Show, Drafts, Index)
+- User management (Admins, Members, Invitations)
+- Authentication forms (Login, Register, Password Reset, 2FA)
+- Markdown editor (toolbar actions, preview, image upload)
+- Composables (useAuth, useBlogUtils, useMarkdown, useAutoSave)
+- Form validation and error handling
+- Navigation and routing
+- Accessibility features (ARIA, keyboard navigation)
+- Comment interactions (create, reply, delete)
+
 ## Production Deployment
 
 ```bash
-# Build assets
+# Build optimized assets
 npm run build
 
 # Optimize Laravel
@@ -203,14 +278,51 @@ php artisan route:cache
 php artisan view:cache
 php artisan optimize
 
-# Set production environment
+# Run migrations (production database)
+php artisan migrate --force
+
+# Set production environment variables
 APP_ENV=production
 APP_DEBUG=false
+APP_URL=https://yourdomain.com
+
+# PostgreSQL production settings
+DB_CONNECTION=pgsql
+DB_HOST=your-postgres-host
+DB_DATABASE=rd_blog_prod
 ```
+
+**Recommended hosting:**
+- Railway ($5/mo) - Managed PostgreSQL + Laravel deployment
+- DigitalOcean App Platform - Zero-config deployment
+- Heroku with Postgres add-on
+- Laravel Forge + DigitalOcean/AWS
+
+See `docs/DATABASE_MIGRATION_PLAN.md` for detailed production setup.
 
 ## Database Configuration
 
-Edit the following lines within `.env`
+### PostgreSQL (Recommended)
+
+Edit the following lines within `.env`:
+```env
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=rd_blog_dev
+DB_USERNAME=rd_blog_user
+DB_PASSWORD=your_secure_password
+```
+
+**Create PostgreSQL user:**
+```bash
+psql postgres -c "CREATE USER rd_blog_user WITH PASSWORD 'your_secure_password';"
+psql postgres -c "CREATE DATABASE rd_blog_dev OWNER rd_blog_user;"
+psql postgres -c "CREATE DATABASE rd_blog_test OWNER rd_blog_user;"
+```
+
+### Alternative: SQLite (Development Only)
+
 ```env
 DB_CONNECTION=sqlite
 DB_DATABASE=/absolute/path/to/database.sqlite
@@ -218,8 +330,10 @@ DB_DATABASE=/absolute/path/to/database.sqlite
 
 ## Framework Documentation
 
-- [Laravel 11 Docs](https://laravel.com/docs/11.x)
+- [Laravel 12 Docs](https://laravel.com/docs/12.x)
 - [Vue.js 3 Composition API](https://vuejs.org/guide/extras/composition-api-faq.html)
 - [Inertia.js Guide](https://inertiajs.com/)
 - [Tailwind CSS v4](https://tailwindcss.com/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Vitest Testing Framework](https://vitest.dev/)
+- [Pest PHP Testing](https://pestphp.com/)
