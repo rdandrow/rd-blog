@@ -117,14 +117,34 @@ psql postgres
 
 # In psql:
 CREATE DATABASE rd_blog_dev;
+CREATE DATABASE rd_blog_test;  -- For testing
 CREATE USER rd_blog_user WITH ENCRYPTED PASSWORD 'your_secure_password';
 GRANT ALL PRIVILEGES ON DATABASE rd_blog_dev TO rd_blog_user;
+GRANT ALL PRIVILEGES ON DATABASE rd_blog_test TO rd_blog_user;
+
+# Grant CREATEDB for parallel test execution (Pest --parallel)
+ALTER USER rd_blog_user CREATEDB;
 
 # Grant schema privileges (PostgreSQL 15+)
 \c rd_blog_dev
 GRANT ALL ON SCHEMA public TO rd_blog_user;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rd_blog_user;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO rd_blog_user;
+
+# Repeat for test database
+\c rd_blog_test
+GRANT ALL ON SCHEMA public TO rd_blog_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rd_blog_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO rd_blog_user;
+
+# Set default privileges for future tables
+\c rd_blog_dev
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO rd_blog_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO rd_blog_user;
+
+\c rd_blog_test
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO rd_blog_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO rd_blog_user;
 ```
 
 #### 1.3 Update Environment Configuration
@@ -164,17 +184,20 @@ DB_PASSWORD=your_secure_password
 
 #### 1.5 Update Testing Configuration
 
-**phpunit.xml** - Keep SQLite for fast tests:
-```xml
-<env name="DB_CONNECTION" value="sqlite"/>
-<env name="DB_DATABASE" value=":memory:"/>
-```
-
-**OR** Use PostgreSQL for testing (more realistic):
+**phpunit.xml** - Use PostgreSQL for realistic testing:
 ```xml
 <env name="DB_CONNECTION" value="pgsql"/>
 <env name="DB_DATABASE" value="rd_blog_test"/>
 ```
+
+**Why PostgreSQL for Testing?**
+- ✅ Tests actual production database behavior
+- ✅ Catches PostgreSQL-specific issues (case sensitivity, JSON operators)
+- ✅ Validates indexes and query performance
+- ✅ Parallel test execution (Pest `--parallel`) creates temp databases
+
+**Note**: Parallel testing requires the database user to have `CREATEDB` privilege.
+Pest creates temporary databases like `rd_blog_test_test_1`, `rd_blog_test_test_2`, etc.
 
 ### Phase 2: Migration Validation (Week 1-2)
 

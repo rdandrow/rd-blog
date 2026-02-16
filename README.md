@@ -199,27 +199,44 @@ Visit `http://localhost:8000`
 
 ## Testing
 
-**Backend Test Suite:** 799 tests • 3,093 assertions • ~24s execution  
+**Backend Test Suite:** 804 tests • 3,111 assertions • ~8s parallel / ~24s sequential  
 **Frontend Test Suite:** 1,773 tests • 5,000+ assertions • ~35s execution
 
 ### Backend Tests (Pest PHP)
 
 ```bash
-# Run all backend tests
+# Run all tests in parallel (fastest - 3x speedup)
+composer test
+# or
+./vendor/bin/pest --parallel
+
+# Run tests sequentially (for debugging)
+composer test:sequential
+# or
 ./vendor/bin/pest
 
 # Compact output
-./vendor/bin/pest --compact
+./vendor/bin/pest --parallel --compact
 
 # Specific test suites
-./vendor/bin/pest tests/Feature/Auth/
+./vendor/bin/pest tests/Feature/Auth/ --parallel
 ./vendor/bin/pest tests/Feature/BlogPosts/
 ./vendor/bin/pest tests/Unit/
 
-# Legacy PHPUnit commands also work
-composer test
-composer test:sequential
+# Control parallel processes
+./vendor/bin/pest --parallel --processes=8
+
+# With coverage
+composer test:coverage
 ```
+
+**Parallel Testing Performance:**
+- Sequential: ~24s (1 process)
+- Parallel: ~8s (12 processes)
+- Speedup: **3x faster** ⚡
+
+**Note:** Parallel testing requires PostgreSQL user to have `CREATEDB` privilege.
+See [docs/PARALLEL_TEST_FIX.md](docs/PARALLEL_TEST_FIX.md) for setup details.
 
 ### Frontend Tests (Vitest)
 
@@ -302,7 +319,7 @@ See `docs/DATABASE_MIGRATION_PLAN.md` for detailed production setup.
 
 ## Database Configuration
 
-### PostgreSQL (Recommended)
+### PostgreSQL
 
 Edit the following lines within `.env`:
 ```env
@@ -319,13 +336,6 @@ DB_PASSWORD=your_secure_password
 psql postgres -c "CREATE USER rd_blog_user WITH PASSWORD 'your_secure_password';"
 psql postgres -c "CREATE DATABASE rd_blog_dev OWNER rd_blog_user;"
 psql postgres -c "CREATE DATABASE rd_blog_test OWNER rd_blog_user;"
-```
-
-### Alternative: SQLite (Development Only)
-
-```env
-DB_CONNECTION=sqlite
-DB_DATABASE=/absolute/path/to/database.sqlite
 ```
 
 ## Framework Documentation
