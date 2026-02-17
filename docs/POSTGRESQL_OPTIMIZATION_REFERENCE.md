@@ -69,7 +69,7 @@ if (config('database.default') === 'pgsql') {
 
 ### 3. Performance Monitoring (Phase 4.3)
 
-**Automatic monitoring** and **manual analysis tools**.
+**Automatic monitoring** and **manual analysis tools** with **pg_stat_statements extension**.
 
 #### Automatic Monitoring (AppServiceProvider)
 ```php
@@ -90,7 +90,32 @@ php artisan db:analyze-performance
 - Index usage statistics
 - Table health metrics
 - Cache hit rates
-- Slow query patterns
+- Slow query patterns (requires pg_stat_statements)
+
+#### pg_stat_statements Extension
+
+**Purpose**: Tracks execution statistics of all SQL statements
+
+**Installation**:
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+```
+
+**Configuration** (postgresql.conf):
+```ini
+shared_preload_libraries = 'pg_stat_statements'
+```
+
+**Migration**: `2026_02_17_155710_enable_pg_stat_statements_extension.php`
+- Automatically attempts installation
+- Gracefully handles permission errors in test environments
+- Requires PostgreSQL superuser for installation
+
+**Benefits**:
+- Query execution count tracking
+- Average/min/max execution time analysis
+- Rows read/written statistics
+- Essential for production monitoring
 
 **Documentation**: [docs/PHASE_4_3_PERFORMANCE_MONITORING.md](PHASE_4_3_PERFORMANCE_MONITORING.md)
 
@@ -125,11 +150,27 @@ php artisan db:analyze-performance --indexes
 # Cache performance
 php artisan db:analyze-performance --cache
 
+# Slow queries (requires pg_stat_statements)
+php artisan db:analyze-performance --slow-queries
+
 # Specific table
 php artisan db:analyze-performance --table=blog_posts
 
 # Monitor logs for slow queries
 tail -f storage/logs/laravel.log | grep "Slow query"
+```
+
+**pg_stat_statements Setup**:
+```bash
+# Install extension (as PostgreSQL superuser)
+psql rd_blog_dev -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+
+# Configure PostgreSQL (postgresql.conf)
+echo "shared_preload_libraries = 'pg_stat_statements'" | sudo tee -a /path/to/postgresql.conf
+
+# Restart PostgreSQL
+brew services restart postgresql@16  # macOS
+sudo systemctl restart postgresql    # Linux
 ```
 
 ### Testing
@@ -198,7 +239,9 @@ app/
 
 database/
 └── migrations/
-    └── 2026_02_16_000000_add_postgresql_optimized_indexes.php
+    ├── 2026_02_16_000000_add_postgresql_optimized_indexes.php
+    ├── 2026_02_17_154630_add_user_id_index_to_comments_table.php
+    └── 2026_02_17_155710_enable_pg_stat_statements_extension.php
 
 docs/
 ├── DATABASE_MIGRATION_PLAN.md           # Overall migration strategy
@@ -363,6 +406,25 @@ php artisan tinker --execute="DB::select('SELECT pg_sleep(0.2)');"
 tail -1 storage/logs/laravel.log
 ```
 
+### pg_stat_statements Not Working
+
+**Check extension is installed:**
+```bash
+psql rd_blog_dev -c "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_stat_statements';"
+```
+
+**Check shared_preload_libraries:**
+```bash
+psql rd_blog_dev -c "SHOW shared_preload_libraries;"
+# Should output: pg_stat_statements
+```
+
+**If not configured:**
+1. Find config file: `psql postgres -c "SHOW config_file;"`
+2. Add: `shared_preload_libraries = 'pg_stat_statements'`
+3. Restart PostgreSQL: `brew services restart postgresql@16`
+4. Install extension: `psql rd_blog_dev -c "CREATE EXTENSION pg_stat_statements;"`
+
 ## Production Checklist
 
 ### Pre-Deployment
@@ -384,7 +446,9 @@ DB_HOST=production-postgres-host
 
 ### Post-Deployment
 
-- [ ] Enable pg_stat_statements: `CREATE EXTENSION pg_stat_statements;`
+- [ ] Enable pg_stat_statements: `CREATE EXTENSION IF NOT EXISTS pg_stat_statements;`
+- [ ] Configure shared_preload_libraries in postgresql.conf
+- [ ] Restart PostgreSQL to load pg_stat_statements
 - [ ] Monitor with external tools (New Relic, Datadog)
 - [ ] Schedule weekly performance reports
 - [ ] Set up autovacuum monitoring

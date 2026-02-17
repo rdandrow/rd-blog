@@ -255,9 +255,35 @@ Requires `pg_stat_statements` extension to be enabled.
 Shows queries with highest average execution times to help identify optimization targets.
 
 **Enable pg_stat_statements:**
-```sql
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-```
+
+1. **Install the extension** (requires PostgreSQL superuser):
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+   ```
+
+2. **Configure PostgreSQL** to load the extension:
+   ```bash
+   # Edit postgresql.conf
+   shared_preload_libraries = 'pg_stat_statements'
+   ```
+
+3. **Restart PostgreSQL**:
+   ```bash
+   # macOS (Homebrew)
+   brew services restart postgresql@16
+   
+   # Linux (systemd)
+   sudo systemctl restart postgresql
+   ```
+
+4. **Verify installation**:
+   ```bash
+   php artisan db:analyze-performance --slow-queries
+   ```
+
+**Migration**: The `2026_02_17_155710_enable_pg_stat_statements_extension.php` migration attempts to install the extension automatically, but requires superuser privileges. In development, follow the manual steps above.
+
+**Note**: Test databases created during parallel test execution will not have this extension (requires superuser per database), but the migration handles this gracefully.
 
 ## Performance Thresholds
 
@@ -329,6 +355,43 @@ php artisan db:analyze-performance --indexes
 ```sql
 SELECT pg_stat_reset();
 ```
+
+### pg_stat_statements Not Working
+
+**Symptom**: `--slow-queries` option shows "extension not enabled" message
+
+**Solutions:**
+
+1. **Check if extension is installed**:
+   ```bash
+   psql your_database -c "SELECT COUNT(*) FROM pg_extension WHERE extname = 'pg_stat_statements';"
+   ```
+
+2. **Check if shared_preload_libraries is configured**:
+   ```bash
+   psql your_database -c "SHOW shared_preload_libraries;"
+   # Should show: pg_stat_statements
+   ```
+
+3. **Install extension manually** (as superuser):
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+   ```
+
+4. **Add to postgresql.conf** if missing:
+   ```bash
+   # Find config file
+   psql postgres -c "SHOW config_file;"
+   
+   # Add line (requires PostgreSQL restart)
+   shared_preload_libraries = 'pg_stat_statements'
+   ```
+
+5. **Restart PostgreSQL** after configuration change:
+   ```bash
+   brew services restart postgresql@16  # macOS
+   sudo systemctl restart postgresql    # Linux
+   ```
 
 ### High Dead Tuple Percentage
 
