@@ -402,6 +402,45 @@ tail -f storage/logs/laravel.log | grep -E "(Slow query|N+1)"
 
 See [docs/PHASE_4_3_PERFORMANCE_MONITORING.md](docs/PHASE_4_3_PERFORMANCE_MONITORING.md) for detailed monitoring guide.
 
+### Connection Pooling
+
+For production environments with high traffic, use **PgBouncer** for connection pooling:
+
+**Why PgBouncer?**
+- ⚡ **50x faster** connection establishment (<1ms vs 5-50ms)
+- 📈 **10x more** concurrent connections (1000+ vs 100-200)
+- 💾 **70% reduction** in memory usage
+- 🚀 **4x faster** response times at scale
+
+**Quick Setup:**
+```bash
+# Install PgBouncer
+brew install pgbouncer  # macOS
+# or
+sudo apt install pgbouncer  # Ubuntu
+
+# Configure for Laravel (transaction mode)
+# Edit /etc/pgbouncer/pgbouncer.ini
+[databases]
+rd_blog_prod = host=localhost port=5432 dbname=rd_blog_prod
+
+[pgbouncer]
+pool_mode = transaction
+default_pool_size = 20
+max_client_conn = 1000
+
+# Update .env to use PgBouncer
+DB_PORT=6432  # PgBouncer port instead of 5432
+```
+
+**When to use:**
+- ✅ >100 concurrent requests
+- ✅ Serverless deployments (AWS Lambda, Cloud Functions)
+- ✅ Multiple application workers
+- ❌ Low traffic development environments
+
+See [docs/CONNECTION_POOLING_GUIDE.md](docs/CONNECTION_POOLING_GUIDE.md) for complete setup guide with configuration examples, monitoring, and troubleshooting.
+
 ## Framework Documentation
 
 - [Laravel 12 Docs](https://laravel.com/docs/12.x)

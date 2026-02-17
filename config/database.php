@@ -96,6 +96,14 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            
+            // Connection pool metadata (optional, for documentation)
+            // When using PgBouncer, set DB_PORT=6432 in .env
+            // See docs/CONNECTION_POOLING_GUIDE.md for setup
+            'options' => [
+                // 'pool_size' => env('DB_POOL_SIZE', 20),
+                // 'pool_mode' => env('DB_POOL_MODE', 'transaction'),
+            ],
         ],
 
         'sqlsrv' => [
