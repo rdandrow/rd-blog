@@ -6,6 +6,8 @@ use App\Services\BlogImageService;
 use App\Services\BlogPostService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Configure rate limiters
         RateLimiter::for('invitation-show', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });
@@ -37,5 +40,56 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('admin-invitation-resend', function (Request $request) {
             return Limit::perMinute(20)->by($request->user()?->id ?? $request->ip());
         });
+
+        // Enable query performance monitoring
+        $this->enableQueryMonitoring();
+    }
+
+    /**
+     * Enable query performance monitoring for development and staging.
+     */
+    protected function enableQueryMonitoring(): void
+    {
+        // Only enable in local and staging environments
+        if (!app()->environment(['local', 'staging'])) {
+            return;
+        }
+
+        DB::listen(function ($query) {
+            // Log slow queries (>100ms)
+            if ($query->time > 100) {
+                Log::warning('Slow query detected', [
+                    'sql' => $query->sql,
+                    'bindings' => $query->bindings,
+                    'time' => $query->time . 'ms',
+                    'connection' => $query->connectionName,
+                ]);
+            }
+
+            // Log extremely slow queries with stack trace (>500ms)
+            if ($query->time > 500) {
+                Log::error('Extremely slow query detected', [
+                    'sql' => $query->sql,
+                    'bindings' => $query->bindings,
+                    'time' => $query->time . 'ms',
+                    'connection' => $query->connectionName,
+                    'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10),
+                ]);
+            }
+
+            // Detect N+1 query problems (>50 queries in a request)
+            if (DB::getQueryLog() && count(DB::getQueryLog()) > 50) {
+                Log::warning('Potential N+1 query problem detected', [
+                    'query_count' => count(DB::getQueryLog()),
+                    'last_query' => $query->sql,
+                    'url' => request()->fullUrl(),
+                ]);
+            }
+        });
+
+        // Log total queries per request (debug mode only)
+        if (config('app.debug')) {
+            DB::enableQueryLog();
+        }
     }
 }

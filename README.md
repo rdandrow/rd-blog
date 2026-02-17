@@ -6,7 +6,7 @@ A modern full-stack blog platform built with Laravel 12 and Vue.js 3, featuring 
 
 **Backend:** Laravel 12 • PHP 8.2+ • Inertia.js • PostgreSQL 16  
 **Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 6  
-**Testing:** Pest PHP (799 tests) • Vitest (1,773 tests) • Feature & Unit Tests
+**Testing:** Pest PHP (809 tests) • Vitest (1,773 tests) • Feature & Unit Tests
 
 ## Key Features
 
@@ -199,7 +199,7 @@ Visit `http://localhost:8000`
 
 ## Testing
 
-**Backend Test Suite:** 804 tests • 3,111 assertions • ~8s parallel / ~24s sequential  
+**Backend Test Suite:** 809 tests • 3,125 assertions • ~8s parallel / ~24s sequential  
 **Frontend Test Suite:** 1,773 tests • 5,000+ assertions • ~35s execution
 
 ### Backend Tests (Pest PHP)
@@ -333,10 +333,45 @@ DB_PASSWORD=your_secure_password
 
 **Create PostgreSQL user:**
 ```bash
-psql postgres -c "CREATE USER rd_blog_user WITH PASSWORD 'your_secure_password';"
+psql postgres -c "CREATE USER rd_blog_user WITH PASSWORD 'your_secure_password' CREATEDB;"
 psql postgres -c "CREATE DATABASE rd_blog_dev OWNER rd_blog_user;"
 psql postgres -c "CREATE DATABASE rd_blog_test OWNER rd_blog_user;"
 ```
+
+**Note:** `CREATEDB` privilege is required for parallel test execution.
+
+### Performance Monitoring
+
+**Analyze database performance:**
+```bash
+# Show all statistics (index usage, table stats, cache hit rates)
+php artisan db:analyze-performance
+
+# Index usage only
+php artisan db:analyze-performance --indexes
+
+# Cache performance
+php artisan db:analyze-performance --cache
+
+# Slow query analysis (requires pg_stat_statements extension)
+php artisan db:analyze-performance --slow-queries
+
+# Specific table
+php artisan db:analyze-performance --table=blog_posts
+```
+
+**Automatic Query Monitoring (Development/Staging):**
+- Slow queries (>100ms) logged as warnings
+- Extremely slow queries (>500ms) logged with stack traces
+- N+1 query problems detected (>50 queries per request)
+- Only active in local/staging environments
+
+**Check logs:**
+```bash
+tail -f storage/logs/laravel.log | grep -E "(Slow query|N+1)"
+```
+
+See [docs/PHASE_4_3_PERFORMANCE_MONITORING.md](docs/PHASE_4_3_PERFORMANCE_MONITORING.md) for detailed monitoring guide.
 
 ## Framework Documentation
 
