@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class BlogPost extends Model
@@ -61,6 +62,43 @@ class BlogPost extends Model
                 $post->reading_time = static::calculateReadingTime($post->content);
             }
         });
+
+        // Invalidate cache when blog posts are created, updated, or deleted
+        static::saved(function () {
+            static::invalidateBlogCache();
+        });
+
+        static::deleted(function () {
+            static::invalidateBlogCache();
+        });
+    }
+
+    /**
+     * Invalidate all blog-related caches.
+     */
+    protected static function invalidateBlogCache(): void
+    {
+        $baseKeys = [
+            'popular_posts',
+            'featured_posts',
+            'recent_posts',
+            'available_tags',
+            'available_authors',
+            'post_stats',
+        ];
+
+        foreach ($baseKeys as $key) {
+            // Clear base key
+            Cache::forget("blog:{$key}");
+            
+            // Clear variations with limits (covers most common cases)
+            for ($i = 1; $i <= 50; $i++) {
+                Cache::forget("blog:{$key}:{$i}");
+            }
+        }
+        
+        // Note: Filtered cache keys use MD5 hashes which we can't enumerate
+        // These will expire naturally via TTL (1 hour default)
     }
 
     /**

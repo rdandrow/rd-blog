@@ -87,6 +87,11 @@ describe('File System Errors', function () {
         // Test that app continues to work without cache
         \Illuminate\Support\Facades\Cache::shouldReceive('get')->andReturn(null);
         \Illuminate\Support\Facades\Cache::shouldReceive('put')->andReturn(false);
+        \Illuminate\Support\Facades\Cache::shouldReceive('remember')->andReturnUsing(function ($key, $ttl, $callback) {
+            return $callback();  // Just execute callback without caching
+        });
+        \Illuminate\Support\Facades\Cache::shouldReceive('forget')->andReturn(true);
+        \Illuminate\Support\Facades\Cache::shouldReceive('has')->andReturn(false);
         
         $response = $this->get(route('home'));
         

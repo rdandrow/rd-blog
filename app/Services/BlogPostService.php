@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Models\BlogPost;
 use App\Models\User;
+use App\Services\Concerns\CachesBlogData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class BlogPostService
 {
+    use CachesBlogData;
     /**
      * Apply search and filter conditions to a query.
      */
@@ -52,6 +54,12 @@ class BlogPostService
      */
     public function getFeaturedPosts(int $limit = 2, array $filters = []): Collection
     {
+        // Use cache if no filters or only common filters
+        if (empty($filters) || $this->isCacheable($filters)) {
+            return $this->cacheFeaturedPosts($limit, $filters);
+        }
+
+        // Bypass cache for complex filters
         $query = BlogPost::with('author')
             ->published()
             ->where('is_featured', true);
@@ -68,6 +76,12 @@ class BlogPostService
      */
     public function getRecentPosts(int $limit = 6, array $filters = []): Collection
     {
+        // Use cache if no filters or only common filters
+        if (empty($filters) || $this->isCacheable($filters)) {
+            return $this->cacheRecentPosts($limit, $filters);
+        }
+
+        // Bypass cache for complex filters
         $query = BlogPost::with('author')
             ->published()
             ->where('is_featured', false);
@@ -96,15 +110,7 @@ class BlogPostService
      */
     public function getAvailableTags(): Collection
     {
-        return BlogPost::published()
-            ->select('tags')
-            ->whereNotNull('tags')
-            ->get()
-            ->pluck('tags')
-            ->flatten()
-            ->unique()
-            ->sort()
-            ->values();
+        return $this->cacheAvailableTags();
     }
 
     /**
@@ -112,9 +118,7 @@ class BlogPostService
      */
     public function getAvailableAuthors(): Collection
     {
-        return User::whereHas('blogPosts', function (Builder $query) {
-            $query->published();
-        })->get(['id', 'name']);
+        return $this->cacheAvailableAuthors();
     }
 
     /**
@@ -143,5 +147,50 @@ class BlogPostService
             'available_tags' => $this->getAvailableTags(),
             'available_authors' => $this->getAvailableAuthors(),
         ];
+    }
+
+    /**
+     * Get popular blog posts (by views).
+     */
+    public function getPopularPosts(int $limit = 10): Collection
+    {
+        return $this->cachePopularPosts($limit);
+    }
+
+    /**
+     * Get blog post statistics.
+     */
+    public function getPostStats(): array
+    {
+        return $this->cachePostStats();
+    }
+
+    /**
+     * Check if filters are cacheable.
+     * 
+     * Only cache common filter combinations to avoid cache pollution.
+     */
+    protected function isCacheable(array $filters): bool
+    {
+        // Only cache tag and author filters (most common)
+        $allowedKeys = ['tag', 'author'];
+        
+        foreach (array_keys($filters) as $key) {
+            if (!in_array($key, $allowedKeys)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Invalidate all blog caches.
+     * 
+     * Call this after creating/updating/deleting posts.
+     */
+    public function invalidateCache(): void
+    {
+        $this->flushBlogCache();
     }
 }
