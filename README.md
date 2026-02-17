@@ -360,6 +360,35 @@ php artisan db:analyze-performance --slow-queries
 php artisan db:analyze-performance --table=blog_posts
 ```
 
+**Analyze query execution plans:**
+```bash
+# Basic query analysis with EXPLAIN ANALYZE
+php artisan db:explain "SELECT * FROM blog_posts WHERE is_published = true"
+
+# With optimization suggestions (detects missing indexes, sequential scans)
+php artisan db:explain "SELECT * FROM blog_posts" --suggest
+
+# Show buffer usage and detailed output
+php artisan db:explain "SELECT * FROM blog_posts" --buffers --detailed
+
+# Analyze query from file
+php artisan db:explain --file=query.sql --suggest
+
+# JSON output for programmatic use
+php artisan db:explain "SELECT * FROM users" --format=json
+
+# EXPLAIN without executing (safe for UPDATE/DELETE queries)
+php artisan db:explain "UPDATE blog_posts SET views = views + 1" --no-execute
+```
+
+**Features:**
+- 🎨 Color-coded output (green for index scans, yellow for sequential scans)
+- ⚡ Performance assessment (fast/good/slow/very slow)
+- 🔍 Automatic optimization suggestions
+- 📊 Multiple output formats (text, JSON)
+
+See [docs/EXPLAIN_ANALYZE_COMMAND.md](docs/EXPLAIN_ANALYZE_COMMAND.md) for complete guide.
+
 **Automatic Query Monitoring (Development/Staging):**
 - Slow queries (>100ms) logged as warnings
 - Extremely slow queries (>500ms) logged with stack traces

@@ -199,6 +199,137 @@ php artisan db:analyze-performance --cache
 php artisan db:analyze-performance --slow-queries
 ```
 
+### 3. Query Execution Plan Analysis Command
+
+**File**: `app/Console/Commands/ExplainQuery.php`
+
+Created `db:explain` artisan command for analyzing individual query execution plans using PostgreSQL's EXPLAIN ANALYZE.
+
+#### Command Signature
+
+```bash
+php artisan db:explain {query?} [options]
+```
+
+#### Options
+
+| Option | Description |
+|--------|-------------|
+| `query` | SQL query to analyze (optional if using `--file`) |
+| `--file=PATH` | Read query from file instead of argument |
+| `--format=FORMAT` | Output format: `text` (default) or `json` |
+| `--buffers` | Show buffer usage statistics |
+| `--detailed` | Show detailed verbose output |
+| `--costs` | Show cost estimates (enabled by default) |
+| `--no-execute` | Run EXPLAIN without ANALYZE (no execution) |
+| `--suggest` | Show optimization suggestions |
+
+#### Features
+
+1. **Color-Coded Output**:
+   - 🟢 Green: Index scans (efficient)
+   - 🟡 Yellow: Sequential scans (may need optimization)
+   - 🔵 Blue: Cost estimates
+   - 🟣 Magenta: Timing information
+
+2. **Performance Assessment**:
+   - ✓ Excellent: < 10ms
+   - ⚠ Good: 10-100ms
+   - ⚠ Slow: 100-500ms
+   - ✗ Very Slow: > 500ms
+
+3. **Optimization Suggestions**:
+   - Detects sequential scans
+   - Identifies missing indexes
+   - Flags high query costs
+   - Warns about external sorts
+   - Highlights inefficient nested loops
+
+#### Example Usage
+
+**Basic Query Analysis:**
+```bash
+php artisan db:explain "SELECT * FROM blog_posts WHERE is_published = true LIMIT 5"
+```
+
+**Output:**
+```
+🔍 Analyzing Query Plan...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Query Execution Plan
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Limit  (cost=0.00..2.60 rows=5 width=1690) (actual time=0.015..0.019 rows=5 loops=1)
+  ->  Seq Scan on blog_posts  (cost=0.00..10.40 rows=20 width=1690) (actual time=0.013..0.014 rows=5 loops=1)
+        Filter: is_published
+Planning Time: 3.710 ms
+Execution Time: 0.048 ms
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Timing Summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Planning Time: 3.71 ms
+Execution Time: 0.048 ms
+Total Time: 3.758 ms
+
+✓ Excellent performance - Query executes very fast
+```
+
+**With Optimization Suggestions:**
+```bash
+php artisan db:explain "SELECT * FROM blog_posts WHERE content LIKE '%search%'" --suggest
+```
+
+**Output (with suggestions):**
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Optimization Suggestions
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 Sequential scan detected on table 'blog_posts'
+   Consider adding an index on the filtered columns
+📊 Table scan with filter condition detected
+   An index on the filter column(s) could improve performance
+```
+
+**Read Query from File:**
+```bash
+php artisan db:explain --file=complex_query.sql --buffers --detailed --suggest
+```
+
+**JSON Output (for programmatic use):**
+```bash
+php artisan db:explain "SELECT * FROM users" --format=json
+```
+
+**EXPLAIN Without Execution (for UPDATEs/DELETEs):**
+```bash
+php artisan db:explain "UPDATE blog_posts SET views = views + 1" --no-execute
+```
+
+**Complex Query with Multiple Options:**
+```bash
+php artisan db:explain "
+  SELECT bp.*, u.name, COUNT(c.id) as comment_count
+  FROM blog_posts bp
+  LEFT JOIN users u ON bp.user_id = u.id
+  LEFT JOIN comments c ON bp.id = c.blog_post_id
+  WHERE bp.is_published = true
+  GROUP BY bp.id, u.name
+  ORDER BY bp.created_at DESC
+  LIMIT 10
+" --buffers --detailed --suggest
+```
+
+#### Use Cases
+
+1. **Development**: Test query performance before production
+2. **Optimization**: Identify slow queries and missing indexes
+3. **Debugging**: Understand why a query is slow
+4. **Learning**: See how PostgreSQL executes queries
+5. **Documentation**: Include execution plans in technical docs
+
 ## Statistics Explained
 
 ### Index Usage Statistics

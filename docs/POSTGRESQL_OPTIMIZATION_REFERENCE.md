@@ -156,6 +156,15 @@ php artisan db:analyze-performance --slow-queries
 # Specific table
 php artisan db:analyze-performance --table=blog_posts
 
+# Explain query execution plan
+php artisan db:explain "SELECT * FROM blog_posts WHERE is_published = true"
+
+# Explain with optimization suggestions
+php artisan db:explain "SELECT * FROM blog_posts" --suggest
+
+# Explain query from file
+php artisan db:explain --file=query.sql --buffers --detailed
+
 # Monitor logs for slow queries
 tail -f storage/logs/laravel.log | grep "Slow query"
 ```
