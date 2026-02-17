@@ -27,10 +27,13 @@ describe('applyFilters method', function () {
         // Arrange: Create a mock query builder
         $query = Mockery::mock(Builder::class);
         
-        // Expect where clause with closure for search
-        $query->shouldReceive('where')
+        // Expect whereRaw for PostgreSQL full-text search
+        $query->shouldReceive('whereRaw')
             ->once()
-            ->with(Mockery::type('Closure'))
+            ->with(
+                Mockery::type('string'),
+                Mockery::type('array')
+            )
             ->andReturnSelf();
         
         // Act: Apply search filter
@@ -79,9 +82,9 @@ describe('applyFilters method', function () {
         $query = Mockery::mock(Builder::class);
         
         // Expect all filter methods to be called
-        $query->shouldReceive('where')
+        $query->shouldReceive('whereRaw')
             ->once()
-            ->with(Mockery::type('Closure'))
+            ->with(Mockery::type('string'), Mockery::type('array'))
             ->andReturnSelf();
         $query->shouldReceive('whereJsonContains')
             ->once()
@@ -109,6 +112,7 @@ describe('applyFilters method', function () {
         
         // Expect no methods to be called
         $query->shouldReceive('where')->never();
+        $query->shouldReceive('whereRaw')->never();
         $query->shouldReceive('whereJsonContains')->never();
         
         // Act: Apply empty filters

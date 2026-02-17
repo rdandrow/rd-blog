@@ -14,13 +14,24 @@ class BlogPostService
      */
     public function applyFilters(Builder $query, array $filters): Builder
     {
-        // Apply search filter (case-insensitive)
+        // Apply search filter
         if (!empty($filters['search'])) {
-            $query->where(function (Builder $q) use ($filters) {
-                $q->where('title', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('excerpt', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('content', 'ilike', "%{$filters['search']}%");
-            });
+            $search = $filters['search'];
+            
+            // Use PostgreSQL full-text search for better performance
+            if (config('database.default') === 'pgsql') {
+                $query->whereRaw(
+                    "to_tsvector('english', coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, '')) @@ plainto_tsquery('english', ?)",
+                    [$search]
+                );
+            } else {
+                // Fallback for other databases (case-insensitive pattern matching)
+                $query->where(function (Builder $q) use ($search) {
+                    $q->where('title', 'ilike', "%{$search}%")
+                      ->orWhere('excerpt', 'ilike', "%{$search}%")
+                      ->orWhere('content', 'ilike', "%{$search}%");
+                });
+            }
         }
 
         // Apply tag filter
