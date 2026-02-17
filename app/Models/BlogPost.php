@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Database\Concerns\HasBatchOperations;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,7 @@ use Illuminate\Support\Str;
 class BlogPost extends Model
 {
     use HasFactory;
+    use HasBatchOperations;
 
     protected $fillable = [
         'title',
