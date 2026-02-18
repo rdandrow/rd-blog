@@ -55,7 +55,13 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        DB::listen(function ($query) {
+        // Enable query logging for N+1 detection (debug mode only)
+        $enableN1Detection = config('app.debug');
+        if ($enableN1Detection) {
+            DB::enableQueryLog();
+        }
+
+        DB::listen(function ($query) use ($enableN1Detection) {
             // Log slow queries (>100ms)
             if ($query->time > 100) {
                 Log::warning('Slow query detected', [
@@ -78,18 +84,22 @@ class AppServiceProvider extends ServiceProvider
             }
 
             // Detect N+1 query problems (>50 queries in a request)
-            if (DB::getQueryLog() && count(DB::getQueryLog()) > 50) {
-                Log::warning('Potential N+1 query problem detected', [
-                    'query_count' => count(DB::getQueryLog()),
-                    'last_query' => $query->sql,
-                    'url' => request()->fullUrl(),
-                ]);
+            // Only check if query logging is enabled to avoid performance overhead
+            if ($enableN1Detection) {
+                $queryLog = DB::getQueryLog();
+                if ($queryLog && count($queryLog) > 50) {
+                    // Log only once when threshold is crossed
+                    static $n1Logged = false;
+                    if (!$n1Logged) {
+                        Log::warning('Potential N+1 query problem detected', [
+                            'query_count' => count($queryLog),
+                            'last_query' => $query->sql,
+                            'url' => request()->fullUrl(),
+                        ]);
+                        $n1Logged = true;
+                    }
+                }
             }
         });
-
-        // Log total queries per request (debug mode only)
-        if (config('app.debug')) {
-            DB::enableQueryLog();
-        }
     }
 }
