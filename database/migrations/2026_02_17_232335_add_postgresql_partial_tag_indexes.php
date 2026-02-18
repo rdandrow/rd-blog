@@ -46,11 +46,14 @@ return new class extends Migration
             // Uses jsonb_path_ops for optimal contains (@>) operator performance
             // Only indexes published posts with this tag
             // Note: Cast json to jsonb for GIN indexing, use jsonb in WHERE clause
+            // Properly escape the JSON value using PDO quote for security
+            $escapedTagJson = DB::connection()->getPdo()->quote($tagJson);
+            
             DB::statement("
                 CREATE INDEX {$indexName}
                 ON blog_posts USING GIN ((tags::jsonb) jsonb_path_ops)
                 WHERE is_published = true 
-                AND (tags::jsonb) @> '{$tagJson}'::jsonb
+                AND (tags::jsonb) @> {$escapedTagJson}::jsonb
             ");
         }
 
@@ -61,11 +64,14 @@ return new class extends Migration
             $indexName = 'blog_posts_tag_' . strtolower(str_replace(['.', ' '], '_', $tag)) . '_date_index';
             $tagJson = json_encode([$tag]);
             
+            // Properly escape the JSON value using PDO quote for security
+            $escapedTagJson = DB::connection()->getPdo()->quote($tagJson);
+            
             DB::statement("
                 CREATE INDEX {$indexName}
                 ON blog_posts (published_at DESC)
                 WHERE is_published = true 
-                AND (tags::jsonb) @> '{$tagJson}'::jsonb
+                AND (tags::jsonb) @> {$escapedTagJson}::jsonb
             ");
         }
     }
