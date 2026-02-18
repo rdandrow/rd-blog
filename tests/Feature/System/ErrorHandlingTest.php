@@ -85,6 +85,10 @@ describe('File System Errors', function () {
 
     it('handles cache service unavailability', function () {
         // Test that app continues to work without cache
+        $mockStore = \Mockery::mock('stdClass');
+        $mockStore->shouldReceive('tags')->andReturnSelf();
+        
+        \Illuminate\Support\Facades\Cache::shouldReceive('getStore')->andReturn($mockStore);
         \Illuminate\Support\Facades\Cache::shouldReceive('get')->andReturn(null);
         \Illuminate\Support\Facades\Cache::shouldReceive('put')->andReturn(false);
         \Illuminate\Support\Facades\Cache::shouldReceive('remember')->andReturnUsing(function ($key, $ttl, $callback) {

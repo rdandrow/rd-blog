@@ -11,6 +11,15 @@ use Illuminate\Support\Facades\DB;
  *
  * Provides PostgreSQL-optimized batch operation methods for Eloquent models.
  * These methods leverage PostgreSQL-specific features for better performance.
+ * 
+ * IMPORTANT: When using batch operations on models with cache invalidation,
+ * wrap operations with withoutCacheInvalidation() to avoid invalidating cache
+ * on every single record:
+ * 
+ * Example:
+ *   BlogPost::withoutCacheInvalidation(function() {
+ *       BlogPost::bulkUpdate($updates);
+ *   });
  */
 trait HasBatchOperations
 {

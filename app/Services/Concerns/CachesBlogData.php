@@ -26,6 +26,8 @@ trait CachesBlogData
     /**
      * Remember a cached value with the blog prefix.
      *
+     * Uses cache tags for efficient invalidation when supported (Redis/Memcached).
+     *
      * @param string $key Cache key (will be prefixed)
      * @param callable $callback Callback to execute if cache miss
      * @param int|null $ttl Time to live in seconds (null = use default)
@@ -36,6 +38,14 @@ trait CachesBlogData
         $ttl = $ttl ?? $this->cacheTtl;
         $fullKey = $this->cachePrefix . $key;
 
+        $store = Cache::getStore();
+        
+        // Use cache tags if supported (Redis, Memcached)
+        if (method_exists($store, 'tags')) {
+            return Cache::tags(['blog_posts'])->remember($fullKey, $ttl, $callback);
+        }
+        
+        // Fallback for drivers without tag support
         return Cache::remember($fullKey, $ttl, $callback);
     }
 

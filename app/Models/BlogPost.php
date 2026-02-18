@@ -16,6 +16,11 @@ class BlogPost extends Model
     use HasFactory;
     use HasBatchOperations;
 
+    /**
+     * Flag to temporarily disable cache invalidation during bulk operations.
+     */
+    protected static bool $cacheInvalidationEnabled = true;
+
     protected $fillable = [
         'title',
         'slug',
@@ -65,40 +70,85 @@ class BlogPost extends Model
 
         // Invalidate cache when blog posts are created, updated, or deleted
         static::saved(function () {
-            static::invalidateBlogCache();
+            if (static::$cacheInvalidationEnabled) {
+                static::invalidateBlogCache();
+            }
         });
 
         static::deleted(function () {
-            static::invalidateBlogCache();
+            if (static::$cacheInvalidationEnabled) {
+                static::invalidateBlogCache();
+            }
         });
     }
 
     /**
+     * Disable cache invalidation (for bulk operations).
+     */
+    public static function withoutCacheInvalidation(callable $callback): mixed
+    {
+        $previousState = static::$cacheInvalidationEnabled;
+        static::$cacheInvalidationEnabled = false;
+
+        try {
+            return $callback();
+        } finally {
+            static::$cacheInvalidationEnabled = $previousState;
+            // Invalidate once after bulk operation completes
+            static::invalidateBlogCache();
+        }
+    }
+
+    /**
      * Invalidate all blog-related caches.
+     * 
+     * Uses cache tags for efficient invalidation (Redis/Memcached)
+     * Falls back to pattern-based clearing for other drivers.
      */
     protected static function invalidateBlogCache(): void
     {
-        $baseKeys = [
-            'popular_posts',
-            'featured_posts',
-            'recent_posts',
-            'available_tags',
-            'available_authors',
-            'post_stats',
-        ];
-
-        foreach ($baseKeys as $key) {
-            // Clear base key
-            Cache::forget("blog:{$key}");
-            
-            // Clear variations with limits (covers most common cases)
-            for ($i = 1; $i <= 50; $i++) {
-                Cache::forget("blog:{$key}:{$i}");
-            }
+        $store = Cache::getStore();
+        
+        // Use cache tags if supported (Redis, Memcached)
+        if (method_exists($store, 'tags')) {
+            Cache::tags(['blog_posts'])->flush();
+            return;
         }
         
-        // Note: Filtered cache keys use MD5 hashes which we can't enumerate
-        // These will expire naturally via TTL (1 hour default)
+        // Fallback for drivers that don't support tags (file, database)
+        // This is less efficient but necessary for compatibility
+        static::flushBlogCacheKeys();
+    }
+
+    /**
+     * Flush blog cache keys for drivers that don't support tags.
+     * 
+     * This is a fallback method - prefer using cache tags with Redis.
+     */
+    protected static function flushBlogCacheKeys(): void
+    {
+        $prefixes = [
+            'blog:popular_posts',
+            'blog:featured_posts',
+            'blog:recent_posts',
+            'blog:available_tags',
+            'blog:available_authors',
+            'blog:post_stats',
+            'blog:all_published_posts',
+            'blog:landing_page',
+        ];
+
+        foreach ($prefixes as $prefix) {
+            // Clear base key
+            Cache::forget($prefix);
+            
+            // Clear common variations (limit parameter)
+            // Note: Only clears up to limit 20 to reduce overhead
+            // Filtered caches with MD5 hashes will expire via TTL
+            for ($i = 1; $i <= 20; $i++) {
+                Cache::forget("{$prefix}:{$i}");
+            }
+        }
     }
 
     /**
