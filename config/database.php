@@ -141,6 +141,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Full-Text Search Configuration
+    |--------------------------------------------------------------------------
+    |
+    | PostgreSQL full-text search configuration. The text search configuration
+    | determines the language-specific rules for stemming, stop words, etc.
+    |
+    | Common configurations: english, spanish, french, german, portuguese, etc.
+    | See: https://www.postgresql.org/docs/current/textsearch-controls.html
+    |
+    */
+
+    'full_text_search' => [
+        'language' => env('DB_FTS_LANGUAGE', 'english'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Redis Databases
     |--------------------------------------------------------------------------
     |

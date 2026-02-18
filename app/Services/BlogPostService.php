@@ -22,9 +22,10 @@ class BlogPostService
             
             // Use PostgreSQL full-text search for better performance
             if (config('database.default') === 'pgsql') {
+                $language = config('database.full_text_search.language', 'english');
                 $query->whereRaw(
-                    "to_tsvector('english', coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, '')) @@ plainto_tsquery('english', ?)",
-                    [$search]
+                    "to_tsvector(?, coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, '')) @@ plainto_tsquery(?, ?)",
+                    [$language, $language, $search]
                 );
             } else {
                 // Fallback for other databases (case-insensitive pattern matching)
