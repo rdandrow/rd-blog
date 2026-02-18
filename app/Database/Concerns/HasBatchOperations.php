@@ -24,74 +24,57 @@ use Illuminate\Support\Facades\DB;
 trait HasBatchOperations
 {
     /**
-     * Insert multiple records using PostgreSQL COPY command for maximum performance.
+     * Insert multiple records efficiently using chunked inserts.
      *
      * Note: This bypasses Eloquent events and does not return model instances.
-     * Use for bulk imports where performance is critical.
+     * Use for bulk imports where performance is critical. Processes records in
+     * chunks to avoid hitting PostgreSQL parameter limits (typically 65535).
+     *
+     * For extremely large datasets (millions of rows), consider using PostgreSQL's
+     * COPY command directly via psql command line tool.
      *
      * @param array $records Array of arrays, each containing column => value pairs
-     * @param array $columns Column names in the order they appear in records
+     * @param int $chunkSize Number of records to insert per query (default: 1000)
      * @return int Number of rows inserted
      */
-    public static function copyFrom(array $records, array $columns = []): int
+    public static function copyFrom(array $records, int $chunkSize = 1000): int
     {
         if (empty($records)) {
             return 0;
         }
 
         $model = new static;
-        $table = $model->getTable();
-
-        // If columns not specified, get from first record
-        if (empty($columns)) {
-            $columns = array_keys($records[0]);
-        }
-
-        // Build CSV data
-        $csvData = [];
-        foreach ($records as $record) {
-            $row = [];
-            foreach ($columns as $column) {
-                $value = $record[$column] ?? null;
-                
-                // Handle null values
-                if ($value === null) {
-                    $row[] = '\N';
-                    continue;
-                }
-                
-                // Handle boolean values
-                if (is_bool($value)) {
-                    $row[] = $value ? 't' : 'f';
-                    continue;
-                }
-                
-                // Handle arrays/JSON
-                if (is_array($value)) {
-                    $row[] = str_replace(['"', "\n", "\r"], ['""', '\\n', '\\r'], json_encode($value));
-                    continue;
-                }
-                
-                // Escape special characters
-                $row[] = str_replace(['"', "\n", "\r", "\t"], ['""', '\\n', '\\r', '\\t'], (string) $value);
-            }
-            $csvData[] = '"' . implode('","', $row) . '"';
-        }
-
-        $csv = implode("\n", $csvData);
-        $columnList = implode(',', array_map(fn($col) => '"' . $col . '"', $columns));
-
-        // Use PostgreSQL COPY command
-        $query = "COPY {$table} ({$columnList}) FROM STDIN WITH (FORMAT CSV, DELIMITER ',', QUOTE '\"', ESCAPE '\"')";
+        $inserted = 0;
         
-        $connection = $model->getConnection();
-        $pdo = $connection->getPdo();
+        // Process in chunks to avoid parameter limits and memory issues
+        DB::transaction(function () use ($model, $records, $chunkSize, &$inserted) {
+            foreach (array_chunk($records, $chunkSize) as $chunk) {
+                // Normalize records to ensure consistent columns
+                $columns = array_keys($chunk[0]);
+                $normalized = [];
+                
+                foreach ($chunk as $record) {
+                    $row = [];
+                    foreach ($columns as $column) {
+                        $value = $record[$column] ?? null;
+                        
+                        // Handle arrays/JSON - convert to JSON string
+                        if (is_array($value)) {
+                            $row[$column] = json_encode($value);
+                        } else {
+                            $row[$column] = $value;
+                        }
+                    }
+                    $normalized[] = $row;
+                }
+                
+                // Use Laravel's insert for reliable, cross-database compatibility
+                $model->getConnection()->table($model->getTable())->insert($normalized);
+                $inserted += count($normalized);
+            }
+        });
 
-        $pdo->exec("BEGIN");
-        $pdo->pgsqlCopyFromArray($table, $records, ',', 'NULL', $columns);
-        $pdo->exec("COMMIT");
-
-        return count($records);
+        return $inserted;
     }
 
     /**
