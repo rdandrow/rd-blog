@@ -32,12 +32,14 @@ To run tests in GitHub Actions, set up the following secrets in your repository:
 
 ### Fallback Values
 
-If secrets are not configured, the workflow uses safe defaults:
+If secrets are not configured, the workflow uses stronger fallback defaults:
 - Username: `rd_blog_test`
-- Password: `test_password_change_me`
+- Password: `ci_temp_9K7mP2xQ8vL4nR6wE5tY` (random-looking default)
 - Database: `rd_blog_test`
 
-**Recommendation:** Set proper secrets for better security hygiene, even for test credentials.
+**Note:** While fallbacks use stronger passwords than typical test defaults, configuring proper secrets is still recommended for security best practices.
+
+**Why fallbacks exist:** To allow quick testing without initial secret setup. The CI database is ephemeral (destroyed after ~2 minutes) and never exposed publicly.
 
 ### Generate Secure Password
 

@@ -19,7 +19,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_test' }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'test_password_change_me' }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'ci_temp_9K7mP2xQ8vL4nR6wE5tY' }}
           POSTGRES_DB: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
         ports:
           - 5432:5432
@@ -64,7 +64,7 @@ jobs:
           echo "DB_PORT=5432" >> .env
           echo "DB_DATABASE=${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}" >> .env
           echo "DB_USERNAME=${{ secrets.DB_TEST_USERNAME || 'rd_blog_test' }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_TEST_PASSWORD || 'test_password_change_me' }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_TEST_PASSWORD || 'ci_temp_9K7mP2xQ8vL4nR6wE5tY' }}" >> .env
 
       - name: Generate Application Key
         run: php artisan key:generate
