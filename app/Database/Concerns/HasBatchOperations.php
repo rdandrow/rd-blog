@@ -133,27 +133,31 @@ trait HasBatchOperations
         $firstRecord = reset($records);
         $columns = array_keys($firstRecord);
         
-        // Build CASE statements for each column
+        // Build CASE statements for each column with parameterized queries
         $caseStatements = [];
+        $bindings = [];
+        
         foreach ($columns as $column) {
             $cases = [];
             foreach ($records as $id => $data) {
                 if (array_key_exists($column, $data)) {
                     $value = $data[$column];
                     
-                    // Handle different data types
+                    // Add ID to bindings
+                    $bindings[] = $id;
+                    
+                    // Handle different data types with proper parameterization
                     if ($value === null) {
-                        $cases[] = "WHEN {$keyColumn} = " . (int)$id . " THEN NULL";
+                        $cases[] = "WHEN {$keyColumn} = ? THEN NULL";
                     } elseif (is_bool($value)) {
-                        $cases[] = "WHEN {$keyColumn} = " . (int)$id . " THEN " . ($value ? 'TRUE' : 'FALSE');
-                    } elseif (is_numeric($value)) {
-                        $cases[] = "WHEN {$keyColumn} = " . (int)$id . " THEN {$value}";
+                        $cases[] = "WHEN {$keyColumn} = ? THEN ?";
+                        $bindings[] = $value;
                     } elseif (is_array($value)) {
-                        $json = str_replace("'", "''", json_encode($value));
-                        $cases[] = "WHEN {$keyColumn} = " . (int)$id . " THEN '{$json}'";
+                        $cases[] = "WHEN {$keyColumn} = ? THEN ?::json";
+                        $bindings[] = json_encode($value);
                     } else {
-                        $escaped = str_replace("'", "''", $value);
-                        $cases[] = "WHEN {$keyColumn} = " . (int)$id . " THEN '{$escaped}'";
+                        $cases[] = "WHEN {$keyColumn} = ? THEN ?";
+                        $bindings[] = $value;
                     }
                 }
             }
@@ -167,12 +171,15 @@ trait HasBatchOperations
             return 0;
         }
 
-        $ids = implode(',', array_keys($records));
+        // Add IDs for WHERE clause
+        $ids = array_keys($records);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $bindings = array_merge($bindings, $ids);
+        
         $updates = implode(', ', $caseStatements);
+        $query = "UPDATE {$table} SET {$updates} WHERE {$keyColumn} IN ({$placeholders})";
         
-        $query = "UPDATE {$table} SET {$updates} WHERE {$keyColumn} IN ({$ids})";
-        
-        return DB::affectingStatement($query);
+        return DB::affectingStatement($query, $bindings);
     }
 
     /**
@@ -286,18 +293,25 @@ trait HasBatchOperations
         $model = new static;
         $table = $model->getTable();
         
+        // Build CASE statement with parameterized queries
         $cases = [];
+        $bindings = [];
+        
         foreach ($increments as $id => $amount) {
-            $safeId = (int)$id;
-            $safeAmount = (int)$amount;
-            $cases[] = "WHEN {$keyColumn} = {$safeId} THEN {$column} + ({$safeAmount})";
+            $cases[] = "WHEN {$keyColumn} = ? THEN {$column} + ?";
+            $bindings[] = $id;
+            $bindings[] = $amount;
         }
         
         $caseStatement = "CASE " . implode(' ', $cases) . " ELSE {$column} END";
-        $ids = implode(',', array_map('intval', array_keys($increments)));
         
-        $query = "UPDATE {$table} SET {$column} = {$caseStatement} WHERE {$keyColumn} IN ({$ids})";
+        // Add IDs for WHERE clause
+        $ids = array_keys($increments);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $bindings = array_merge($bindings, $ids);
         
-        return DB::affectingStatement($query);
+        $query = "UPDATE {$table} SET {$column} = {$caseStatement} WHERE {$keyColumn} IN ({$placeholders})";
+        
+        return DB::affectingStatement($query, $bindings);
     }
 }
