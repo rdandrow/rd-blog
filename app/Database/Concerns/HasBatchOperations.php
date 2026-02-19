@@ -121,9 +121,12 @@ trait HasBatchOperations
         $model = new static;
         $table = $model->getTable();
         
-        // Get all column names to update (excluding the key)
-        $firstRecord = reset($records);
-        $columns = array_keys($firstRecord);
+        // Get union of all column names across all records (excluding the key)
+        $columns = [];
+        foreach ($records as $record) {
+            $columns = array_merge($columns, array_keys($record));
+        }
+        $columns = array_unique($columns);
         
         // Build CASE statements for each column with parameterized queries
         $caseStatements = [];
