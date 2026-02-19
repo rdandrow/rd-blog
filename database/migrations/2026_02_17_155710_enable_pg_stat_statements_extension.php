@@ -42,7 +42,8 @@ return new class extends Migration
             DB::statement('CREATE EXTENSION IF NOT EXISTS pg_stat_statements');
         } catch (\Exception $e) {
             // Extension requires superuser - skip silently in test environments
-            if (str_contains($e->getMessage(), 'permission denied')) {
+            $message = $e->getMessage();
+            if (str_contains($message, 'permission denied') || str_contains($message, 'Insufficient privilege')) {
                 if (app()->environment(['testing', 'local'])) {
                     // Silent skip for testing/development
                     return;
@@ -79,6 +80,27 @@ return new class extends Migration
             return;
         }
 
-        DB::statement('DROP EXTENSION IF EXISTS pg_stat_statements');
+        try {
+            DB::statement('DROP EXTENSION IF EXISTS pg_stat_statements');
+        } catch (\Exception $e) {
+            // Extension requires superuser - skip silently in test environments
+            $message = $e->getMessage();
+            if (str_contains($message, 'permission denied') || str_contains($message, 'Insufficient privilege')) {
+                if (app()->environment(['testing', 'local'])) {
+                    // Silent skip for testing/development
+                    return;
+                }
+                
+                throw new \RuntimeException(
+                    "pg_stat_statements requires superuser privileges to drop.\n" .
+                    "Please run as PostgreSQL superuser:\n" .
+                    "  psql {$this->getDatabaseName()} -c \"DROP EXTENSION IF EXISTS pg_stat_statements;\"\n" .
+                    "Then run: php artisan migrate:rollback to verify.",
+                    0,
+                    $e
+                );
+            }
+            throw $e;
+        }
     }
 };
