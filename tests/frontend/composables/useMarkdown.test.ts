@@ -200,6 +200,77 @@ describe('useMarkdown', () => {
                 expect(result).toContain('<pre class="hljs">');
             });
 
+            it('should highlight SQL code', () => {
+                const code = '```sql\nSELECT * FROM users WHERE id = 1;\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+                expect(result).toContain('SELECT');
+            });
+
+            it('should highlight CSS code', () => {
+                const code = '```css\n.button { color: blue; }\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+                expect(result).toContain('button');
+            });
+
+            it('should highlight HTML code', () => {
+                const code = '```html\n<div class="container">Content</div>\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+                // Check that HTML is escaped and highlighted
+                expect(result).toContain('hljs-tag');
+                expect(result).toContain('hljs-name');
+            });
+
+            it('should highlight Vue template code', () => {
+                const code = '```vue\n<template>\n  <div>{{ message }}</div>\n</template>\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+                // Check that Vue template is escaped and highlighted
+                expect(result).toContain('hljs-tag');
+                expect(result).toContain('hljs-name');
+            });
+
+            it('should highlight YAML code', () => {
+                const code = '```yaml\nname: test\nversion: 1.0\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+                expect(result).toContain('name');
+            });
+
+            it('should handle language aliases (yml for yaml)', () => {
+                const code = '```yml\nkey: value\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+            });
+
+            it('should highlight Dockerfile code', () => {
+                const code = '```dockerfile\nFROM node:18\nWORKDIR /app\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+                expect(result).toContain('FROM');
+            });
+
+            it('should highlight INI configuration files', () => {
+                const code = '```ini\n[section]\nkey=value\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+                expect(result).toContain('section');
+            });
+
+            it('should handle language aliases (sh for bash)', () => {
+                const code = '```sh\nls -la\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+            });
+
+            it('should handle language aliases (rb for ruby)', () => {
+                const code = '```rb\nputs "Hello"\n```';
+                const result = markdown.render(code);
+                expect(result).toContain('<pre class="hljs">');
+            });
+
             it('should escape code for unknown languages', () => {
                 const code = '```unknownlang\n<script>alert(1)</script>\n```';
                 const result = markdown.render(code);

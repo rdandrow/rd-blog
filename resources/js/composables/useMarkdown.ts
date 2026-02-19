@@ -6,6 +6,12 @@ import python from 'highlight.js/lib/languages/python';
 import php from 'highlight.js/lib/languages/php';
 import bash from 'highlight.js/lib/languages/bash';
 import ruby from 'highlight.js/lib/languages/ruby';
+import sql from 'highlight.js/lib/languages/sql';
+import css from 'highlight.js/lib/languages/css';
+import xml from 'highlight.js/lib/languages/xml'; // Used for HTML and Vue templates
+import yaml from 'highlight.js/lib/languages/yaml';
+import dockerfile from 'highlight.js/lib/languages/dockerfile';
+import ini from 'highlight.js/lib/languages/ini';
 import { MAX_BLOG_POST_CHARACTERS } from '@/constants/editor';
 
 // Register languages
@@ -15,6 +21,17 @@ hljs.registerLanguage('python', python);
 hljs.registerLanguage('php', php);
 hljs.registerLanguage('bash', bash);
 hljs.registerLanguage('ruby', ruby);
+hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('css', css);
+hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('html', xml);
+hljs.registerLanguage('vue', xml);
+hljs.registerLanguage('yaml', yaml);
+hljs.registerLanguage('yml', yaml);
+hljs.registerLanguage('dockerfile', dockerfile);
+hljs.registerLanguage('ini', ini);
+
+// Common aliases
 hljs.registerLanguage('js', javascript);
 hljs.registerLanguage('ts', typescript);
 hljs.registerLanguage('py', python);

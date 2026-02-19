@@ -1108,6 +1108,13 @@ onUnmounted(() => {
             <div>• <code class="text-xs">php</code></div>
             <div>• <code class="text-xs">ruby</code> or <code class="text-xs">rb</code></div>
             <div>• <code class="text-xs">bash</code> or <code class="text-xs">sh</code></div>
+            <div>• <code class="text-xs">sql</code></div>
+            <div>• <code class="text-xs">css</code></div>
+            <div>• <code class="text-xs">html</code></div>
+            <div>• <code class="text-xs">vue</code></div>
+            <div>• <code class="text-xs">yaml</code> or <code class="text-xs">yml</code></div>
+            <div>• <code class="text-xs">dockerfile</code></div>
+            <div>• <code class="text-xs">ini</code></div>
           </div>
         </div>
       </details>
