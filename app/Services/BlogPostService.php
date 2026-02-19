@@ -28,11 +28,12 @@ class BlogPostService
                     [$language, $language, $search]
                 );
             } else {
-                // Fallback for other databases (case-insensitive pattern matching)
-                $query->where(function (Builder $q) use ($search) {
-                    $q->where('title', 'ilike', "%{$search}%")
-                      ->orWhere('excerpt', 'ilike', "%{$search}%")
-                      ->orWhere('content', 'ilike', "%{$search}%");
+                // Fallback for other databases (portable case-insensitive pattern matching)
+                $searchLower = strtolower($search);
+                $query->where(function (Builder $q) use ($searchLower) {
+                    $q->whereRaw('LOWER(title) LIKE ?', ["%{$searchLower}%"])
+                      ->orWhereRaw('LOWER(excerpt) LIKE ?', ["%{$searchLower}%"])
+                      ->orWhereRaw('LOWER(content) LIKE ?', ["%{$searchLower}%"]);
                 });
             }
         }
