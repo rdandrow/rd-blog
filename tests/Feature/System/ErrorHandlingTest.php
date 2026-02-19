@@ -91,6 +91,7 @@ describe('File System Errors', function () {
         \Illuminate\Support\Facades\Cache::shouldReceive('getStore')->andReturn($mockStore);
         \Illuminate\Support\Facades\Cache::shouldReceive('get')->andReturn(null);
         \Illuminate\Support\Facades\Cache::shouldReceive('put')->andReturn(false);
+        \Illuminate\Support\Facades\Cache::shouldReceive('forever')->andReturn(true);
         \Illuminate\Support\Facades\Cache::shouldReceive('remember')->andReturnUsing(function ($key, $ttl, $callback) {
             return $callback();  // Just execute callback without caching
         });

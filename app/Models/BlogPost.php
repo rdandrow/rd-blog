@@ -100,55 +100,56 @@ class BlogPost extends Model
     }
 
     /**
+     * Get the current blog cache version.
+     * 
+     * This version is included in all cache keys to enable instant invalidation
+     * by simply incrementing the version number.
+     */
+    public static function getCacheVersion(): int
+    {
+        $version = Cache::get('blog:cache_version');
+        
+        if ($version === null) {
+            $version = 1;
+            Cache::forever('blog:cache_version', $version);
+        }
+        
+        return $version;
+    }
+
+    /**
+     * Bump the blog cache version to invalidate all cached data.
+     * 
+     * This is more efficient than deleting individual keys, especially for
+     * drivers that don't support cache tags (file, database, array).
+     */
+    public static function bumpCacheVersion(): void
+    {
+        $currentVersion = static::getCacheVersion();
+        Cache::forever('blog:cache_version', $currentVersion + 1);
+    }
+
+    /**
      * Invalidate all blog-related caches.
      * 
      * Uses cache tags for efficient invalidation (Redis/Memcached)
-     * Falls back to pattern-based clearing for other drivers.
+     * Falls back to version bumping for other drivers.
      */
     protected static function invalidateBlogCache(): void
     {
         $store = Cache::getStore();
+        $driver = config('cache.default');
         
-        // Use cache tags if supported (Redis, Memcached)
-        if (method_exists($store, 'tags')) {
+        // Use cache tags only for drivers that properly support them (Redis, Memcached)
+        // Array, file, and database drivers have tags() method but don't actually support tags
+        if (in_array($driver, ['redis', 'memcached']) && method_exists($store, 'tags')) {
             Cache::tags(['blog_posts'])->flush();
             return;
         }
         
-        // Fallback for drivers that don't support tags (file, database)
-        // This is less efficient but necessary for compatibility
-        static::flushBlogCacheKeys();
-    }
-
-    /**
-     * Flush blog cache keys for drivers that don't support tags.
-     * 
-     * This is a fallback method - prefer using cache tags with Redis.
-     */
-    protected static function flushBlogCacheKeys(): void
-    {
-        $prefixes = [
-            'blog:popular_posts',
-            'blog:featured_posts',
-            'blog:recent_posts',
-            'blog:available_tags',
-            'blog:available_authors',
-            'blog:post_stats',
-            'blog:all_published_posts',
-            'blog:landing_page',
-        ];
-
-        foreach ($prefixes as $prefix) {
-            // Clear base key
-            Cache::forget($prefix);
-            
-            // Clear common variations (limit parameter)
-            // Note: Only clears up to limit 20 to reduce overhead
-            // Filtered caches with MD5 hashes will expire via TTL
-            for ($i = 1; $i <= 20; $i++) {
-                Cache::forget("{$prefix}:{$i}");
-            }
-        }
+        // Fallback: Bump cache version to instantly invalidate all versioned keys
+        // This is more efficient and reliable than trying to enumerate and delete keys
+        static::bumpCacheVersion();
     }
 
     /**

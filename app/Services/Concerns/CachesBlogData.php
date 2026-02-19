@@ -27,6 +27,7 @@ trait CachesBlogData
      * Remember a cached value with the blog prefix.
      *
      * Uses cache tags for efficient invalidation when supported (Redis/Memcached).
+     * For other drivers, includes a version number in the key for instant invalidation.
      *
      * @param string $key Cache key (will be prefixed)
      * @param callable $callback Callback to execute if cache miss
@@ -36,21 +37,28 @@ trait CachesBlogData
     protected function remember(string $key, callable $callback, ?int $ttl = null): mixed
     {
         $ttl = $ttl ?? $this->cacheTtl;
-        $fullKey = $this->cachePrefix . $key;
-
         $store = Cache::getStore();
+        $driver = config('cache.default');
         
-        // Use cache tags if supported (Redis, Memcached)
-        if (method_exists($store, 'tags')) {
+        // Use cache tags only for drivers that properly support them (Redis, Memcached)
+        // Array, file, and database drivers have tags() method but don't actually support tags
+        if (in_array($driver, ['redis', 'memcached']) && method_exists($store, 'tags')) {
+            $fullKey = $this->cachePrefix . $key;
             return Cache::tags(['blog_posts'])->remember($fullKey, $ttl, $callback);
         }
         
-        // Fallback for drivers without tag support
-        return Cache::remember($fullKey, $ttl, $callback);
+        // Fallback: Use versioned cache keys for instant invalidation
+        // When cache is invalidated, the version bumps and old keys become stale
+        $version = \App\Models\BlogPost::getCacheVersion();
+        $versionedKey = $this->cachePrefix . "v{$version}:" . $key;
+        return Cache::remember($versionedKey, $ttl, $callback);
     }
 
     /**
      * Forget a cached value.
+     *
+     * Note: With versioned keys, this may not be necessary in most cases.
+     * Cache invalidation is handled by bumping the version in BlogPost model.
      *
      * @param string $key Cache key (will be prefixed)
      * @return bool
@@ -58,39 +66,6 @@ trait CachesBlogData
     protected function forget(string $key): bool
     {
         return Cache::forget($this->cachePrefix . $key);
-    }
-
-    /**
-     * Flush all blog-related cached data.
-     *
-     * @return void
-     */
-    protected function flushBlogCache(): void
-    {
-        $baseKeys = [
-            'popular_posts',
-            'featured_posts',
-            'recent_posts',
-            'available_tags',
-            'available_authors',
-            'post_stats',
-        ];
-
-        // Clear base keys
-        foreach ($baseKeys as $key) {
-            $this->forget($key);
-        }
-        
-        // Clear variations with different limits and filters
-        foreach ($baseKeys as $key) {
-            // Clear variations with limits (1-50)
-            for ($i = 1; $i <= 50; $i++) {
-                Cache::forget($this->cachePrefix . "{$key}:{$i}");
-            }
-            
-            // Clear variations with filter hashes (can't enumerate all, rely on TTL)
-            // In production, consider using cache tags for better invalidation
-        }
     }
 
     /**

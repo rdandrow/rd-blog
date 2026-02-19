@@ -189,9 +189,10 @@ class BlogPostService
      * Invalidate all blog caches.
      * 
      * Call this after creating/updating/deleting posts.
+     * This delegates to the model's cache invalidation logic.
      */
     public function invalidateCache(): void
     {
-        $this->flushBlogCache();
+        BlogPost::bumpCacheVersion();
     }
 }

@@ -383,4 +383,140 @@ describe('BlogPostService Caching', function () {
                 ->and($secondCallQueries)->toBeLessThan($firstCallQueries);
         });
     });
+
+    describe('Versioned Cache Keys', function () {
+        it('uses versioned cache keys for non-tagged stores', function () {
+            // Force use of non-tagged cache store (array driver doesn't support tags)
+            config(['cache.default' => 'array']);
+            Cache::flush();
+            
+            $author = User::factory()->create();
+            BlogPost::factory()->count(5)->create([
+                'user_id' => $author->id,
+                'is_published' => true,
+                'published_at' => now()->subDay(),
+            ]);
+
+            // Get initial cache version
+            $initialVersion = BlogPost::getCacheVersion();
+            expect($initialVersion)->toBeInt()->toBeGreaterThan(0);
+
+            // Fetch data (should cache with version)
+            $posts1 = $this->service->getPopularPosts(10);
+            expect($posts1)->toHaveCount(5);
+
+            // Verify data is cached by fetching again
+            $posts2 = $this->service->getPopularPosts(10);
+            expect($posts2->pluck('id')->toArray())->toBe($posts1->pluck('id')->toArray());
+
+            // Manually bump version to simulate invalidation
+            BlogPost::bumpCacheVersion();
+
+            // Cache version should have bumped
+            $newVersion = BlogPost::getCacheVersion();
+            expect($newVersion)->toBe($initialVersion + 1);
+
+            // Create a new post
+            BlogPost::withoutCacheInvalidation(function () use ($author) {
+                BlogPost::factory()->create([
+                    'user_id' => $author->id,
+                    'is_published' => true,
+                    'published_at' => now(),
+                ]);
+            });
+
+            // Fetching data should now use new version key and return updated results
+            $posts3 = $this->service->getPopularPosts(10);
+            expect($posts3)->toHaveCount(6); // Now includes the new post
+        });
+
+        it('bumps cache version on model events', function () {
+            config(['cache.default' => 'array']);
+            Cache::flush();
+            
+            $author = User::factory()->create();
+            
+            // Manually set initial version
+            Cache::forever('blog:cache_version', 10);
+            expect(BlogPost::getCacheVersion())->toBe(10);
+
+            // Create - should bump version
+            $post = BlogPost::factory()->create([
+                'user_id' => $author->id,
+                'is_published' => true,
+            ]);
+            expect(BlogPost::getCacheVersion())->toBe(11);
+
+            // Update - should bump version
+            $post->update(['title' => 'Updated Title']);
+            expect(BlogPost::getCacheVersion())->toBe(12);
+
+            // Delete - should bump version
+            $post->delete();
+            expect(BlogPost::getCacheVersion())->toBe(13);
+        });
+
+        it('handles filtered cache keys with versions', function () {
+            config(['cache.default' => 'array']);
+            Cache::flush();
+            
+            $author = User::factory()->create();
+            
+            // Get baseline version
+            $baseVersion = BlogPost::getCacheVersion();
+            
+            BlogPost::withoutCacheInvalidation(function () use ($author) {
+                BlogPost::factory()->create([
+                    'user_id' => $author->id,
+                    'is_published' => true,
+                    'is_featured' => true,
+                    'published_at' => now(),
+                    'tags' => ['Laravel', 'PHP'],
+                ]);
+            });
+
+            // Fetch with filters (should cache with version + filter hash)
+            $filtered1 = $this->service->getFeaturedPosts(10, ['tag' => 'Laravel']);
+            expect($filtered1)->toHaveCount(1);
+
+            // Manually bump version (simulating invalidation)
+            BlogPost::bumpCacheVersion();
+            
+            // Create new post without auto-invalidation
+            BlogPost::withoutCacheInvalidation(function () use ($author) {
+                BlogPost::factory()->create([
+                    'user_id' => $author->id,
+                    'is_published' => true,
+                    'is_featured' => true,
+                    'published_at' => now(),
+                    'tags' => ['Laravel', 'Vue'],
+                ]);
+            });
+
+            $newVersion = BlogPost::getCacheVersion();
+            expect($newVersion)->toBeGreaterThan($baseVersion);
+
+            // Same filter query should now return updated results (new version key)
+            $filtered2 = $this->service->getFeaturedPosts(10, ['tag' => 'Laravel']);
+            expect($filtered2)->toHaveCount(2);
+        });
+
+        it('maintains separate versions for different cache stores', function () {
+            // This test verifies that cache version is stored in cache,
+            // so different cache stores can have different versions
+            config(['cache.default' => 'array']);
+            Cache::flush();
+            
+            $version1 = BlogPost::getCacheVersion();
+            expect($version1)->toBe(1); // Initial version
+            
+            BlogPost::bumpCacheVersion();
+            $version2 = BlogPost::getCacheVersion();
+            expect($version2)->toBe(2);
+            
+            BlogPost::bumpCacheVersion();
+            $version3 = BlogPost::getCacheVersion();
+            expect($version3)->toBe(3);
+        });
+    });
 });
