@@ -113,6 +113,7 @@ class DatabaseSeeder extends Seeder
             [
                 'author' => $masterAdmin,
                 'title' => 'Mastering Vue 3 Composition API',
+                'excerpt' => 'Dive deep into Vue 3\'s Composition API and learn how to write cleaner, more maintainable code. From setup functions to composables, master the modern way to build Vue applications.',
                 'tags' => ['Vue.js', 'JavaScript', 'Frontend', 'Tutorial'],
                 'is_featured' => true,
                 'featured_image' => 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=1200&h=600&fit=crop',
@@ -370,6 +371,7 @@ MARKDOWN
             [
                 'author' => $masterAdmin,
                 'title' => 'PostgreSQL Performance Tuning',
+                'excerpt' => 'Unlock the full potential of PostgreSQL with proven optimization techniques. Learn about indexes, query optimization, connection pooling, and monitoring to supercharge your database performance.',
                 'tags' => ['PostgreSQL', 'Database', 'Performance', 'Backend'],
                 'is_featured' => true,
                 'featured_image' => 'https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=1200&h=600&fit=crop',
@@ -474,6 +476,7 @@ MARKDOWN
             [
                 'author' => $masterAdmin,
                 'title' => 'Laravel Inertia.js Best Practices',
+                'excerpt' => 'Build modern full-stack applications with Laravel and Inertia.js. Discover best practices for structuring your app, handling forms, optimizing performance, and creating seamless user experiences.',
                 'tags' => ['Laravel', 'Inertia.js', 'Vue.js', 'Full-Stack'],
                 'is_featured' => false,
                 'featured_image' => 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=600&fit=crop',
@@ -567,6 +570,7 @@ MARKDOWN
             [
                 'author' => $author1,
                 'title' => 'Modern CSS: Grid vs Flexbox',
+                'excerpt' => 'Confused about when to use CSS Grid vs Flexbox? This guide breaks down the strengths of each layout system and shows you exactly when to use which one for optimal results.',
                 'tags' => ['CSS', 'Frontend', 'Web Development', 'Design'],
                 'is_featured' => true,
                 'featured_image' => 'https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=1200&h=600&fit=crop',
@@ -659,6 +663,7 @@ MARKDOWN
             [
                 'author' => $author1,
                 'title' => 'Tailwind CSS: Tips and Tricks',
+                'excerpt' => 'Level up your Tailwind CSS skills with these practical tips and tricks. From custom utilities to component patterns and dark mode, learn how to make the most of this utility-first framework.',
                 'tags' => ['Tailwind', 'CSS', 'Frontend', 'Tips'],
                 'is_featured' => false,
                 'featured_image' => 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=600&fit=crop',
@@ -740,6 +745,7 @@ MARKDOWN
             [
                 'author' => $author2,
                 'title' => 'Laravel Query Optimization',
+                'excerpt' => 'Write efficient Laravel queries and avoid common performance pitfalls. Learn to tackle N+1 problems, use eager loading, optimize selects, and leverage query scopes for better database performance.',
                 'tags' => ['Laravel', 'PHP', 'Database', 'Performance'],
                 'is_featured' => false,
                 'featured_image' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=600&fit=crop',
@@ -824,6 +830,7 @@ MARKDOWN
             [
                 'author' => $author2,
                 'title' => 'Docker for Laravel Development',
+                'excerpt' => 'Containerize your Laravel application with Docker for consistent development environments. Set up a complete stack with PHP, Nginx, MySQL, and Redis using Docker Compose.',
                 'tags' => ['Docker', 'Laravel', 'DevOps', 'Tutorial'],
                 'is_featured' => true,
                 'featured_image' => 'https://images.unsplash.com/photo-1605745341075-e4c6c8e82f5b?w=1200&h=600&fit=crop',
@@ -931,6 +938,7 @@ MARKDOWN
             [
                 'author' => $author3,
                 'title' => 'Testing Vue Components with Vitest',
+                'excerpt' => 'Write confident, fast tests for your Vue 3 components using Vitest. Learn setup, component testing patterns, mocking strategies, and best practices for maintainable test suites.',
                 'tags' => ['Testing', 'Vue.js', 'Vitest', 'JavaScript'],
                 'is_featured' => false,
                 'featured_image' => 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=1200&h=600&fit=crop',
@@ -1025,6 +1033,7 @@ MARKDOWN
             [
                 'author' => $author3,
                 'title' => 'TypeScript with Vue 3',
+                'excerpt' => 'Add robust type safety to your Vue 3 applications with TypeScript. Master typed props, composables, generic components, and get better IDE support and fewer runtime errors.',
                 'tags' => ['TypeScript', 'Vue.js', 'JavaScript', 'Tutorial'],
                 'is_featured' => false,
                 'featured_image' => 'https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=1200&h=600&fit=crop',
@@ -1117,6 +1126,7 @@ MARKDOWN
             [
                 'author' => $author4,
                 'title' => 'CI/CD with GitHub Actions',
+                'excerpt' => 'Automate your entire deployment pipeline with GitHub Actions. From running tests and linting to deploying to production, learn how to build reliable CI/CD workflows that save time and prevent errors.',
                 'tags' => ['CI/CD', 'GitHub Actions', 'DevOps', 'Automation'],
                 'is_featured' => true,
                 'featured_image' => 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=1200&h=600&fit=crop',
@@ -1231,6 +1241,7 @@ MARKDOWN
             [
                 'author' => $author4,
                 'title' => 'Kubernetes Basics for Developers',
+                'excerpt' => 'Understanding Kubernetes fundamentals without the overwhelm. Learn pods, deployments, services, and how to deploy your containerized applications to production with confidence.',
                 'tags' => ['Kubernetes', 'DevOps', 'Docker', 'Cloud'],
                 'is_featured' => false,
                 'featured_image' => 'https://images.unsplash.com/photo-1667372393086-9d4001d51cf1?w=1200&h=600&fit=crop',
@@ -1365,7 +1376,7 @@ MARKDOWN
                 'user_id' => $postData['author']->id,
                 'title' => $postData['title'],
                 'slug' => \Illuminate\Support\Str::slug($postData['title']),
-                'excerpt' => \Illuminate\Support\Str::limit(strip_tags($postData['content']), 150),
+                'excerpt' => $postData['excerpt'],
                 'content' => $postData['content'],
                 'featured_image' => $postData['featured_image'] ?? null,
                 'tags' => $postData['tags'],
