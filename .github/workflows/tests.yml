@@ -18,9 +18,11 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_test' }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'ci_temp_9K7mP2xQ8vL4nR6wE5tY' }}
-          POSTGRES_DB: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
+          # All PostgreSQL configuration must be provided via secrets - no hardcoded fallbacks
+          # See .github/SECRETS_SETUP.md for configuration instructions
+          POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DB_TEST_DATABASE }}
         ports:
           - 5432:5432
         options: >-
@@ -32,6 +34,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Required Secrets
+        run: |
+          if [ -z "${{ secrets.DB_TEST_USERNAME }}" ]; then
+            echo "::error::DB_TEST_USERNAME secret is not configured"
+            echo "Please configure repository secrets before running tests."
+            echo "See .github/SECRETS_SETUP.md for instructions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.DB_TEST_PASSWORD }}" ]; then
+            echo "::error::DB_TEST_PASSWORD secret is not configured"
+            echo "Please configure repository secrets before running tests."
+            echo "See .github/SECRETS_SETUP.md for instructions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.DB_TEST_DATABASE }}" ]; then
+            echo "::error::DB_TEST_DATABASE secret is not configured"
+            echo "Please configure repository secrets before running tests."
+            echo "See .github/SECRETS_SETUP.md for instructions."
+            exit 1
+          fi
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -62,9 +85,9 @@ jobs:
           php -r "file_put_contents('.env', str_replace('DB_CONNECTION=sqlite', 'DB_CONNECTION=pgsql', file_get_contents('.env')));"
           echo "DB_HOST=127.0.0.1" >> .env
           echo "DB_PORT=5432" >> .env
-          echo "DB_DATABASE=${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}" >> .env
-          echo "DB_USERNAME=${{ secrets.DB_TEST_USERNAME || 'rd_blog_test' }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_TEST_PASSWORD || 'ci_temp_9K7mP2xQ8vL4nR6wE5tY' }}" >> .env
+          echo "DB_DATABASE=${{ secrets.DB_TEST_DATABASE }}" >> .env
+          echo "DB_USERNAME=${{ secrets.DB_TEST_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_TEST_PASSWORD }}" >> .env
 
       - name: Generate Application Key
         run: php artisan key:generate

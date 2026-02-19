@@ -2,7 +2,7 @@
 
 ## Required Secrets for CI
 
-To run tests in GitHub Actions, set up the following secrets in your repository:
+To run tests in GitHub Actions, you **must** configure the following secrets:
 
 ### How to Add Secrets
 
@@ -11,7 +11,7 @@ To run tests in GitHub Actions, set up the following secrets in your repository:
 3. Click **New repository secret**
 4. Add each secret below
 
-### Test Database Secrets
+### Test Database Secrets (All Required)
 
 | Secret Name | Description | Example Value |
 |------------|-------------|---------------|
@@ -21,25 +21,24 @@ To run tests in GitHub Actions, set up the following secrets in your repository:
 
 ### Important Notes
 
-**These are TEST credentials only:**
+**This is a TEST credential only:**
 - Used exclusively in CI for running automated tests
 - Database exists only during test execution (~2 minutes)
 - Automatically destroyed after each CI run
 - Not connected to any production or development data
 
 **Security level:** Low risk (ephemeral test environment)  
-**Best practice:** Still use secrets to avoid exposing any credentials in git history
+**Best practice:** No hardcoded passwords in git history, even for ephemeral environments
 
-### Fallback Values
+### Why No Fallback?
 
-If secrets are not configured, the workflow uses stronger fallback defaults:
-- Username: `rd_blog_test`
-- Password: `ci_temp_9K7mP2xQ8vL4nR6wE5tY` (random-looking default)
-- Database: `rd_blog_test`
+Previous versions included a fallback password, but this has been removed to:
+- Avoid committing any credentials to git history
+- Follow security best practices even for test environments
+- Require explicit configuration before running CI
+- Prevent accidental exposure of default credentials
 
-**Note:** While fallbacks use stronger passwords than typical test defaults, configuring proper secrets is still recommended for security best practices.
-
-**Why fallbacks exist:** To allow quick testing without initial secret setup. The CI database is ephemeral (destroyed after ~2 minutes) and never exposed publicly.
+**The workflow will fail fast with a clear error if the secret is not configured.**
 
 ### Generate Secure Password
 
@@ -62,14 +61,14 @@ DB_PASSWORD=$(openssl rand -base64 32)
 
 ### Verification
 
-After adding secrets, push a commit to trigger CI:
+After adding all three secrets, push a commit to trigger CI:
 
 ```bash
-git commit --allow-empty -m "Test CI with secrets"
+git commit --allow-empty -m "Test CI with configured secret"
 git push
 ```
 
-Check Actions tab to verify tests pass with configured secrets.
+Check Actions tab to verify tests pass with the configured secrets.
 
 ## Other Environment Secrets (If Needed)
 
