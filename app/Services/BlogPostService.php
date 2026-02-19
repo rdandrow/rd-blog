@@ -194,6 +194,6 @@ class BlogPostService
      */
     public function invalidateCache(): void
     {
-        BlogPost::bumpCacheVersion();
+        BlogPost::invalidateBlogCache();
     }
 }

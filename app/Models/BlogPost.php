@@ -138,7 +138,7 @@ class BlogPost extends Model
      * Uses cache tags for efficient invalidation (Redis/Memcached)
      * Falls back to version bumping for other drivers.
      */
-    protected static function invalidateBlogCache(): void
+    public static function invalidateBlogCache(): void
     {
         $store = Cache::getStore();
         $driver = config('cache.default');
