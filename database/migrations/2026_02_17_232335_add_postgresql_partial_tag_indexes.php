@@ -45,9 +45,9 @@ return new class extends Migration
             // Create partial GIN index for this specific tag
             // Uses jsonb_path_ops for optimal contains (@>) operator performance
             // Only indexes published posts with this tag
-            // Note: Cast json to jsonb for GIN indexing, use jsonb in WHERE clause
-            // Properly escape the JSON value using PDO quote for security
-            $escapedTagJson = DB::connection()->getPdo()->quote($tagJson);
+            // Note: DDL WHERE clauses don't support bind parameters, so we safely escape the literal
+            $pdo = DB::connection()->getPdo();
+            $escapedTagJson = $pdo->quote($tagJson);
             
             DB::statement("
                 CREATE INDEX {$indexName}
@@ -64,8 +64,9 @@ return new class extends Migration
             $indexName = 'blog_posts_tag_' . strtolower(str_replace(['.', ' '], '_', $tag)) . '_date_index';
             $tagJson = json_encode([$tag]);
             
-            // Properly escape the JSON value using PDO quote for security
-            $escapedTagJson = DB::connection()->getPdo()->quote($tagJson);
+            // DDL WHERE clauses don't support bind parameters, so we safely escape the literal
+            $pdo = DB::connection()->getPdo();
+            $escapedTagJson = $pdo->quote($tagJson);
             
             DB::statement("
                 CREATE INDEX {$indexName}
