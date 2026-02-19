@@ -30,14 +30,15 @@ trait HasBatchOperations
      * Use for bulk imports where performance is critical. Processes records in
      * chunks to avoid hitting PostgreSQL parameter limits (typically 65535).
      *
-     * For extremely large datasets (millions of rows), consider using PostgreSQL's
-     * COPY command directly via psql command line tool.
+     * This uses standard INSERT statements. For extremely large datasets 
+     * (millions of rows), consider using PostgreSQL's COPY command directly 
+     * via psql command line tool for even better performance.
      *
      * @param array $records Array of arrays, each containing column => value pairs
      * @param int $chunkSize Number of records to insert per query (default: 1000)
      * @return int Number of rows inserted
      */
-    public static function copyFrom(array $records, int $chunkSize = 1000): int
+    public static function bulkInsert(array $records, int $chunkSize = 1000): int
     {
         if (empty($records)) {
             return 0;
