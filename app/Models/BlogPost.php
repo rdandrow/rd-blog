@@ -94,8 +94,11 @@ class BlogPost extends Model
             return $callback();
         } finally {
             static::$cacheInvalidationEnabled = $previousState;
-            // Invalidate once after bulk operation completes
-            static::invalidateBlogCache();
+            // Only invalidate when re-enabling (outermost call)
+            // This prevents multiple invalidations with nested calls
+            if ($previousState === true) {
+                static::invalidateBlogCache();
+            }
         }
     }
 
