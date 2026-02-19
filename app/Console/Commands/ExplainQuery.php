@@ -20,7 +20,7 @@ class ExplainQuery extends Command
                             {--format=text : Output format (text, json)}
                             {--buffers : Show buffer usage statistics}
                             {--detailed : Show detailed verbose output}
-                            {--costs : Show cost estimates (default: true)}
+                            {--no-costs : Exclude cost estimates from output}
                             {--no-execute : Run EXPLAIN without ANALYZE (no execution)}
                             {--suggest : Show optimization suggestions}';
 
@@ -120,7 +120,8 @@ class ExplainQuery extends Command
             $options[] = 'VERBOSE';
         }
 
-        if ($this->option('costs') !== false) {
+        // Include COSTS by default unless --no-costs flag is set
+        if (!$this->option('no-costs')) {
             $options[] = 'COSTS';
         }
 
