@@ -55,13 +55,16 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        // Enable query logging for N+1 detection (debug mode only)
+        // Track query count per request for N+1 detection without memory overhead
         $enableN1Detection = config('app.debug');
-        if ($enableN1Detection) {
-            DB::enableQueryLog();
-        }
+        $queryCount = 0;
 
-        DB::listen(function ($query) use ($enableN1Detection) {
+        DB::listen(function ($query) use ($enableN1Detection, &$queryCount) {
+            // Increment query counter
+            if ($enableN1Detection) {
+                $queryCount++;
+            }
+
             // Log slow queries (>100ms)
             if ($query->time > 100) {
                 Log::warning('Slow query detected', [
@@ -84,20 +87,17 @@ class AppServiceProvider extends ServiceProvider
             }
 
             // Detect N+1 query problems (>50 queries in a request)
-            // Only check if query logging is enabled to avoid performance overhead
-            if ($enableN1Detection) {
-                $queryLog = DB::getQueryLog();
-                if ($queryLog && count($queryLog) > 50) {
-                    // Log only once when threshold is crossed
-                    static $n1Logged = false;
-                    if (!$n1Logged) {
-                        Log::warning('Potential N+1 query problem detected', [
-                            'query_count' => count($queryLog),
-                            'last_query' => $query->sql,
-                            'url' => request()->fullUrl(),
-                        ]);
-                        $n1Logged = true;
-                    }
+            // Uses a simple counter instead of query log to avoid memory accumulation
+            if ($enableN1Detection && $queryCount > 50) {
+                // Log only once when threshold is crossed
+                static $n1Logged = false;
+                if (!$n1Logged) {
+                    Log::warning('Potential N+1 query problem detected', [
+                        'query_count' => $queryCount,
+                        'last_query' => $query->sql,
+                        'url' => request()->fullUrl(),
+                    ]);
+                    $n1Logged = true;
                 }
             }
         });
