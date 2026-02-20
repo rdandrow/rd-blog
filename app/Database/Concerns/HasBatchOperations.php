@@ -129,6 +129,17 @@ trait HasBatchOperations
         }
         $columns = array_unique($columns);
         
+        // SECURITY: Validate column names against actual database columns to prevent SQL injection
+        // Column names cannot be parameterized in SQL, so we must whitelist them
+        $validColumns = static::getValidColumnNames($model);
+        $columns = array_filter($columns, function($column) use ($validColumns) {
+            return in_array($column, $validColumns, true);
+        });
+        
+        if (empty($columns)) {
+            return 0; // No valid columns to update
+        }
+        
         // Build CASE statements for each column with parameterized queries
         $caseStatements = [];
         $bindings = [];
@@ -159,6 +170,7 @@ trait HasBatchOperations
             }
             
             if (!empty($cases)) {
+                // Column name is validated above, safe to interpolate
                 $caseStatements[] = "{$column} = CASE " . implode(' ', $cases) . " ELSE {$column} END";
             }
         }
@@ -179,6 +191,34 @@ trait HasBatchOperations
     }
 
     /**
+     * Get valid column names for the model's table.
+     * 
+     * This is used to validate column names before using them in raw SQL queries,
+     * preventing SQL injection through column name manipulation.
+     * 
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return array Array of valid column names
+     */
+    protected static function getValidColumnNames($model): array
+    {
+        static $columnCache = [];
+        
+        $table = $model->getTable();
+        
+        // Cache column names to avoid repeated database queries
+        if (isset($columnCache[$table])) {
+            return $columnCache[$table];
+        }
+        
+        // Get columns from database schema
+        $columns = DB::getSchemaBuilder()->getColumnListing($table);
+        
+        $columnCache[$table] = $columns;
+        
+        return $columns;
+    }
+
+    /**
      * Bulk delete records in a single query.
      *
      * More efficient than deleting individually.
@@ -194,6 +234,14 @@ trait HasBatchOperations
         }
 
         $model = new static;
+        
+        // SECURITY: Validate column name against database schema to prevent SQL injection
+        $validColumns = static::getValidColumnNames($model);
+        
+        if (!in_array($keyColumn, $validColumns, true)) {
+            throw new \InvalidArgumentException("Invalid key column: {$keyColumn}");
+        }
+        
         return $model->newQuery()->whereIn($keyColumn, $ids)->delete();
     }
 
@@ -238,8 +286,25 @@ trait HasBatchOperations
         $model = new static;
         $table = $model->getTable();
         
-        // Get columns from first record
+        // SECURITY: Validate column names against actual database columns
+        $validColumns = static::getValidColumnNames($model);
+        
+        // Validate returning column
+        if (!in_array($returningColumn, $validColumns, true)) {
+            throw new \InvalidArgumentException("Invalid returning column: {$returningColumn}");
+        }
+        
+        // Get and validate columns from first record
         $columns = array_keys($records[0]);
+        $columns = array_filter($columns, function($column) use ($validColumns) {
+            return in_array($column, $validColumns, true);
+        });
+        
+        if (empty($columns)) {
+            throw new \InvalidArgumentException('No valid columns provided for insert');
+        }
+        
+        // Column names are validated above, safe to use in query
         $columnList = implode(',', array_map(fn($col) => '"' . $col . '"', $columns));
         
         // Build values
@@ -288,6 +353,17 @@ trait HasBatchOperations
 
         $model = new static;
         $table = $model->getTable();
+        
+        // Security: Validate column names against database schema to prevent SQL injection
+        $validColumns = static::getValidColumnNames($model);
+        
+        if (!in_array($column, $validColumns, true)) {
+            throw new \InvalidArgumentException("Invalid increment column: {$column}");
+        }
+        
+        if (!in_array($keyColumn, $validColumns, true)) {
+            throw new \InvalidArgumentException("Invalid key column: {$keyColumn}");
+        }
         
         // Build CASE statement with parameterized queries
         $cases = [];
