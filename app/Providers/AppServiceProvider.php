@@ -57,12 +57,14 @@ class AppServiceProvider extends ServiceProvider
 
         // Track query count per request for N+1 detection without memory overhead
         $enableN1Detection = config('app.debug');
-        $queryCount = 0;
 
-        DB::listen(function ($query) use ($enableN1Detection, &$queryCount) {
-            // Increment query counter
-            if ($enableN1Detection) {
-                $queryCount++;
+        DB::listen(function ($query) use ($enableN1Detection) {
+            $request = request();
+            
+            // Increment query counter (scoped to current request)
+            if ($enableN1Detection && $request) {
+                $queryCount = $request->attributes->get('_query_count', 0) + 1;
+                $request->attributes->set('_query_count', $queryCount);
             }
 
             // Log slow queries (>100ms)
@@ -88,16 +90,15 @@ class AppServiceProvider extends ServiceProvider
 
             // Detect N+1 query problems (>50 queries in a request)
             // Uses a simple counter instead of query log to avoid memory accumulation
-            if ($enableN1Detection && $queryCount > 50) {
-                // Log only once when threshold is crossed
-                static $n1Logged = false;
-                if (!$n1Logged) {
+            if ($enableN1Detection && $request && isset($queryCount) && $queryCount > 50) {
+                // Log only once per request when threshold is crossed
+                if (!$request->attributes->get('_n1_logged', false)) {
                     Log::warning('Potential N+1 query problem detected', [
                         'query_count' => $queryCount,
                         'last_query' => $query->sql,
-                        'url' => request()->fullUrl(),
+                        'url' => $request->fullUrl(),
                     ]);
-                    $n1Logged = true;
+                    $request->attributes->set('_n1_logged', true);
                 }
             }
         });
