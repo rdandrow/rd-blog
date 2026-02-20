@@ -39,13 +39,24 @@ return new class extends Migration
         ];
 
         foreach ($hotTags as $tag) {
+            // Validate tag name to prevent SQL injection (even though these are hardcoded)
+            // Tags should only contain alphanumeric, dots, and spaces
+            if (!preg_match('/^[a-zA-Z0-9.\s]+$/', $tag)) {
+                throw new \InvalidArgumentException("Invalid tag name: {$tag}");
+            }
+            
             $indexName = 'blog_posts_tag_' . strtolower(str_replace(['.', ' '], '_', $tag)) . '_index';
             $tagJson = json_encode([$tag]);
             
-            // Create partial GIN index for this specific tag
-            // Uses jsonb_path_ops for optimal contains (@>) operator performance
-            // Only indexes published posts with this tag
-            // Note: DDL WHERE clauses don't support bind parameters, so we safely escape the literal
+            // SECURITY NOTE: This migration uses hardcoded tag values, which is safe.
+            // If you adapt this pattern for dynamic tag values, you MUST:
+            // 1. Validate tag names strictly (alphanumeric + limited special chars)
+            // 2. Consider alternative approaches (e.g., programmatic index creation)
+            // 3. NEVER use user input directly in DDL statements
+            //
+            // DDL WHERE clauses don't support bind parameters in PostgreSQL.
+            // Laravel's Schema Builder doesn't support partial indexes with complex WHERE clauses.
+            // We use PDO::quote() as a safer alternative to string concatenation.
             $pdo = DB::connection()->getPdo();
             $escapedTagJson = $pdo->quote($tagJson);
             
@@ -61,10 +72,15 @@ return new class extends Migration
         // Optimizes: "Get posts with tag X, ordered by date"
         // This is the most common query pattern for tag filtering
         foreach (['Laravel', 'PHP', 'JavaScript', 'Vue.js', 'Tutorial'] as $tag) {
+            // Validate tag name (same security precautions as above)
+            if (!preg_match('/^[a-zA-Z0-9.\s]+$/', $tag)) {
+                throw new \InvalidArgumentException("Invalid tag name: {$tag}");
+            }
+            
             $indexName = 'blog_posts_tag_' . strtolower(str_replace(['.', ' '], '_', $tag)) . '_date_index';
             $tagJson = json_encode([$tag]);
             
-            // DDL WHERE clauses don't support bind parameters, so we safely escape the literal
+            // SECURITY NOTE: See warning above - only safe with hardcoded values
             $pdo = DB::connection()->getPdo();
             $escapedTagJson = $pdo->quote($tagJson);
             
