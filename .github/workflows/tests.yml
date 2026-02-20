@@ -11,14 +11,33 @@ on:
       - main
 
 jobs:
+  validate-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Required Secrets
+        run: |
+          if [ -z "${{ secrets.DB_TEST_USERNAME }}" ] || [ -z "${{ secrets.DB_TEST_PASSWORD }}" ] || [ -z "${{ secrets.DB_TEST_DATABASE }}" ]; then
+            echo "::error::Required database secrets are not configured"
+            echo "::error::Please configure the following secrets in your repository:"
+            echo "::error::  - DB_TEST_USERNAME"
+            echo "::error::  - DB_TEST_PASSWORD"
+            echo "::error::  - DB_TEST_DATABASE"
+            echo "::error::See .github/SECRETS_SETUP.md for detailed instructions."
+            exit 1
+          fi
+          echo "✓ All required secrets are configured"
+
   ci:
     runs-on: ubuntu-latest
+    needs: validate-secrets
+    # Gate the job - only run if all required secrets are configured
+    if: ${{ success() }}
 
     services:
       postgres:
         image: postgres:16
         env:
-          # All PostgreSQL configuration must be provided via secrets - no hardcoded fallbacks
+          # All PostgreSQL configuration must be provided via secrets
           # See .github/SECRETS_SETUP.md for configuration instructions
           POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME }}
           POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
@@ -34,27 +53,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Validate Required Secrets
-        run: |
-          if [ -z "${{ secrets.DB_TEST_USERNAME }}" ]; then
-            echo "::error::DB_TEST_USERNAME secret is not configured"
-            echo "Please configure repository secrets before running tests."
-            echo "See .github/SECRETS_SETUP.md for instructions."
-            exit 1
-          fi
-          if [ -z "${{ secrets.DB_TEST_PASSWORD }}" ]; then
-            echo "::error::DB_TEST_PASSWORD secret is not configured"
-            echo "Please configure repository secrets before running tests."
-            echo "See .github/SECRETS_SETUP.md for instructions."
-            exit 1
-          fi
-          if [ -z "${{ secrets.DB_TEST_DATABASE }}" ]; then
-            echo "::error::DB_TEST_DATABASE secret is not configured"
-            echo "Please configure repository secrets before running tests."
-            echo "See .github/SECRETS_SETUP.md for instructions."
-            exit 1
-          fi
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
