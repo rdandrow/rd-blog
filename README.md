@@ -283,6 +283,26 @@ npm run test -- pages/Admin/
 - Accessibility features (ARIA, keyboard navigation)
 - Comment interactions (create, reply, delete)
 
+## Continuous Integration
+
+The project uses GitHub Actions for automated testing on pull requests and pushes to `main`.
+
+### Required Secrets
+
+**GitHub Actions secrets must be configured** for CI runs to execute properly. The workflow will fail with clear instructions if secrets are missing.
+
+Required repository secrets:
+- `POSTGRES_DB` - PostgreSQL database name
+- `POSTGRES_USER` - PostgreSQL username  
+- `POSTGRES_PASSWORD` - PostgreSQL password
+
+**Setup Instructions:**
+1. Navigate to **Settings → Secrets and variables → Actions**
+2. Add three repository secrets with your PostgreSQL credentials
+3. See [.github/SECRETS_SETUP.md](.github/SECRETS_SETUP.md) for detailed configuration guide
+
+**Note:** The CI workflow uses a validation job to check secrets before running tests. If secrets are not configured, the workflow will fail immediately with helpful instructions rather than attempting to run with missing credentials.
+
 ## Production Deployment
 
 ```bash
