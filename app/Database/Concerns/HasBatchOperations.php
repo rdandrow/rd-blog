@@ -107,13 +107,15 @@ trait HasBatchOperations
     /**
      * Bulk update records with different values using CASE statements.
      *
-     * More efficient than individual UPDATE queries.
+     * More efficient than individual UPDATE queries. Processes records in chunks
+     * to avoid hitting PostgreSQL parameter limits and memory issues.
      *
      * @param array $records Array where key is ID and value is array of columns to update
      * @param string $keyColumn Primary key column name (default: 'id')
+     * @param int $chunkSize Number of records to update per query (default: 500)
      * @return int Number of rows affected
      */
-    public static function bulkUpdate(array $records, string $keyColumn = 'id'): int
+    public static function bulkUpdate(array $records, string $keyColumn = 'id', int $chunkSize = 500): int
     {
         if (empty($records)) {
             return 0;
@@ -140,54 +142,63 @@ trait HasBatchOperations
             return 0; // No valid columns to update
         }
         
-        // Build CASE statements for each column with parameterized queries
-        $caseStatements = [];
-        $bindings = [];
+        // Process records in chunks to avoid parameter limits and memory issues
+        $totalAffected = 0;
         
-        foreach ($columns as $column) {
-            $cases = [];
-            foreach ($records as $id => $data) {
-                if (array_key_exists($column, $data)) {
-                    $value = $data[$column];
+        DB::transaction(function () use ($records, $columns, $keyColumn, $table, $chunkSize, &$totalAffected) {
+            foreach (array_chunk($records, $chunkSize, true) as $chunk) {
+                // Build CASE statements for each column with parameterized queries
+                $caseStatements = [];
+                $bindings = [];
+                
+                foreach ($columns as $column) {
+                    $cases = [];
+                    foreach ($chunk as $id => $data) {
+                        if (array_key_exists($column, $data)) {
+                            $value = $data[$column];
+                            
+                            // Add ID to bindings
+                            $bindings[] = $id;
+                            
+                            // Handle different data types with proper parameterization
+                            if ($value === null) {
+                                $cases[] = "WHEN {$keyColumn} = ? THEN NULL";
+                            } elseif (is_bool($value)) {
+                                $cases[] = "WHEN {$keyColumn} = ? THEN ?";
+                                $bindings[] = $value;
+                            } elseif (is_array($value)) {
+                                $cases[] = "WHEN {$keyColumn} = ? THEN ?::json";
+                                $bindings[] = json_encode($value);
+                            } else {
+                                $cases[] = "WHEN {$keyColumn} = ? THEN ?";
+                                $bindings[] = $value;
+                            }
+                        }
+                    }
                     
-                    // Add ID to bindings
-                    $bindings[] = $id;
-                    
-                    // Handle different data types with proper parameterization
-                    if ($value === null) {
-                        $cases[] = "WHEN {$keyColumn} = ? THEN NULL";
-                    } elseif (is_bool($value)) {
-                        $cases[] = "WHEN {$keyColumn} = ? THEN ?";
-                        $bindings[] = $value;
-                    } elseif (is_array($value)) {
-                        $cases[] = "WHEN {$keyColumn} = ? THEN ?::json";
-                        $bindings[] = json_encode($value);
-                    } else {
-                        $cases[] = "WHEN {$keyColumn} = ? THEN ?";
-                        $bindings[] = $value;
+                    if (!empty($cases)) {
+                        // Column name is validated above, safe to interpolate
+                        $caseStatements[] = "{$column} = CASE " . implode(' ', $cases) . " ELSE {$column} END";
                     }
                 }
-            }
-            
-            if (!empty($cases)) {
-                // Column name is validated above, safe to interpolate
-                $caseStatements[] = "{$column} = CASE " . implode(' ', $cases) . " ELSE {$column} END";
-            }
-        }
 
-        if (empty($caseStatements)) {
-            return 0;
-        }
+                if (empty($caseStatements)) {
+                    continue;
+                }
 
-        // Add IDs for WHERE clause
-        $ids = array_keys($records);
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $bindings = array_merge($bindings, $ids);
+                // Add IDs for WHERE clause
+                $ids = array_keys($chunk);
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                $bindings = array_merge($bindings, $ids);
+                
+                $updates = implode(', ', $caseStatements);
+                $query = "UPDATE {$table} SET {$updates} WHERE {$keyColumn} IN ({$placeholders})";
+                
+                $totalAffected += DB::affectingStatement($query, $bindings);
+            }
+        });
         
-        $updates = implode(', ', $caseStatements);
-        $query = "UPDATE {$table} SET {$updates} WHERE {$keyColumn} IN ({$placeholders})";
-        
-        return DB::affectingStatement($query, $bindings);
+        return $totalAffected;
     }
 
     /**
@@ -340,12 +351,15 @@ trait HasBatchOperations
     /**
      * Batch increment/decrement a column for multiple records.
      *
+     * Processes records in chunks to avoid PostgreSQL parameter limits.
+     *
      * @param array $increments Array where key is ID and value is increment amount
      * @param string $column Column to increment
      * @param string $keyColumn Primary key column (default: 'id')
+     * @param int $chunkSize Number of records to update per query (default: 1000)
      * @return int Number of rows affected
      */
-    public static function bulkIncrement(array $increments, string $column, string $keyColumn = 'id'): int
+    public static function bulkIncrement(array $increments, string $column, string $keyColumn = 'id', int $chunkSize = 1000): int
     {
         if (empty($increments)) {
             return 0;
@@ -365,25 +379,34 @@ trait HasBatchOperations
             throw new \InvalidArgumentException("Invalid key column: {$keyColumn}");
         }
         
-        // Build CASE statement with parameterized queries
-        $cases = [];
-        $bindings = [];
+        // Process increments in chunks to avoid parameter limits
+        $totalAffected = 0;
         
-        foreach ($increments as $id => $amount) {
-            $cases[] = "WHEN {$keyColumn} = ? THEN {$column} + ?";
-            $bindings[] = $id;
-            $bindings[] = $amount;
-        }
+        DB::transaction(function () use ($increments, $column, $keyColumn, $table, $chunkSize, &$totalAffected) {
+            foreach (array_chunk($increments, $chunkSize, true) as $chunk) {
+                // Build CASE statement with parameterized queries
+                $cases = [];
+                $bindings = [];
+                
+                foreach ($chunk as $id => $amount) {
+                    $cases[] = "WHEN {$keyColumn} = ? THEN {$column} + ?";
+                    $bindings[] = $id;
+                    $bindings[] = $amount;
+                }
+                
+                $caseStatement = "CASE " . implode(' ', $cases) . " ELSE {$column} END";
+                
+                // Add IDs for WHERE clause
+                $ids = array_keys($chunk);
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                $bindings = array_merge($bindings, $ids);
+                
+                $query = "UPDATE {$table} SET {$column} = {$caseStatement} WHERE {$keyColumn} IN ({$placeholders})";
+                
+                $totalAffected += DB::affectingStatement($query, $bindings);
+            }
+        });
         
-        $caseStatement = "CASE " . implode(' ', $cases) . " ELSE {$column} END";
-        
-        // Add IDs for WHERE clause
-        $ids = array_keys($increments);
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $bindings = array_merge($bindings, $ids);
-        
-        $query = "UPDATE {$table} SET {$column} = {$caseStatement} WHERE {$keyColumn} IN ({$placeholders})";
-        
-        return DB::affectingStatement($query, $bindings);
+        return $totalAffected;
     }
 }
