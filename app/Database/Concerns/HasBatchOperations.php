@@ -24,6 +24,13 @@ use Illuminate\Support\Facades\DB;
 trait HasBatchOperations
 {
     /**
+     * Column name cache scoped by connection and table.
+     * 
+     * @var array<string, array<string>>
+     */
+    protected static array $columnCache = [];
+
+    /**
      * Insert multiple records efficiently using chunked inserts.
      *
      * Note: This bypasses Eloquent events and does not return model instances.
@@ -207,26 +214,63 @@ trait HasBatchOperations
      * This is used to validate column names before using them in raw SQL queries,
      * preventing SQL injection through column name manipulation.
      * 
+     * Cache is scoped by connection and table to handle:
+     * - Multi-tenancy with different schemas
+     * - Multiple database connections
+     * - Tables with same name in different schemas
+     * 
+     * Note: In long-running processes (Octane, queue workers), call
+     * clearColumnCache() if table structure changes at runtime.
+     * 
      * @param \Illuminate\Database\Eloquent\Model $model
      * @return array Array of valid column names
      */
     protected static function getValidColumnNames($model): array
     {
-        static $columnCache = [];
-        
+        // Create cache key with connection name and schema-qualified table
+        // This prevents cache collision across connections and schemas
+        $connection = $model->getConnectionName() ?? config('database.default');
         $table = $model->getTable();
         
+        // Include schema in cache key for PostgreSQL multi-schema support
+        // On PostgreSQL, getTable() might return "schema.table" or just "table"
+        $cacheKey = $connection . '.' . $table;
+        
         // Cache column names to avoid repeated database queries
-        if (isset($columnCache[$table])) {
-            return $columnCache[$table];
+        if (isset(self::$columnCache[$cacheKey])) {
+            return self::$columnCache[$cacheKey];
         }
         
-        // Get columns from database schema
-        $columns = DB::getSchemaBuilder()->getColumnListing($table);
+        // Get columns from database schema using the model's connection
+        $columns = $model->getConnection()->getSchemaBuilder()->getColumnListing($table);
         
-        $columnCache[$table] = $columns;
+        self::$columnCache[$cacheKey] = $columns;
         
         return $columns;
+    }
+
+    /**
+     * Clear the column name cache.
+     * 
+     * Call this method if table structure changes at runtime in long-running
+     * processes (Laravel Octane, queue workers, etc.).
+     * 
+     * @param string|null $connection Optional: Clear cache for specific connection only
+     * @return void
+     */
+    public static function clearColumnCache(?string $connection = null): void
+    {
+        if ($connection === null) {
+            // Clear entire cache
+            self::$columnCache = [];
+        } else {
+            // Clear cache for specific connection
+            foreach (array_keys(self::$columnCache) as $key) {
+                if (str_starts_with($key, $connection . '.')) {
+                    unset(self::$columnCache[$key]);
+                }
+            }
+        }
     }
 
     /**
