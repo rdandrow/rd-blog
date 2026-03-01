@@ -292,9 +292,9 @@ The project uses GitHub Actions for automated testing on pull requests and pushe
 **GitHub Actions secrets must be configured** for CI runs to execute properly. The workflow will fail with clear instructions if secrets are missing.
 
 Required repository secrets:
-- `POSTGRES_DB` - PostgreSQL database name
-- `POSTGRES_USER` - PostgreSQL username  
-- `POSTGRES_PASSWORD` - PostgreSQL password
+- `DB_TEST_DATABASE` - PostgreSQL database name
+- `DB_TEST_USERNAME` - PostgreSQL username  
+- `DB_TEST_PASSWORD` - PostgreSQL password
 
 **Setup Instructions:**
 1. Navigate to **Settings → Secrets and variables → Actions**
