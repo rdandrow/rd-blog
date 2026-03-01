@@ -13,20 +13,12 @@ use Laravel\Fortify\Features;
 
 describe('Two-Factor Challenge', function () {
     it('redirects to login when not authenticated', function () {
-        if (! Features::canManageTwoFactorAuthentication()) {
-            $this->markTestSkipped('Two-factor authentication is not enabled.');
-        }
-
         $response = $this->get(route('two-factor.login'));
 
         expect($response)->toRedirectToLogin();
     })->group('auth', 'two-factor', 'guest');
 
     it('renders two factor challenge screen', function () {
-        if (! Features::canManageTwoFactorAuthentication()) {
-            $this->markTestSkipped('Two-factor authentication is not enabled.');
-        }
-
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,

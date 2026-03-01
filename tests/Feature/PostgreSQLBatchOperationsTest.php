@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Database\Concerns\HasBatchOperations;
 use App\Models\BlogPost;
-use App\Models\Comment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -16,12 +15,6 @@ use Illuminate\Support\Facades\DB;
  */
 
 describe('PostgreSQL Batch Operations', function () {
-
-    beforeEach(function () {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('These tests require PostgreSQL');
-        }
-    });
 
     describe('upsertBatch', function () {
 
@@ -78,28 +71,6 @@ describe('PostgreSQL Batch Operations', function () {
             $existingPost->refresh();
             expect($existingPost->title)->toBe('Updated Title');
             expect($existingPost->is_published)->toBeTrue();
-        });
-
-        it('handles multiple unique columns', function () {
-            $user = User::factory()->create();
-            $post = BlogPost::factory()->create(['user_id' => $user->id]);
-
-            $comments = [
-                [
-                    'blog_post_id' => $post->id,
-                    'user_id' => $user->id,
-                    'content' => 'First comment',
-                ],
-            ];
-
-            // Skip this test - Comments table doesn't have a unique constraint on (blog_post_id, user_id)
-            // In production, you would add: UNIQUE INDEX comments_blog_post_user_unique ON comments(blog_post_id, user_id)
-            $this->markTestSkipped('Requires unique constraint on (blog_post_id, user_id)');
-
-            $affected = Comment::upsertBatch($comments, ['blog_post_id', 'user_id']);
-
-            expect($affected)->toBeGreaterThanOrEqual(1);
-            expect(Comment::where('content', 'First comment')->exists())->toBeTrue();
         });
 
     });
@@ -422,10 +393,7 @@ describe('PostgreSQL Batch Operations', function () {
 
             // Batch should be significantly faster
             expect($batchTime)->toBeLessThan($individualTime);
-            
-            $this->comment("Batch upsert: {$batchTime}s, Individual inserts: {$individualTime}s");
-            $this->info("Batch is " . round($individualTime / $batchTime, 2) . "x faster");
-        })->skip(env('SKIP_PERFORMANCE_TESTS', true), 'Performance test - enable with SKIP_PERFORMANCE_TESTS=false');
+        });
 
     });
 
@@ -443,10 +411,6 @@ class TestModelWithBatchOperations extends \Illuminate\Database\Eloquent\Model
 describe('HasBatchOperations Trait', function () {
 
     it('can be used by any model', function () {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('Requires PostgreSQL');
-        }
-
         $user = User::factory()->create();
 
         $posts = [

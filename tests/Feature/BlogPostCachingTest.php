@@ -212,14 +212,23 @@ describe('BlogPostService Caching', function () {
                 'is_featured' => true,
             ]);
 
-            // Search filter should bypass cache
-            $posts = $this->service->getFeaturedPosts(10, ['search' => 'test']);
+            // Search filter should bypass cache - verify by checking DB queries
+            DB::enableQueryLog();
             
-            expect($posts)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+            // First call with search filter
+            $posts1 = $this->service->getFeaturedPosts(10, ['search' => 'test']);
+            $firstCallQueries = count(DB::getQueryLog());
+            DB::flushQueryLog();
             
-            // Should NOT be cached (search is not cacheable)
-            $searchHash = md5(json_encode(['search' => 'test']));
-            expect(Cache::has("blog:featured_posts:10:{$searchHash}"))->toBeFalse();
+            // Second identical call - should still hit DB (not cached)
+            $posts2 = $this->service->getFeaturedPosts(10, ['search' => 'test']);
+            $secondCallQueries = count(DB::getQueryLog());
+            DB::disableQueryLog();
+            
+            expect($posts1)->toBeInstanceOf(\Illuminate\Support\Collection::class)
+                ->and($firstCallQueries)->toBeGreaterThan(0)
+                ->and($secondCallQueries)->toBeGreaterThan(0)
+                ->and($secondCallQueries)->toBe($firstCallQueries); // Same queries = not cached
         });
     });
 

@@ -13,10 +13,6 @@ use Laravel\Fortify\Features;
 
 describe('Two-Factor Settings Page', function () {
     it('renders the two-factor settings page', function () {
-        if (! Features::canManageTwoFactorAuthentication()) {
-            $this->markTestSkipped('Two-factor authentication is not enabled.');
-        }
-
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
@@ -34,10 +30,6 @@ describe('Two-Factor Settings Page', function () {
     })->group('settings', '2fa', 'authenticated');
 
     it('requires password confirmation when password confirmation is enabled', function () {
-        if (! Features::canManageTwoFactorAuthentication()) {
-            $this->markTestSkipped('Two-factor authentication is not enabled.');
-        }
-
         $user = User::factory()->withTwoFactor()->create();
 
         Features::twoFactorAuthentication([
@@ -51,10 +43,6 @@ describe('Two-Factor Settings Page', function () {
     })->group('settings', '2fa', 'authentication');
 
     it('does not require password confirmation when disabled', function () {
-        if (! Features::canManageTwoFactorAuthentication()) {
-            $this->markTestSkipped('Two-factor authentication is not enabled.');
-        }
-
         $user = User::factory()->create();
 
         Features::twoFactorAuthentication([
@@ -71,10 +59,6 @@ describe('Two-Factor Settings Page', function () {
     })->group('settings', '2fa', 'authenticated');
 
     it('returns forbidden when two-factor authentication is disabled', function () {
-        if (! Features::canManageTwoFactorAuthentication()) {
-            $this->markTestSkipped('Two-factor authentication is not enabled.');
-        }
-
         config(['fortify.features' => []]);
 
         $user = User::factory()->create();

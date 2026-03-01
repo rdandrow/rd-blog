@@ -14,12 +14,6 @@ use Illuminate\Support\Facades\DB;
 
 describe('PostgreSQL Query Optimizations', function () {
 
-    beforeEach(function () {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('These tests require PostgreSQL');
-        }
-    });
-
     it('uses full-text search for PostgreSQL', function () {
         // Create test data
         $admin = User::factory()->create(['role' => 'admin']);
@@ -63,34 +57,6 @@ describe('PostgreSQL Query Optimizations', function () {
             ->and($searchQuery['query'])->toContain('to_tsvector')
             ->and($searchQuery['query'])->toContain('plainto_tsquery');
     })->group('performance', 'postgresql', 'optimization');
-
-    it('finds posts with word variations using stemming', function () {
-        // Create test data with variations of "program"
-        $admin = User::factory()->create(['role' => 'admin']);
-        
-        BlogPost::factory()->create([
-            'user_id' => $admin->id,
-            'title' => 'Programming Best Practices',
-            'content' => 'Best practices for programming in Laravel.',
-            'is_published' => true,
-            'published_at' => now(),
-        ]);
-
-        BlogPost::factory()->create([
-            'user_id' => $admin->id,
-            'title' => 'The Programmer Guide',
-            'content' => 'A comprehensive guide for programmers.',
-            'is_published' => true,
-            'published_at' => now(),
-        ]);
-
-        $service = new BlogPostService();
-        
-        // Search for "program" should find "programming" and "programmer" due to stemming
-        $results = $service->getAllPublishedPosts(['search' => 'program']);
-
-        expect($results)->toHaveCount(2);
-    })->group('performance', 'postgresql', 'optimization', 'stemming')->skip('Stemming behavior varies by PostgreSQL configuration');
 
     it('handles special characters in search queries', function () {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -223,12 +189,6 @@ describe('PostgreSQL Query Optimizations', function () {
 
 describe('Query Performance Benchmarks', function () {
 
-    beforeEach(function () {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('These tests require PostgreSQL');
-        }
-    });
-
     it('demonstrates full-text search performance advantage', function () {
         $admin = User::factory()->create(['role' => 'admin']);
         
@@ -265,6 +225,6 @@ describe('Query Performance Benchmarks', function () {
         // With full-text search, this should be very fast even with 50+ posts
         // On a modern machine, this should complete in < 50ms
         expect($duration)->toBeLessThan(100);
-    })->group('performance', 'postgresql', 'benchmark')->skip('Enable for performance analysis');
+    })->group('performance', 'postgresql', 'benchmark');
 
 });

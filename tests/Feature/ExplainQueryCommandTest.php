@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\DB;
-
 /*
  * EXPLAIN ANALYZE Command Tests
  *
@@ -12,12 +10,6 @@ use Illuminate\Support\Facades\DB;
  */
 
 describe('EXPLAIN ANALYZE Command', function () {
-
-    beforeEach(function () {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            $this->markTestSkipped('EXPLAIN ANALYZE tests require PostgreSQL');
-        }
-    });
 
     test('requires a query argument or file option', function () {
         $this->artisan('db:explain')
@@ -40,11 +32,12 @@ describe('EXPLAIN ANALYZE Command', function () {
     });
 
     test('displays execution time in output', function () {
-        $output = $this->artisan('db:explain', [
+        $this->artisan('db:explain', [
             'query' => 'SELECT * FROM blog_posts LIMIT 1',
-        ])->execute();
-
-        expect($output)->toBe(0);
+        ])
+            ->expectsOutputToContain('Timing Summary')
+            ->expectsOutputToContain('Execution Time:')
+            ->assertExitCode(0);
     });
 
     test('supports buffers option', function () {
