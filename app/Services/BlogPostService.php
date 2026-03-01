@@ -152,7 +152,11 @@ class BlogPostService
     }
 
     /**
-     * Get popular blog posts (by views).
+     * Get the most recently published blog posts.
+     *
+     * Named "popular" for API intent, but ordered by published_at because
+     * view/engagement tracking is not yet implemented. Replace the ordering
+     * in cachePopularPosts() once real popularity metrics are available.
      */
     public function getPopularPosts(int $limit = 10): Collection
     {
