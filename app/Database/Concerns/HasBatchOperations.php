@@ -130,7 +130,16 @@ trait HasBatchOperations
 
         $model = new static;
         $table = $model->getTable();
-        
+
+        // SECURITY: Validate $keyColumn before interpolating it into raw SQL.
+        // Must be done first, before getValidColumnNames() result is used for
+        // the update-column whitelist below.
+        $validColumns = static::getValidColumnNames($model);
+
+        if (!in_array($keyColumn, $validColumns, true)) {
+            throw new \InvalidArgumentException("Invalid key column: {$keyColumn}");
+        }
+
         // Get union of all column names across all records (excluding the key)
         $columns = [];
         foreach ($records as $record) {
@@ -138,9 +147,8 @@ trait HasBatchOperations
         }
         $columns = array_unique($columns);
         
-        // SECURITY: Validate column names against actual database columns to prevent SQL injection
+        // SECURITY: Validate update column names against actual database columns to prevent SQL injection
         // Column names cannot be parameterized in SQL, so we must whitelist them
-        $validColumns = static::getValidColumnNames($model);
         $columns = array_filter($columns, function($column) use ($validColumns) {
             return in_array($column, $validColumns, true);
         });
@@ -384,8 +392,15 @@ trait HasBatchOperations
         }
         
         $values = implode(',', $valueSets);
-        
-        $query = "INSERT INTO {$table} ({$columnList}) VALUES {$values} RETURNING {$returningColumn}";
+
+        // Use the connection's query grammar to properly quote identifiers.
+        // This handles reserved words and unusual names consistently with how
+        // the insert column list is already quoted above.
+        $grammar = DB::connection($model->getConnectionName())->getQueryGrammar();
+        $quotedTable = $grammar->wrap($table);
+        $quotedReturning = $grammar->wrap($returningColumn);
+
+        $query = "INSERT INTO {$quotedTable} ({$columnList}) VALUES {$values} RETURNING {$quotedReturning}";
         
         $results = DB::select($query, $bindings);
         

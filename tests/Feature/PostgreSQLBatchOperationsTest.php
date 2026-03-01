@@ -16,6 +16,85 @@ use Illuminate\Support\Facades\DB;
 
 describe('PostgreSQL Batch Operations', function () {
 
+    describe('bulkInsert', function () {
+
+        it('inserts records and returns the correct count', function () {
+            $user = User::factory()->create();
+
+            $records = [
+                [
+                    'title' => 'Bulk Insert 1',
+                    'slug' => 'bulk-insert-1',
+                    'excerpt' => 'Excerpt 1',
+                    'content' => 'Content 1',
+                    'user_id' => $user->id,
+                    'is_published' => true,
+                ],
+                [
+                    'title' => 'Bulk Insert 2',
+                    'slug' => 'bulk-insert-2',
+                    'excerpt' => 'Excerpt 2',
+                    'content' => 'Content 2',
+                    'user_id' => $user->id,
+                    'is_published' => false,
+                ],
+            ];
+
+            $count = BlogPost::bulkInsert($records);
+
+            expect($count)->toBe(2);
+            expect(BlogPost::where('slug', 'bulk-insert-1')->exists())->toBeTrue();
+            expect(BlogPost::where('slug', 'bulk-insert-2')->exists())->toBeTrue();
+        });
+
+        it('handles JSON/array columns', function () {
+            $user = User::factory()->create();
+
+            $records = [
+                [
+                    'title' => 'Tagged Post',
+                    'slug' => 'tagged-post-bulk',
+                    'excerpt' => 'Excerpt',
+                    'content' => 'Content',
+                    'user_id' => $user->id,
+                    'tags' => ['laravel', 'php'],
+                ],
+            ];
+
+            BlogPost::bulkInsert($records);
+
+            $post = BlogPost::where('slug', 'tagged-post-bulk')->first();
+            expect($post->tags)->toBe(['laravel', 'php']);
+        });
+
+        it('returns 0 for empty input', function () {
+            $count = BlogPost::bulkInsert([]);
+            expect($count)->toBe(0);
+        });
+
+        it('processes records across chunk boundaries', function () {
+            $user = User::factory()->create();
+
+            // 5 records with a chunkSize of 2 forces 3 separate INSERT queries
+            $records = [];
+            for ($i = 1; $i <= 5; $i++) {
+                $records[] = [
+                    'title' => "Chunk Post {$i}",
+                    'slug' => "chunk-post-{$i}",
+                    'excerpt' => 'Excerpt',
+                    'content' => 'Content',
+                    'user_id' => $user->id,
+                ];
+            }
+
+            $count = BlogPost::bulkInsert($records, chunkSize: 2);
+
+            expect($count)->toBe(5);
+            expect(BlogPost::where('slug', 'like', 'chunk-post-%')->count())->toBe(5);
+        });
+
+    });
+
     describe('upsertBatch', function () {
 
         it('inserts new records when they do not exist', function () {
@@ -141,6 +220,84 @@ describe('PostgreSQL Batch Operations', function () {
             expect($posts[1]->tags)->toBe(['javascript', 'vue']);
         });
 
+        it('handles boolean values correctly', function () {
+            $user = User::factory()->create();
+            $posts = BlogPost::factory(2)->create([
+                'user_id' => $user->id,
+                'is_featured' => false,
+                'is_published' => true,
+            ]);
+
+            $updates = [
+                $posts[0]->id => ['is_featured' => true,  'is_published' => false],
+                $posts[1]->id => ['is_featured' => false, 'is_published' => true],
+            ];
+
+            BlogPost::bulkUpdate($updates);
+
+            $posts[0]->refresh();
+            $posts[1]->refresh();
+
+            expect($posts[0]->is_featured)->toBeTrue();
+            expect($posts[0]->is_published)->toBeFalse();
+            expect($posts[1]->is_featured)->toBeFalse();
+            expect($posts[1]->is_published)->toBeTrue();
+        });
+
+        it('processes records across chunk boundaries', function () {
+            $user = User::factory()->create();
+            $posts = BlogPost::factory(5)->create(['user_id' => $user->id]);
+
+            // chunkSize of 2 with 5 records forces 3 query chunks
+            $updates = collect($posts)->mapWithKeys(fn ($p, $i) => [
+                $p->id => ['title' => "Chunked Title {$i}"],
+            ])->all();
+
+            $affected = BlogPost::bulkUpdate($updates, chunkSize: 2);
+
+            expect($affected)->toBe(5);
+            foreach ($posts as $i => $post) {
+                expect($post->fresh()->title)->toBe("Chunked Title {$i}");
+            }
+        });
+
+        it('silently ignores columns not present in the schema', function () {
+            $user = User::factory()->create();
+            $post = BlogPost::factory()->create(['user_id' => $user->id, 'title' => 'Original']);
+
+            // 'nonexistent_column' is not a real column — it must be silently dropped
+            $updates = [
+                $post->id => ['title' => 'Updated', 'nonexistent_column' => 'bad value'],
+            ];
+
+            $affected = BlogPost::bulkUpdate($updates);
+
+            expect($affected)->toBe(1);
+            expect($post->fresh()->title)->toBe('Updated');
+        });
+
+        it('returns 0 when all supplied columns are invalid', function () {
+            $user = User::factory()->create();
+            $post = BlogPost::factory()->create(['user_id' => $user->id]);
+
+            $updates = [
+                $post->id => ['totally_fake' => 'value', 'also_fake' => 'value'],
+            ];
+
+            $affected = BlogPost::bulkUpdate($updates);
+            expect($affected)->toBe(0);
+        });
+
+        it('throws for an invalid keyColumn', function () {
+            $user  = User::factory()->create();
+            $post  = BlogPost::factory()->create(['user_id' => $user->id]);
+
+            expect(fn () => BlogPost::bulkUpdate(
+                [$post->id => ['title' => 'X']],
+                keyColumn: 'nonexistent_key'
+            ))->toThrow(\InvalidArgumentException::class);
+        });
+
         it('returns zero for empty updates', function () {
             $affected = BlogPost::bulkUpdate([]);
             expect($affected)->toBe(0);
@@ -178,6 +335,27 @@ describe('PostgreSQL Batch Operations', function () {
 
             expect($affected)->toBe(2);
             expect(BlogPost::whereIn('slug', $slugsToDelete)->count())->toBe(0);
+        });
+
+        it('returns 0 when none of the IDs exist', function () {
+            $affected = BlogPost::bulkDelete([999999, 999998]);
+            expect($affected)->toBe(0);
+        });
+
+        it('deletes only existing records when IDs are mixed', function () {
+            $user  = User::factory()->create();
+            $posts = BlogPost::factory(2)->create(['user_id' => $user->id]);
+
+            $ids = [$posts[0]->id, $posts[1]->id, 999999];
+
+            $affected = BlogPost::bulkDelete($ids);
+
+            expect($affected)->toBe(2);
+        });
+
+        it('throws for an invalid keyColumn', function () {
+            expect(fn () => BlogPost::bulkDelete([1], 'nonexistent_key'))
+                ->toThrow(\InvalidArgumentException::class);
         });
 
     });
@@ -260,6 +438,26 @@ describe('PostgreSQL Batch Operations', function () {
             expect($ids)->toBe([]);
         });
 
+        it('throws for an invalid returningColumn', function () {
+            $user = User::factory()->create();
+
+            $records = [[
+                'title' => 'Post',
+                'slug' => 'throw-test-returning',
+                'excerpt' => 'E',
+                'content' => 'C',
+                'user_id' => $user->id,
+            ]];
+
+            expect(fn () => BlogPost::insertReturning($records, 'nonexistent_col'))
+                ->toThrow(\InvalidArgumentException::class);
+        });
+
+        it('throws when no valid insert columns are provided', function () {
+            expect(fn () => BlogPost::insertReturning([['totally_fake' => 'val']]))
+                ->toThrow(\InvalidArgumentException::class);
+        });
+
     });
 
     describe('bulkIncrement', function () {
@@ -323,6 +521,35 @@ describe('PostgreSQL Batch Operations', function () {
         it('returns zero for empty increments', function () {
             $affected = BlogPost::bulkIncrement([], 'reading_time');
             expect($affected)->toBe(0);
+        });
+
+        it('processes increments across chunk boundaries', function () {
+            $user  = User::factory()->create();
+            $posts = BlogPost::factory(5)->create(['user_id' => $user->id]);
+
+            DB::table('blog_posts')
+                ->whereIn('id', $posts->pluck('id'))
+                ->update(['reading_time' => 10]);
+
+            // chunkSize of 2 with 5 records forces 3 query chunks
+            $increments = $posts->mapWithKeys(fn ($p) => [$p->id => 1])->all();
+
+            $affected = BlogPost::bulkIncrement($increments, 'reading_time', chunkSize: 2);
+
+            expect($affected)->toBe(5);
+            foreach ($posts as $post) {
+                expect($post->fresh()->reading_time)->toBe(11);
+            }
+        });
+
+        it('throws for an invalid increment column', function () {
+            expect(fn () => BlogPost::bulkIncrement([1 => 1], 'nonexistent_col'))
+                ->toThrow(\InvalidArgumentException::class);
+        });
+
+        it('throws for an invalid keyColumn', function () {
+            expect(fn () => BlogPost::bulkIncrement([1 => 1], 'reading_time', keyColumn: 'nonexistent_key'))
+                ->toThrow(\InvalidArgumentException::class);
         });
 
     });
@@ -425,6 +652,64 @@ describe('HasBatchOperations Trait', function () {
 
         $affected = TestModelWithBatchOperations::upsertBatch($posts, 'slug');
         expect($affected)->toBe(1);
+    });
+
+});
+
+describe('Column Cache', function () {
+
+    beforeEach(function () {
+        BlogPost::clearColumnCache();
+    });
+
+    it('clears the entire column cache', function () {
+        // Populate cache with two models
+        $model = new BlogPost;
+        $cacheProperty = (new \ReflectionClass(BlogPost::class))->getProperty('columnCache');
+        $cacheProperty->setAccessible(true);
+
+        // Trigger cache population with a non-empty call (ID -1 won't match any row)
+        BlogPost::bulkDelete([-1]);
+        expect($cacheProperty->getValue())->not->toBeEmpty();
+
+        BlogPost::clearColumnCache();
+        expect($cacheProperty->getValue())->toBe([]);
+    });
+
+    it('clears cache only for the specified connection', function () {
+        $cacheProperty = (new \ReflectionClass(BlogPost::class))->getProperty('columnCache');
+        $cacheProperty->setAccessible(true);
+
+        // Seed the static cache directly with two fake connection entries
+        $cacheProperty->setValue(null, [
+            'pgsql.blog_posts'   => ['id', 'title'],
+            'sqlite.blog_posts'  => ['id', 'title'],
+        ]);
+
+        BlogPost::clearColumnCache('pgsql');
+
+        $remaining = $cacheProperty->getValue();
+        expect($remaining)->toHaveKey('sqlite.blog_posts')
+            ->and($remaining)->not->toHaveKey('pgsql.blog_posts');
+    });
+
+    it('repopulates cache automatically after clearing', function () {
+        $user = User::factory()->create();
+        BlogPost::factory()->create(['user_id' => $user->id]);
+
+        // First access populates cache
+        BlogPost::bulkDelete([]);
+
+        BlogPost::clearColumnCache();
+
+        // Access after clear should re-query and repopulate
+        $user2 = User::factory()->create();
+        $post  = BlogPost::factory()->create(['user_id' => $user2->id, 'title' => 'Cache Repop']);
+
+        $affected = BlogPost::bulkUpdate([$post->id => ['title' => 'Updated After Clear']]);
+
+        expect($affected)->toBe(1);
+        expect($post->fresh()->title)->toBe('Updated After Clear');
     });
 
 });
