@@ -108,14 +108,13 @@ class BlogPost extends Model
      * This version is included in all cache keys to enable instant invalidation
      * by simply incrementing the version number.
      * 
-     * IMPORTANT: The version counter is stored in cache using Cache::forever().
-     * If you run `php artisan cache:clear`, the version will reset to 1, which
-     * could cause stale cached data to be served. After clearing the cache, always
-     * bump the version to a safe value:
+     * NOTE: The version counter is stored in cache using Cache::forever().
+     * When you run `php artisan cache:clear`, the version resets to 1 and all
+     * cached data is cleared, so the cache will naturally warm from scratch with
+     * version 1 keys. This is the expected behavior and requires no manual intervention.
      * 
-     *   php artisan tinker --execute="\App\Models\BlogPost::bumpCacheVersion();"
-     * 
-     * Or better yet, use Cache::flush() from code which will invalidate all keys.
+     * If you need the version to persist across cache clears (e.g., for debugging
+     * or strict version monotonicity), store it in the database instead of cache.
      */
     public static function getCacheVersion(): int
     {
