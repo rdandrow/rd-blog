@@ -96,13 +96,19 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
-            
-            // Connection pool metadata (optional, for documentation)
-            // When using PgBouncer, set DB_PORT=6432 in .env
-            // See docs/CONNECTION_POOLING_GUIDE.md for setup
-            'options' => [
-                // 'pool_size' => env('DB_POOL_SIZE', 20),
-                // 'pool_mode' => env('DB_POOL_MODE', 'transaction'),
+
+            // PDO connection attributes — add real PDO::* integer constants here if needed.
+            // e.g. PDO::ATTR_PERSISTENT => true
+            'options' => [],
+
+            // PgBouncer / connection-pool metadata.
+            // These keys are NOT passed to PDO; they are here for documentation and
+            // can be read at runtime via config('database.connections.pgsql.pgbouncer.*').
+            // To use PgBouncer, set DB_PORT=6432 in .env.
+            // See docs/CONNECTION_POOLING_GUIDE.md for full setup instructions.
+            'pgbouncer' => [
+                'pool_size' => env('DB_POOL_SIZE', 20),
+                'pool_mode' => env('DB_POOL_MODE', 'transaction'),
             ],
         ],
 
