@@ -47,6 +47,9 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Enable query performance monitoring for development and staging.
+     * 
+     * Note: Query counters and flags are reset per request via ResetQueryMonitoring
+     * middleware to ensure clean state in Octane and long-running processes.
      */
     protected function enableQueryMonitoring(): void
     {
@@ -56,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Track query count per request for N+1 detection without memory overhead
+        // Counter is reset at the start of each request by ResetQueryMonitoring middleware
         $enableN1Detection = config('app.debug');
 
         DB::listen(function ($query) use ($enableN1Detection) {
