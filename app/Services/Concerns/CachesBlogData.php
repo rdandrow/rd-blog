@@ -57,15 +57,29 @@ trait CachesBlogData
     /**
      * Forget a cached value.
      *
-     * Note: With versioned keys, this may not be necessary in most cases.
-     * Cache invalidation is handled by bumping the version in BlogPost model.
+     * Uses the same driver-detection logic as remember() to delete the correct key.
+     * For tagged stores (Redis/Memcached) it forgets within the 'blog_posts' tag.
+     * For versioned stores it forgets the current versioned key (blog:v{n}:{key}).
+     *
+     * Note: For versioned stores, bumping the cache version via BlogPost::invalidateCaches()
+     * is the preferred way to invalidate all blog cache keys at once. Use forget() only
+     * when you need to invalidate a single key without a full cache bust.
      *
      * @param string $key Cache key (will be prefixed)
      * @return bool
      */
     protected function forget(string $key): bool
     {
-        return Cache::forget($this->cachePrefix . $key);
+        $store = Cache::getStore();
+        $driver = config('cache.default');
+
+        if (in_array($driver, ['redis', 'memcached']) && method_exists($store, 'tags')) {
+            return Cache::tags(['blog_posts'])->forget($this->cachePrefix . $key);
+        }
+
+        $version = \App\Models\BlogPost::getCacheVersion();
+        $versionedKey = $this->cachePrefix . "v{$version}:" . $key;
+        return Cache::forget($versionedKey);
     }
 
     /**
