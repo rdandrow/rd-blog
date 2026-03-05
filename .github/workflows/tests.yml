@@ -11,37 +11,25 @@ on:
       - main
 
 jobs:
-  validate-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check Required Secrets
-        run: |
-          if [ -z "${{ secrets.DB_TEST_USERNAME }}" ] || [ -z "${{ secrets.DB_TEST_PASSWORD }}" ] || [ -z "${{ secrets.DB_TEST_DATABASE }}" ]; then
-            echo "::error::Required database secrets are not configured"
-            echo "::error::Please configure the following secrets in your repository:"
-            echo "::error::  - DB_TEST_USERNAME"
-            echo "::error::  - DB_TEST_PASSWORD"
-            echo "::error::  - DB_TEST_DATABASE"
-            echo "::error::See .github/SECRETS_SETUP.md for detailed instructions."
-            exit 1
-          fi
-          echo "✓ All required secrets are configured"
-
   ci:
     runs-on: ubuntu-latest
-    needs: validate-secrets
-    # Gate the job - only run if all required secrets are configured
-    if: ${{ success() }}
+
+    # Safe CI defaults are used when repository secrets are absent (e.g. fork PRs).
+    # On push to protected branches, configure the secrets below to override:
+    #   DB_TEST_USERNAME / DB_TEST_PASSWORD / DB_TEST_DATABASE
+    # These credentials are ephemeral and only reachable inside the CI runner.
+    env:
+      DB_USERNAME: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_user' }}
+      DB_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'secret' }}
+      DB_DATABASE: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
 
     services:
       postgres:
         image: postgres:16
         env:
-          # All PostgreSQL configuration must be provided via secrets
-          # See .github/SECRETS_SETUP.md for configuration instructions
-          POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.DB_TEST_DATABASE }}
+          POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_user' }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'secret' }}
+          POSTGRES_DB: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
         ports:
           - 5432:5432
         options: >-
@@ -78,14 +66,13 @@ jobs:
         run: cp .env.example .env
 
       - name: Configure Database
+        # DB_CONNECTION, DB_HOST, and DB_PORT are already set in .env.example.
+        # Append the remaining credentials so artisan commands (migrate, etc.) resolve them.
         run: |
+          echo "DB_DATABASE=${{ env.DB_DATABASE }}" >> .env
+          echo "DB_USERNAME=${{ env.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ env.DB_PASSWORD }}" >> .env
           php artisan config:clear
-          php -r "file_put_contents('.env', str_replace('DB_CONNECTION=sqlite', 'DB_CONNECTION=pgsql', file_get_contents('.env')));"
-          echo "DB_HOST=127.0.0.1" >> .env
-          echo "DB_PORT=5432" >> .env
-          echo "DB_DATABASE=${{ secrets.DB_TEST_DATABASE }}" >> .env
-          echo "DB_USERNAME=${{ secrets.DB_TEST_USERNAME }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_TEST_PASSWORD }}" >> .env
 
       - name: Generate Application Key
         run: php artisan key:generate
@@ -101,5 +88,5 @@ jobs:
 
       - name: Frontend Tests
         run: npm run test:run
-        env: 
+        env:
           LARAVEL_BYPASS_ENV_CHECK: 1

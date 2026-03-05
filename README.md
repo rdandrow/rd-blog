@@ -6,7 +6,7 @@ A modern full-stack blog platform built with Laravel 12 and Vue.js 3, featuring 
 
 **Backend:** Laravel 12 • PHP 8.2+ • Inertia.js • PostgreSQL 16  
 **Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 6  
-**Testing:** Pest PHP (862 tests) • Vitest (1,774 tests) • Feature & Unit Tests
+**Testing:** Pest PHP (875 tests) • Vitest (1,774 tests) • Feature & Unit Tests
 
 ## Key Features
 
@@ -173,10 +173,7 @@ psql postgres -c "CREATE DATABASE rd_blog_test;"
 psql rd_blog_dev -c "GRANT ALL ON SCHEMA public TO rd_blog_user;"
 psql rd_blog_test -c "GRANT ALL ON SCHEMA public TO rd_blog_user;"
 
-# Configure .env for PostgreSQL
-# DB_CONNECTION=pgsql
-# DB_HOST=127.0.0.1
-# DB_PORT=5432
+# Set your credentials in .env (connection/host/port already default correctly)
 # DB_DATABASE=rd_blog_dev
 # DB_USERNAME=rd_blog_user
 # DB_PASSWORD=your_secure_password
@@ -199,8 +196,8 @@ Visit `http://localhost:8000`
 
 ## Testing
 
-**Backend Test Suite:** 809 tests • 3,125 assertions • ~8s parallel / ~24s sequential  
-**Frontend Test Suite:** 1,773 tests • 5,000+ assertions • ~35s execution
+**Backend Test Suite:** 890 tests • 3326 assertions • ~8s parallel / ~24s sequential  
+**Frontend Test Suite:** 1,784 tests • 5,000+ assertions • ~35s execution
 
 ### Backend Tests (Pest PHP)
 
@@ -270,6 +267,7 @@ npm run test -- pages/Admin/
 - Rate limiting (login attempts, spam prevention)
 - Middleware (execution order, CSRF, authorization)
 - Performance (N+1 queries, large datasets, memory usage)
+- Batch operations (bulkInsert, bulkUpdate, bulkDelete, bulkIncrement, insertReturning)
 
 **Frontend Test Coverage:**
 - Page components (Welcome, Blog, BlogPost, Dashboard)
@@ -287,21 +285,20 @@ npm run test -- pages/Admin/
 
 The project uses GitHub Actions for automated testing on pull requests and pushes to `main`.
 
-### Required Secrets
+### Secrets (Optional)
 
-**GitHub Actions secrets must be configured** for CI runs to execute properly. The workflow will fail with clear instructions if secrets are missing.
+The CI workflow runs a single `ci` job with built-in fallback defaults — **no repository secrets are required**, including for fork PRs.
 
-Required repository secrets:
-- `DB_TEST_DATABASE` - PostgreSQL database name
-- `DB_TEST_USERNAME` - PostgreSQL username  
-- `DB_TEST_PASSWORD` - PostgreSQL password
+Default credentials used when secrets are absent:
+| Secret | Fallback default |
+|---|---|
+| `DB_TEST_USERNAME` | `rd_blog_user` |
+| `DB_TEST_PASSWORD` | `secret` |
+| `DB_TEST_DATABASE` | `rd_blog_test` |
 
-**Setup Instructions:**
-1. Navigate to **Settings → Secrets and variables → Actions**
-2. Add three repository secrets with your PostgreSQL credentials
-3. See [.github/SECRETS_SETUP.md](.github/SECRETS_SETUP.md) for detailed configuration guide
+If you want CI to use different credentials (e.g. on a private fork), add any or all three as repository secrets under **Settings → Secrets and variables → Actions** and they will take precedence over the defaults.
 
-**Note:** The CI workflow uses a validation job to check secrets before running tests. If secrets are not configured, the workflow will fail immediately with helpful instructions rather than attempting to run with missing credentials.
+See [docs/CI_POSTGRESQL_SETUP.md](docs/CI_POSTGRESQL_SETUP.md) for the full CI PostgreSQL setup guide.
 
 ## Production Deployment
 

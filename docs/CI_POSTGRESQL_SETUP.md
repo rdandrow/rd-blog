@@ -1,12 +1,14 @@
 # CI PostgreSQL Setup Guide
 
-**Date**: February 17, 2026  
+**Date**: March 4, 2026  
 **CI Platform**: GitHub Actions  
 **Database**: PostgreSQL 16
 
 ## Overview
 
 This guide documents the PostgreSQL configuration for CI/CD environments to ensure database connectivity during automated testing.
+
+**Fork PR support:** The workflow uses `||` fallback defaults for all secrets, so CI runs without any repository secrets configured. This means pull requests from forks work out of the box. Repository secrets (`DB_TEST_USERNAME`, `DB_TEST_PASSWORD`, `DB_TEST_DATABASE`) only need to be set if you want to override the defaults on push to protected branches.
 
 ## Configuration
 
@@ -17,27 +19,35 @@ This guide documents the PostgreSQL configuration for CI/CD environments to ensu
 ### PostgreSQL Service
 
 ```yaml
-services:
-  postgres:
-    image: postgres:16
+    # Safe CI defaults are used when repository secrets are absent (e.g. fork PRs).
+    # On push to protected branches, configure the secrets below to override:
+    #   DB_TEST_USERNAME / DB_TEST_PASSWORD / DB_TEST_DATABASE
     env:
-      POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_test' }}
-      POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'test_password_change_me' }}
-      POSTGRES_DB: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
-    ports:
-      - 5432:5432
-    options: >-
-      --health-cmd pg_isready
-      --health-interval 10s
-      --health-timeout 5s
-      --health-retries 5
+      DB_USERNAME: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_user' }}
+      DB_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'secret' }}
+      DB_DATABASE: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_user' }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'secret' }}
+          POSTGRES_DB: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 ```
 
 **Key Features:**
 - **Health checks**: Ensures PostgreSQL is ready before tests run
 - **Port mapping**: Makes PostgreSQL accessible on standard port 5432
 - **Automatic startup**: Service starts before job steps execute
-- **Secrets**: Uses GitHub Secrets with fallback defaults (see [Secrets Setup](../.github/SECRETS_SETUP.md))
+- **Secrets with fallbacks**: Repository secrets override the defaults; when absent (fork PRs), the hardcoded defaults are used — credentials are ephemeral and only reachable inside the CI runner
 
 ### PHP Extensions
 
@@ -60,21 +70,20 @@ services:
 
 ```yaml
 - name: Configure Database
+  # DB_CONNECTION, DB_HOST, and DB_PORT are already set in .env.example.
+  # Append the remaining credentials so artisan commands (migrate, etc.) resolve them.
   run: |
+    echo "DB_DATABASE=${{ env.DB_DATABASE }}" >> .env
+    echo "DB_USERNAME=${{ env.DB_USERNAME }}" >> .env
+    echo "DB_PASSWORD=${{ env.DB_PASSWORD }}" >> .env
     php artisan config:clear
-    php -r "file_put_contents('.env', str_replace('DB_CONNECTION=sqlite', 'DB_CONNECTION=pgsql', file_get_contents('.env')));"
-    echo "DB_HOST=127.0.0.1" >> .env
-    echo "DB_PORT=5432" >> .env
-    echo "DB_DATABASE=rd_blog_test" >> .env
-    echo "DB_USERNAME=rd_blog_user" >> .env
-    echo "DB_PASSWORD=rd_blog_password" >> .env
 ```
 
 **Steps:**
-1. Clear cached config
-2. Switch from SQLite to PostgreSQL
-3. Add PostgreSQL connection details
-4. Use `127.0.0.1` (service runs on localhost in CI)
+1. Append the three credentials (resolved from secrets with fallback defaults) to `.env`
+2. Clear cached config *after* writing credentials so the values are picked up
+
+**Note:** `DB_CONNECTION=pgsql`, `DB_HOST=127.0.0.1`, and `DB_PORT=5432` are already present in `.env.example` — no string replacement or extra `echo` lines needed.
 
 ### Migration Execution
 
@@ -95,15 +104,20 @@ services:
 ```xml
 <php>
     <env name="DB_CONNECTION" value="pgsql"/>
-    <env name="DB_DATABASE" value="rd_blog_test"/>
+    <env name="DB_HOST"       value="127.0.0.1"/>
+    <env name="DB_PORT"       value="5432"/>
+    <env name="DB_DATABASE"   value="rd_blog_test"/>
+    <env name="DB_USERNAME"   value="rd_blog_user"/>
+    <!-- DB_PASSWORD must be set in your shell environment or .env — never hardcode credentials here -->
     <!-- Other test environment variables -->
 </php>
 ```
 
 **Ensures:**
-- Tests always use PostgreSQL
-- Consistent test database name
+- Tests always use PostgreSQL with a consistent, complete connection tuple
+- Consistent test database name and user (`rd_blog_user`)
 - Isolated from development database
+- `DB_PASSWORD` must be supplied via shell environment or `.env` (not committed)
 
 ## Troubleshooting
 
@@ -286,23 +300,26 @@ options: >-
 ### Service (Docker Container)
 
 ```yaml
-POSTGRES_USER=rd_blog_user
-POSTGRES_PASSWORD=rd_blog_password
-POSTGRES_DB=rd_blog_test
+POSTGRES_USER=rd_blog_user        # default; overridden by DB_TEST_USERNAME secret
+POSTGRES_PASSWORD=secret          # default; overridden by DB_TEST_PASSWORD secret
+POSTGRES_DB=rd_blog_test          # default; overridden by DB_TEST_DATABASE secret
 ```
 
 ### Application (.env in CI)
 
 ```bash
+# From .env.example (already present):
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
-DB_DATABASE=rd_blog_test
-DB_USERNAME=rd_blog_user
-DB_PASSWORD=rd_blog_password
+
+# Appended by the «Configure Database» step:
+DB_DATABASE=rd_blog_test          # or $DB_TEST_DATABASE secret
+DB_USERNAME=rd_blog_user          # or $DB_TEST_USERNAME secret
+DB_PASSWORD=secret                # or $DB_TEST_PASSWORD secret
 ```
 
-**Must Match:** User, password, and database name
+**Must Match:** User, password, and database name between service and application config
 
 ## Local Testing of CI Configuration
 
@@ -312,14 +329,16 @@ DB_PASSWORD=rd_blog_password
 # 1. Start PostgreSQL with same config
 docker run --name test-postgres \
   -e POSTGRES_USER=rd_blog_user \
-  -e POSTGRES_PASSWORD=rd_blog_password \
+  -e POSTGRES_PASSWORD=secret \
   -e POSTGRES_DB=rd_blog_test \
   -p 5432:5432 \
   -d postgres:16
 
-# 2. Configure .env
+# 2. Configure .env  (DB_CONNECTION, DB_HOST, DB_PORT already set in .env.example)
 cp .env.example .env
-# Edit .env with above credentials
+echo "DB_DATABASE=rd_blog_test" >> .env
+echo "DB_USERNAME=rd_blog_user" >> .env
+echo "DB_PASSWORD=secret"       >> .env
 
 # 3. Run migrations
 php artisan migrate --force
