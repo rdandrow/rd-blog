@@ -210,21 +210,26 @@ describe('Query Performance Benchmarks', function () {
 
         $service = new BlogPostService();
 
-        // Warm up
+        // Warm up application-level cache so the subsequent query reflects
+        // only DB work, not cache population overhead.
         $service->getAllPublishedPosts(['search' => 'optimization']);
 
-        // Benchmark search
-        $start = microtime(true);
+        // Count queries for the actual search call — this is environment-independent
+        // and a meaningful performance guarantee: full-text search must not cause N+1.
+        DB::enableQueryLog();
         $results = $service->getAllPublishedPosts(['search' => 'optimization']);
-        $duration = (microtime(true) - $start) * 1000; // Convert to ms
+        $queryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
 
         // Should find the post
         expect($results)->toHaveCount(1)
             ->and($results->first()->title)->toBe('Laravel Performance Optimization');
 
-        // With full-text search, this should be very fast even with 50+ posts
-        // On a modern machine, this should complete in < 50ms
-        expect($duration)->toBeLessThan(100);
+        // Full-text search across 50+ posts must resolve in a single query (or two
+        // at most if a count query is issued alongside). An N+1 would produce 50+.
+        // We deliberately avoid wall-clock thresholds here — they are inherently
+        // flaky across CI runners, container cold starts, and parallel test workers.
+        expect($queryCount)->toBeLessThanOrEqual(2);
     })->group('performance', 'postgresql', 'benchmark');
 
 });

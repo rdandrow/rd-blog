@@ -5,7 +5,7 @@ A modern full-stack blog platform built with Laravel 12 and Vue.js 3, featuring 
 ## Tech Stack
 
 **Backend:** Laravel 12 • PHP 8.2+ • Inertia.js • PostgreSQL 16  
-**Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 6  
+**Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 7  
 **Testing:** Pest PHP (875 tests) • Vitest (1,774 tests) • Feature & Unit Tests
 
 ## Key Features
