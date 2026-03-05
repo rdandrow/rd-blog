@@ -62,11 +62,17 @@ class AppServiceProvider extends ServiceProvider
         // Counter is reset at the start of each request by ResetQueryMonitoring middleware
         $enableN1Detection = config('app.debug');
 
-        DB::listen(function ($query) use ($enableN1Detection) {
+        // Captured once here rather than inside the closure to avoid a container
+        // lookup on every query. Console commands and tests share a single synthetic
+        // request for their entire lifetime, so the counter would never be reset and
+        // would trigger false N+1 warnings — skip counter/N+1 logic in those contexts.
+        $isHttpRequest = ! app()->runningInConsole();
+
+        DB::listen(function ($query) use ($enableN1Detection, $isHttpRequest) {
             $request = request();
-            
-            // Increment query counter (scoped to current request)
-            if ($enableN1Detection && $request) {
+
+            // Increment query counter (scoped to current HTTP request only)
+            if ($enableN1Detection && $isHttpRequest && $request) {
                 $queryCount = $request->attributes->get('_query_count', 0) + 1;
                 $request->attributes->set('_query_count', $queryCount);
             }
@@ -94,7 +100,7 @@ class AppServiceProvider extends ServiceProvider
 
             // Detect N+1 query problems (>50 queries in a request)
             // Uses a simple counter instead of query log to avoid memory accumulation
-            if ($enableN1Detection && $request && isset($queryCount) && $queryCount > 50) {
+            if ($enableN1Detection && $isHttpRequest && $request && isset($queryCount) && $queryCount > 50) {
                 // Log only once per request when threshold is crossed
                 if (!$request->attributes->get('_n1_logged', false)) {
                     Log::warning('Potential N+1 query problem detected', [

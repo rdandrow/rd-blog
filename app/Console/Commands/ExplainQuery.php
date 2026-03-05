@@ -93,7 +93,7 @@ class ExplainQuery extends Command
             $this->error('Please provide a query via argument or --file option.');
             $this->newLine();
             $this->line('Examples:');
-            $this->line('  php artisan db:explain "SELECT * FROM blog_posts WHERE published = true"');
+            $this->line('  php artisan db:explain "SELECT * FROM blog_posts WHERE is_published = true"');
             $this->line('  php artisan db:explain --file=query.sql');
             return null;
         }
