@@ -47,7 +47,7 @@ Successfully added 10 PostgreSQL-specific indexes to optimize query performance 
 | Query Type | Before | After | Speedup |
 |-----------|--------|-------|---------|
 | Tag filtering (`whereJsonContains`) | Seq Scan | GIN Index Scan | **10-50x** |
-| Full-text search | Pattern matching | tsvector (future) | **20-100x** |
+| Full-text search | Pattern matching | PostgreSQL FTS (`to_tsvector` + `plainto_tsquery`) | **20-100x** |
 | Published posts listing | Full table scan | Partial index scan | **5-20x** |
 | Featured posts | Filtered scan | Partial index scan | **3-10x** |
 | Draft posts by author | Table scan | Partial index scan | **3-8x** |
@@ -61,7 +61,7 @@ Successfully added 10 PostgreSQL-specific indexes to optimize query performance 
 
 ✅ **Migration Applied**: Successfully ran `php artisan migrate`  
 ✅ **Indexes Created**: Verified all 10 indexes exist in PostgreSQL  
-✅ **Tests Pass**: All 892 Pest tests passing (including index and optimization coverage)  
+✅ **Tests Pass**: All 906 Pest tests passing (including index and optimization coverage)  
 ✅ **No Regressions**: Performance maintained or improved  
 ✅ **Documentation**: Comprehensive guide created  
 

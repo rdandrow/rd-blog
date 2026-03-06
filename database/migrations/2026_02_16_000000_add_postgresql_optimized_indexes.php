@@ -34,7 +34,8 @@ return new class extends Migration
         DB::statement('CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_tags_gin_index ON blog_posts USING GIN ((tags::jsonb) jsonb_path_ops)');
 
         // 2. Full-text search index for title, excerpt, and content (CRITICAL for search)
-        // Used in: BlogPostService::applyFilters with ILIKE searches
+        // Used in: BlogPostService::applyFilters PostgreSQL path
+        // Query pattern: to_tsvector(...) @@ plainto_tsquery(...)
         // Creates a tsvector combining all searchable text fields
         DB::statement(" 
             CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_search_index ON blog_posts 
