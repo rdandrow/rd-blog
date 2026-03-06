@@ -21,10 +21,10 @@ Added `enableQueryMonitoring()` method that automatically logs slow queries and 
 **Multi-Tier Slow Query Detection:**
 - **Warning Level** (>100ms): Logs query details for investigation
 - **Error Level** (>500ms): Logs query with full stack trace for debugging
-- **Query Log**: Enables DB query logging in debug mode
+- **Binding Safety**: Query bindings are redacted by default (`LOG_QUERY_BINDINGS=false`)
 
 **N+1 Query Detection:**
-- Warns when request executes >50 queries
+- Warns when HTTP request executes >50 queries
 - Helps identify missing eager loading
 
 **Environment-Aware:**
@@ -40,12 +40,20 @@ protected function enableQueryMonitoring(): void
         return;
     }
 
-    DB::listen(function ($query) {
+   $enableN1Detection = config('app.debug');
+   $isHttpRequest = ! app()->runningInConsole();
+   $logBindings = (bool) env('LOG_QUERY_BINDINGS', false);
+
+   DB::listen(function ($query) use ($enableN1Detection, $isHttpRequest, $logBindings) {
+      $request = request();
+      $bindings = $logBindings ? '[SANITIZED]' : '[REDACTED]';
+
         // Slow query warning (>100ms)
         if ($query->time > 100) {
             Log::warning('Slow query detected', [
                 'sql' => $query->sql,
-                'bindings' => $query->bindings,
+            'bindings' => $bindings,
+            'binding_count' => count($query->bindings),
                 'time' => $query->time . 'ms',
                 'connection' => $query->connectionName,
             ]);
@@ -55,29 +63,28 @@ protected function enableQueryMonitoring(): void
         if ($query->time > 500) {
             Log::error('Extremely slow query detected', [
                 'sql' => $query->sql,
-                'bindings' => $query->bindings,
+            'bindings' => $bindings,
+            'binding_count' => count($query->bindings),
                 'time' => $query->time . 'ms',
                 'connection' => $query->connectionName,
                 'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10),
             ]);
         }
 
-        // N+1 query detection
-        if (config('app.debug') && DB::getQueryLog()) {
-            $queryCount = count(DB::getQueryLog());
-            if ($queryCount > 50) {
+      // N+1 query detection (HTTP requests only)
+      if ($enableN1Detection && $isHttpRequest && $request) {
+         $queryCount = $request->attributes->get('_query_count', 0) + 1;
+         $request->attributes->set('_query_count', $queryCount);
+
+         if ($queryCount > 50 && !$request->attributes->get('_n1_logged', false)) {
                 Log::warning('Potential N+1 query problem detected', [
                     'query_count' => $queryCount,
                     'last_query' => $query->sql,
                 ]);
+            $request->attributes->set('_n1_logged', true);
             }
         }
     });
-
-    // Enable query log in debug mode
-    if (config('app.debug')) {
-        DB::enableQueryLog();
-    }
 }
 ```
 
@@ -88,7 +95,8 @@ protected function enableQueryMonitoring(): void
 [2026-02-17 02:46:38] local.WARNING: Slow query detected 
 {
     "sql":"SELECT pg_sleep(0.2)",
-    "bindings":[],
+   "bindings":"[REDACTED]",
+   "binding_count":0,
     "time":"220.63ms",
     "connection":"pgsql"
 }
@@ -99,7 +107,8 @@ protected function enableQueryMonitoring(): void
 [2026-02-17 02:46:38] local.ERROR: Extremely slow query detected
 {
     "sql":"SELECT * FROM blog_posts WHERE ...",
-    "bindings":[...],
+   "bindings":"[REDACTED]",
+   "binding_count":3,
     "time":"650.2ms",
     "connection":"pgsql",
     "trace":[...]
@@ -220,8 +229,9 @@ php artisan db:explain {query?} [options]
 | `--format=FORMAT` | Output format: `text` (default) or `json` |
 | `--buffers` | Show buffer usage statistics |
 | `--detailed` | Show detailed verbose output |
-| `--costs` | Show cost estimates (enabled by default) |
+| `--no-costs` | Exclude cost estimates from output |
 | `--no-execute` | Run EXPLAIN without ANALYZE (no execution) |
+| `--allow-write` | Allow mutating statements with EXPLAIN ANALYZE |
 | `--suggest` | Show optimization suggestions |
 
 #### Features

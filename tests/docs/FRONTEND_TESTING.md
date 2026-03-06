@@ -6,6 +6,29 @@ This document outlines frontend testing recommendations for the blog admin panel
 
 ## Current Testing Coverage
 
+### ✅ Frontend Tests (Vitest)
+
+Current frontend test run status:
+
+- **68 test files**
+- **1,785 tests total**
+- **1,784 passing, 1 skipped**
+- **Duration**: ~18s (`npm run test:run`)
+
+Key coverage currently implemented:
+
+1. **Composables**
+  - `useAutoSave`, `useMarkdown`, `useBlogPostForm`, `useTwoFactorAuth`, and related utility composables
+2. **Core Components**
+  - `MarkdownEditor`, `MarkdownRender`, shared form components, layout/navigation, sidebar components
+3. **Pages**
+  - Admin blog lifecycle pages, admin/member user pages, auth flows, public pages, settings pages
+
+### Remaining Frontend Priorities
+
+- Additional sidebar button variants (`SidebarMenuButton`, `SidebarMenuButtonChild`)
+- Dashboard/overview page coverage expansion
+
 ### ✅ Backend Tests (Pest PHP)
 
 The following aspects are covered by PHP tests:
@@ -31,9 +54,9 @@ The following aspects are covered by PHP tests:
    - Unique filename generation
    - Error handling for upload failures
 
-### ⚠️ Missing Frontend Tests (Requires JavaScript Testing Framework)
+### ⚠️ Historical Gaps (Now Mostly Implemented)
 
-The following aspects require a JavaScript testing framework (Vitest recommended) to test properly:
+The following aspects were previously identified before Vitest coverage was expanded. Most are now covered by tests in `tests/frontend`; keep this list as a regression checklist when adding new features.
 
 1. **Auto-Save Composable** (`resources/js/composables/useAutoSave.ts`)
    - localStorage read/write operations
@@ -666,7 +689,7 @@ Once frontend testing is set up, aim for these improved targets:
 
 ## Integration with CI/CD
 
-Add to `.github/workflows/test.yml` (if using GitHub Actions):
+Add to `.github/workflows/tests.yml` (if using GitHub Actions):
 
 ```yaml
 - name: Run Frontend Tests

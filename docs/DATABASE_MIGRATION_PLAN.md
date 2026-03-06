@@ -225,7 +225,7 @@ php artisan db:seed
 # Backend tests
 ./vendor/bin/pest
 
-# Should pass: ~185 tests (Feature + Unit)
+# Should pass: 902 tests (3,365 assertions)
 ```
 
 #### 2.4 Manual Testing Checklist
@@ -422,7 +422,8 @@ public function boot(): void
             if ($query->time > 100) { // Log slow queries (>100ms)
                 logger()->warning('Slow query detected', [
                     'sql' => $query->sql,
-                    'bindings' => $query->bindings,
+                    'bindings' => '[REDACTED]',
+                    'binding_count' => count($query->bindings),
                     'time' => $query->time,
                 ]);
             }

@@ -6,7 +6,7 @@ A modern full-stack blog platform built with Laravel 12 and Vue.js 3, featuring 
 
 **Backend:** Laravel 12 • PHP 8.2+ • Inertia.js • PostgreSQL 16  
 **Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 7  
-**Testing:** Pest PHP (892 tests) • Vitest (1,784 tests) • Feature & Unit Tests
+**Testing:** Pest PHP (902 tests) • Vitest (1,785 tests) • Feature & Unit Tests
 
 ## Key Features
 
@@ -196,8 +196,8 @@ Visit `http://localhost:8000`
 
 ## Testing
 
-**Backend Test Suite:** 892 tests • 3,331 assertions • ~8s parallel / ~24s sequential  
-**Frontend Test Suite:** 1,784 tests passed (+1 skipped) • 5,000+ assertions • ~35s execution
+**Backend Test Suite:** 902 tests • 3,365 assertions • ~9.5s parallel (`composer test`)  
+**Frontend Test Suite:** 1,784 passed (+1 skipped) from 1,785 total • ~18s execution (`npm run test:run`)
 
 ### Backend Tests (Pest PHP)
 
@@ -217,7 +217,7 @@ composer test:sequential
 
 # Specific test suites
 ./vendor/bin/pest tests/Feature/Auth/ --parallel
-./vendor/bin/pest tests/Feature/BlogPosts/
+./vendor/bin/pest tests/Feature/Admin/BlogPostTest.php
 ./vendor/bin/pest tests/Unit/
 
 # Control parallel processes
@@ -429,6 +429,9 @@ php artisan db:explain "SELECT * FROM users" --format=json
 
 # EXPLAIN without executing (safe for UPDATE/DELETE queries)
 php artisan db:explain "UPDATE blog_posts SET views = views + 1" --no-execute
+
+# Explicitly allow mutating statements with ANALYZE (dangerous)
+php artisan db:explain "UPDATE blog_posts SET views = views + 1" --allow-write
 ```
 
 **Features:**
@@ -443,6 +446,7 @@ See [docs/EXPLAIN_ANALYZE_COMMAND.md](docs/EXPLAIN_ANALYZE_COMMAND.md) for compl
 - Slow queries (>100ms) logged as warnings
 - Extremely slow queries (>500ms) logged with stack traces
 - N+1 query problems detected (>50 queries per request)
+- Query bindings are redacted by default (set `LOG_QUERY_BINDINGS=true` to include sanitized bindings)
 - Only active in local/staging environments
 
 **Check logs:**

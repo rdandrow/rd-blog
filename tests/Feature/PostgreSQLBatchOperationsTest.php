@@ -298,6 +298,29 @@ describe('PostgreSQL Batch Operations', function () {
             ))->toThrow(\InvalidArgumentException::class);
         });
 
+        it('generates wrapped identifiers in bulkUpdate SQL', function () {
+            $user = User::factory()->create();
+            $post = BlogPost::factory()->create(['user_id' => $user->id, 'title' => 'Original']);
+
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+
+            BlogPost::bulkUpdate([
+                $post->id => ['title' => 'Wrapped'],
+            ]);
+
+            $query = collect(DB::getQueryLog())
+                ->pluck('query')
+                ->first(fn (string $sql) => str_starts_with($sql, 'UPDATE'));
+
+            DB::disableQueryLog();
+
+            expect($query)->not->toBeNull()
+                ->and($query)->toContain('UPDATE "blog_posts"')
+                ->and($query)->toContain('"title" = CASE')
+                ->and($query)->toContain('"id" IN');
+        });
+
         it('returns zero for empty updates', function () {
             $affected = BlogPost::bulkUpdate([]);
             expect($affected)->toBe(0);
@@ -550,6 +573,27 @@ describe('PostgreSQL Batch Operations', function () {
         it('throws for an invalid keyColumn', function () {
             expect(fn () => BlogPost::bulkIncrement([1 => 1], 'reading_time', keyColumn: 'nonexistent_key'))
                 ->toThrow(\InvalidArgumentException::class);
+        });
+
+        it('generates wrapped identifiers in bulkIncrement SQL', function () {
+            $user = User::factory()->create();
+            $post = BlogPost::factory()->create(['user_id' => $user->id, 'reading_time' => 3]);
+
+            DB::flushQueryLog();
+            DB::enableQueryLog();
+
+            BlogPost::bulkIncrement([$post->id => 2], 'reading_time');
+
+            $query = collect(DB::getQueryLog())
+                ->pluck('query')
+                ->first(fn (string $sql) => str_starts_with($sql, 'UPDATE'));
+
+            DB::disableQueryLog();
+
+            expect($query)->not->toBeNull()
+                ->and($query)->toContain('UPDATE "blog_posts"')
+                ->and($query)->toContain('SET "reading_time" = CASE')
+                ->and($query)->toContain('WHEN "id" = ? THEN "reading_time" + ?');
         });
 
     });

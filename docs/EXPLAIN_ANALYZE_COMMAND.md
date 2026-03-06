@@ -27,8 +27,9 @@ php artisan db:explain {query?} [options]
 | `--format=FORMAT` | Output format: `text` or `json` | `text` |
 | `--buffers` | Show buffer usage statistics | `false` |
 | `--detailed` | Show verbose output (includes VERBOSE flag) | `false` |
-| `--costs` | Show cost estimates | `true` |
+| `--no-costs` | Exclude cost estimates from output | `false` |
 | `--no-execute` | Run EXPLAIN without ANALYZE (doesn't execute) | `false` |
+| `--allow-write` | Allow mutating statements with ANALYZE (dangerous) | `false` |
 | `--suggest` | Show optimization suggestions | `false` |
 
 ## Features
@@ -212,6 +213,21 @@ php artisan db:explain "UPDATE blog_posts SET views = views + 1 WHERE id = 1" --
 ```
 
 This runs `EXPLAIN` instead of `EXPLAIN ANALYZE`, so the query is not executed.
+
+### Safety Guard for Mutating Queries
+
+By default, mutating statements are blocked when using `EXPLAIN ANALYZE` because ANALYZE executes the statement.
+
+```bash
+# Blocked by default (returns non-zero)
+php artisan db:explain "UPDATE blog_posts SET views = views + 1 WHERE id = 1"
+
+# Safe planning mode (allowed)
+php artisan db:explain "UPDATE blog_posts SET views = views + 1 WHERE id = 1" --no-execute
+
+# Explicitly allow execution (use with care)
+php artisan db:explain "UPDATE blog_posts SET views = views + 1 WHERE id = 1" --allow-write
+```
 
 ### Complex Multi-Join Query
 

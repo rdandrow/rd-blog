@@ -13,12 +13,13 @@ Real-time monitoring that logs slow queries and detects N+1 problems automatical
 - ⚠️ Warns on queries >100ms
 - 🚨 Errors on queries >500ms (with stack trace)
 - 🔍 Detects N+1 query problems (>50 queries)
+- 🔐 Redacts query bindings by default (`LOG_QUERY_BINDINGS=false`)
 - 🌍 Environment-aware (local/staging only, zero production overhead)
 
 **Example Log:**
 ```
 [2026-02-17 02:46:38] local.WARNING: Slow query detected 
-{"sql":"SELECT pg_sleep(0.2)","bindings":[],"time":"220.63ms","connection":"pgsql"}
+{"sql":"SELECT pg_sleep(0.2)","bindings":"[REDACTED]","binding_count":0,"time":"220.63ms","connection":"pgsql"}
 ```
 
 ### 2. Performance Analysis Command (`db:analyze-performance`)
@@ -110,9 +111,8 @@ tail -1 storage/logs/laravel.log
 ## Testing Results
 
 **Test Suite Status:**
-- ✅ 809 tests passing
-- ✅ 3,125 assertions
-- ✅ 4 skipped (expected)
+- ✅ 902 tests passing
+- ✅ 3,365 assertions
 - ⚡ 8.78s execution time (12 parallel processes)
 
 **Monitoring Tests:**

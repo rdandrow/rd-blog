@@ -22,6 +22,7 @@ class ExplainQuery extends Command
                             {--detailed : Show detailed verbose output}
                             {--no-costs : Exclude cost estimates from output}
                             {--no-execute : Run EXPLAIN without ANALYZE (no execution)}
+                            {--allow-write : Allow mutating statements with EXPLAIN ANALYZE (dangerous)}
                             {--suggest : Show optimization suggestions}';
 
     /**
@@ -43,6 +44,10 @@ class ExplainQuery extends Command
 
         $query = $this->getQuery();
         if (! $query) {
+            return self::FAILURE;
+        }
+
+        if (! $this->validateQuerySafety($query)) {
             return self::FAILURE;
         }
 
@@ -99,6 +104,69 @@ class ExplainQuery extends Command
         }
 
         return trim($query);
+    }
+
+    /**
+     * Validate query safety for EXPLAIN ANALYZE execution.
+     */
+    private function validateQuerySafety(string $query): bool
+    {
+        // EXPLAIN (without ANALYZE) does not execute statements, so it is safe.
+        if ($this->option('no-execute')) {
+            return true;
+        }
+
+        // Explicit opt-in for mutating statements.
+        if ($this->option('allow-write')) {
+            return true;
+        }
+
+        if (! $this->isPotentiallyMutatingQuery($query)) {
+            return true;
+        }
+
+        $this->error('Mutating statements are blocked by default when using EXPLAIN ANALYZE.');
+        $this->line('Use --no-execute to inspect the plan safely without executing the statement.');
+        $this->line('If you intentionally want execution, re-run with --allow-write.');
+
+        return false;
+    }
+
+    /**
+     * Detect whether query text appears to be a mutating statement.
+     */
+    private function isPotentiallyMutatingQuery(string $query): bool
+    {
+        $normalized = ltrim($query);
+        $normalized = ltrim($normalized, " \t\n\r(");
+        $firstToken = strtolower((string) strtok($normalized, " \t\n\r"));
+
+        if ($firstToken === 'with') {
+            return preg_match('/\b(insert|update|delete|merge)\b/i', $normalized) === 1;
+        }
+
+        $mutatingTokens = [
+            'insert',
+            'update',
+            'delete',
+            'merge',
+            'truncate',
+            'alter',
+            'drop',
+            'create',
+            'grant',
+            'revoke',
+            'vacuum',
+            'analyze',
+            'reindex',
+            'cluster',
+            'comment',
+            'call',
+            'do',
+            'copy',
+        ];
+
+        return in_array($firstToken, $mutatingTokens, true);
     }
 
     /**

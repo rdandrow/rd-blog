@@ -158,17 +158,28 @@ trait HasBatchOperations
         if (empty($columns)) {
             return 0; // No valid columns to update
         }
+
+        // Ensure deterministic column iteration and prepare wrapped identifiers.
+        $columns = array_values($columns);
+        $grammar = $connection->getQueryGrammar();
+        $wrappedTable = $grammar->wrapTable($table);
+        $wrappedKeyColumn = $grammar->wrap($keyColumn);
+        $wrappedColumns = [];
+        foreach ($columns as $column) {
+            $wrappedColumns[$column] = $grammar->wrap($column);
+        }
         
         // Process records in chunks to avoid parameter limits and memory issues
         $totalAffected = 0;
         
-        $connection->transaction(function () use ($connection, $records, $columns, $keyColumn, $table, $chunkSize, &$totalAffected) {
+        $connection->transaction(function () use ($connection, $records, $columns, $wrappedColumns, $wrappedKeyColumn, $wrappedTable, $chunkSize, &$totalAffected) {
             foreach (array_chunk($records, $chunkSize, true) as $chunk) {
                 // Build CASE statements for each column with parameterized queries
                 $caseStatements = [];
                 $bindings = [];
                 
                 foreach ($columns as $column) {
+                    $wrappedColumn = $wrappedColumns[$column];
                     $cases = [];
                     foreach ($chunk as $id => $data) {
                         if (array_key_exists($column, $data)) {
@@ -179,23 +190,22 @@ trait HasBatchOperations
                             
                             // Handle different data types with proper parameterization
                             if ($value === null) {
-                                $cases[] = "WHEN {$keyColumn} = ? THEN NULL";
+                                $cases[] = "WHEN {$wrappedKeyColumn} = ? THEN NULL";
                             } elseif (is_bool($value)) {
-                                $cases[] = "WHEN {$keyColumn} = ? THEN ?";
+                                $cases[] = "WHEN {$wrappedKeyColumn} = ? THEN ?";
                                 $bindings[] = $value;
                             } elseif (is_array($value)) {
-                                $cases[] = "WHEN {$keyColumn} = ? THEN ?::json";
+                                $cases[] = "WHEN {$wrappedKeyColumn} = ? THEN ?::json";
                                 $bindings[] = json_encode($value);
                             } else {
-                                $cases[] = "WHEN {$keyColumn} = ? THEN ?";
+                                $cases[] = "WHEN {$wrappedKeyColumn} = ? THEN ?";
                                 $bindings[] = $value;
                             }
                         }
                     }
                     
                     if (!empty($cases)) {
-                        // Column name is validated above, safe to interpolate
-                        $caseStatements[] = "{$column} = CASE " . implode(' ', $cases) . " ELSE {$column} END";
+                        $caseStatements[] = "{$wrappedColumn} = CASE " . implode(' ', $cases) . " ELSE {$wrappedColumn} END";
                     }
                 }
 
@@ -209,7 +219,7 @@ trait HasBatchOperations
                 $bindings = array_merge($bindings, $ids);
                 
                 $updates = implode(', ', $caseStatements);
-                $query = "UPDATE {$table} SET {$updates} WHERE {$keyColumn} IN ({$placeholders})";
+                $query = "UPDATE {$wrappedTable} SET {$updates} WHERE {$wrappedKeyColumn} IN ({$placeholders})";
                 
                 $totalAffected += $connection->affectingStatement($query, $bindings);
             }
@@ -371,8 +381,9 @@ trait HasBatchOperations
             throw new \InvalidArgumentException('No valid columns provided for insert');
         }
         
-        // Column names are validated above, safe to use in query
-        $columnList = implode(',', array_map(fn($col) => '"' . $col . '"', $columns));
+        // Column names are validated above, and wrapped via grammar for consistency.
+        $grammar = $connection->getQueryGrammar();
+        $columnList = implode(',', array_map(fn($col) => $grammar->wrap($col), $columns));
         
         // Build values
         $valueSets = [];
@@ -400,7 +411,6 @@ trait HasBatchOperations
         // Use the connection's query grammar to properly quote identifiers.
         // This handles reserved words and unusual names consistently with how
         // the insert column list is already quoted above.
-        $grammar = $connection->getQueryGrammar();
         $quotedTable = $grammar->wrap($table);
         $quotedReturning = $grammar->wrap($returningColumn);
 
@@ -442,30 +452,35 @@ trait HasBatchOperations
         if (!in_array($keyColumn, $validColumns, true)) {
             throw new \InvalidArgumentException("Invalid key column: {$keyColumn}");
         }
+
+        $grammar = $connection->getQueryGrammar();
+        $wrappedTable = $grammar->wrapTable($table);
+        $wrappedColumn = $grammar->wrap($column);
+        $wrappedKeyColumn = $grammar->wrap($keyColumn);
         
         // Process increments in chunks to avoid parameter limits
         $totalAffected = 0;
         
-        $connection->transaction(function () use ($connection, $increments, $column, $keyColumn, $table, $chunkSize, &$totalAffected) {
+        $connection->transaction(function () use ($connection, $increments, $wrappedColumn, $wrappedKeyColumn, $wrappedTable, $chunkSize, &$totalAffected) {
             foreach (array_chunk($increments, $chunkSize, true) as $chunk) {
                 // Build CASE statement with parameterized queries
                 $cases = [];
                 $bindings = [];
                 
                 foreach ($chunk as $id => $amount) {
-                    $cases[] = "WHEN {$keyColumn} = ? THEN {$column} + ?";
+                    $cases[] = "WHEN {$wrappedKeyColumn} = ? THEN {$wrappedColumn} + ?";
                     $bindings[] = $id;
                     $bindings[] = $amount;
                 }
                 
-                $caseStatement = "CASE " . implode(' ', $cases) . " ELSE {$column} END";
+                $caseStatement = "CASE " . implode(' ', $cases) . " ELSE {$wrappedColumn} END";
                 
                 // Add IDs for WHERE clause
                 $ids = array_keys($chunk);
                 $placeholders = implode(',', array_fill(0, count($ids), '?'));
                 $bindings = array_merge($bindings, $ids);
                 
-                $query = "UPDATE {$table} SET {$column} = {$caseStatement} WHERE {$keyColumn} IN ({$placeholders})";
+                $query = "UPDATE {$wrappedTable} SET {$wrappedColumn} = {$caseStatement} WHERE {$wrappedKeyColumn} IN ({$placeholders})";
                 
                 $totalAffected += $connection->affectingStatement($query, $bindings);
             }

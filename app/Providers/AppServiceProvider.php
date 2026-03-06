@@ -67,9 +67,14 @@ class AppServiceProvider extends ServiceProvider
         // request for their entire lifetime, so the counter would never be reset and
         // would trigger false N+1 warnings — skip counter/N+1 logic in those contexts.
         $isHttpRequest = ! app()->runningInConsole();
+        $logBindings = $this->shouldLogQueryBindings();
 
-        DB::listen(function ($query) use ($enableN1Detection, $isHttpRequest) {
+        DB::listen(function ($query) use ($enableN1Detection, $isHttpRequest, $logBindings) {
             $request = request();
+
+            $bindings = $logBindings
+                ? $this->sanitizeBindings($query->bindings)
+                : '[REDACTED]';
 
             // Increment query counter (scoped to current HTTP request only)
             if ($enableN1Detection && $isHttpRequest && $request) {
@@ -81,7 +86,8 @@ class AppServiceProvider extends ServiceProvider
             if ($query->time > 100) {
                 Log::warning('Slow query detected', [
                     'sql' => $query->sql,
-                    'bindings' => $query->bindings,
+                    'bindings' => $bindings,
+                    'binding_count' => count($query->bindings),
                     'time' => $query->time . 'ms',
                     'connection' => $query->connectionName,
                 ]);
@@ -91,7 +97,8 @@ class AppServiceProvider extends ServiceProvider
             if ($query->time > 500) {
                 Log::error('Extremely slow query detected', [
                     'sql' => $query->sql,
-                    'bindings' => $query->bindings,
+                    'bindings' => $bindings,
+                    'binding_count' => count($query->bindings),
                     'time' => $query->time . 'ms',
                     'connection' => $query->connectionName,
                     'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10),
@@ -112,5 +119,35 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         });
+    }
+
+    /**
+     * Whether query bindings should be included in logs.
+     */
+    protected function shouldLogQueryBindings(): bool
+    {
+        return (bool) env('LOG_QUERY_BINDINGS', false);
+    }
+
+    /**
+     * Sanitize query bindings to avoid logging sensitive values directly.
+     */
+    protected function sanitizeBindings(array $bindings): array
+    {
+        return array_map(function ($binding) {
+            if (is_null($binding) || is_bool($binding) || is_int($binding) || is_float($binding)) {
+                return $binding;
+            }
+
+            if ($binding instanceof \DateTimeInterface) {
+                return $binding->format(DATE_ATOM);
+            }
+
+            if (is_string($binding)) {
+                return '[REDACTED]';
+            }
+
+            return '[REDACTED]';
+        }, $bindings);
     }
 }

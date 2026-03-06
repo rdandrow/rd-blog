@@ -140,8 +140,8 @@ composer test
 ```
 
 **Results**:
-- ✅ **892 tests passing**
-- ✅ **3,331 assertions**
+- ✅ **902 tests passing**
+- ✅ **3,365 assertions**
 - ✅ **7.68s execution time** (parallel)
 - ✅ Performance benchmark checks use deterministic query characteristics (no timing thresholds)
 

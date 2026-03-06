@@ -67,6 +67,50 @@ describe('EXPLAIN ANALYZE Command', function () {
             ->assertExitCode(0);
     });
 
+    test('blocks mutating query by default when no-execute is not set', function () {
+        $this->artisan('db:explain', [
+            'query' => 'UPDATE blog_posts SET updated_at = NOW() WHERE id = -1',
+        ])
+            ->expectsOutput('Mutating statements are blocked by default when using EXPLAIN ANALYZE.')
+            ->assertExitCode(1);
+    });
+
+    test('allows mutating query with no-execute for safe planning', function () {
+        $this->artisan('db:explain', [
+            'query' => 'UPDATE blog_posts SET updated_at = NOW() WHERE id = -1',
+            '--no-execute' => true,
+        ])
+            ->expectsOutput('🔍 Analyzing Query Plan...')
+            ->assertExitCode(0);
+    });
+
+    test('allows mutating query when allow-write is explicitly set', function () {
+        $this->artisan('db:explain', [
+            'query' => 'UPDATE blog_posts SET updated_at = NOW() WHERE id = -1',
+            '--allow-write' => true,
+        ])
+            ->expectsOutput('🔍 Analyzing Query Plan...')
+            ->assertExitCode(0);
+    });
+
+    test('blocks mutating CTE by default', function () {
+        $query = <<<'SQL'
+            WITH changed AS (
+                UPDATE blog_posts
+                SET updated_at = NOW()
+                WHERE id = -1
+                RETURNING id
+            )
+            SELECT * FROM changed
+            SQL;
+
+        $this->artisan('db:explain', [
+            'query' => $query,
+        ])
+            ->expectsOutput('Mutating statements are blocked by default when using EXPLAIN ANALYZE.')
+            ->assertExitCode(1);
+    });
+
     test('supports JSON format output', function () {
         $exitCode = $this->artisan('db:explain', [
             'query' => 'SELECT * FROM blog_posts LIMIT 1',

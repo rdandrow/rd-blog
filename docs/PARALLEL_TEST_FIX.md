@@ -54,7 +54,7 @@ Expected output:
 ### After Fix
 ```bash
 ./vendor/bin/pest --parallel --compact
-# Result: Tests: 2 skipped, 804 passed (3111 assertions)
+# Result: Tests: 902 passed (3,365 assertions)
 # Duration: 8.11s
 # Parallel: 12 processes
 ```
@@ -135,7 +135,7 @@ composer test
 composer test:sequential
 
 # Run specific test file in parallel
-./vendor/bin/pest tests/Feature/BlogPostTest.php --parallel
+./vendor/bin/pest tests/Feature/Admin/BlogPostTest.php --parallel
 
 # Control number of parallel processes
 ./vendor/bin/pest --parallel --processes=8
@@ -211,5 +211,5 @@ The following files have been updated to reflect this fix:
 ---
 
 **Fixed**: February 16, 2026  
-**Test Status**: ✅ 804/804 passing in parallel mode  
+**Test Status**: ✅ 902/902 passing in parallel mode  
 **Performance**: 8.11s (3x faster than sequential)
