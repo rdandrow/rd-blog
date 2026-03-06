@@ -6,7 +6,7 @@ A modern full-stack blog platform built with Laravel 12 and Vue.js 3, featuring 
 
 **Backend:** Laravel 12 • PHP 8.2+ • Inertia.js • PostgreSQL 16  
 **Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 7  
-**Testing:** Pest PHP (902 tests) • Vitest (1,785 tests) • Feature & Unit Tests
+**Testing:** Pest PHP (906 tests) • Vitest (1,785 tests) • Feature & Unit Tests
 
 ## Key Features
 
@@ -196,7 +196,7 @@ Visit `http://localhost:8000`
 
 ## Testing
 
-**Backend Test Suite:** 902 tests • 3,373 assertions • ~9.23s parallel (`composer test`)  
+**Backend Test Suite:** 906 tests • 3,382 assertions • ~9.66s parallel (`composer test`)  
 **Frontend Test Suite:** 1,784 passed (+1 skipped) from 1,785 total • ~18.80s execution (`npm run test:run`)
 
 ### Backend Tests (Pest PHP)
@@ -228,9 +228,9 @@ composer test:coverage
 ```
 
 **Parallel Testing Performance:**
-- Sequential: ~24s (1 process)
-- Parallel: ~8s (12 processes)
-- Speedup: **3x faster** ⚡
+- Current full-suite baseline: ~9.66s (12 processes)
+- Historical benchmark (initial parallel rollout): ~24s sequential → ~8s parallel
+- Observed speedup: **~3x faster** ⚡
 
 **Note:** Parallel testing requires PostgreSQL user to have `CREATEDB` privilege.
 See [docs/PARALLEL_TEST_FIX.md](docs/PARALLEL_TEST_FIX.md) for setup details.
@@ -379,7 +379,10 @@ DB_PORT=5432
 DB_DATABASE=rd_blog_dev
 DB_USERNAME=rd_blog_user
 DB_PASSWORD=your_secure_password
+DB_SSLMODE=prefer
 ```
+
+For production with TLS, set `DB_SSLMODE=require` (or `verify-ca` / `verify-full` when cert validation is configured).
 
 **Create PostgreSQL user:**
 ```bash
@@ -432,6 +435,9 @@ php artisan db:explain "UPDATE blog_posts SET views = views + 1" --no-execute
 
 # Explicitly allow mutating statements with ANALYZE (dangerous)
 php artisan db:explain "UPDATE blog_posts SET views = views + 1" --allow-write
+
+# Stacked/multi-statement SQL is rejected (single statement only)
+php artisan db:explain "SELECT 1; SELECT 2"
 ```
 
 **Features:**
@@ -439,6 +445,7 @@ php artisan db:explain "UPDATE blog_posts SET views = views + 1" --allow-write
 - ⚡ Performance assessment (fast/good/slow/very slow)
 - 🔍 Automatic optimization suggestions
 - 📊 Multiple output formats (text, JSON)
+- 🛡️ Safety guards for both mutating ANALYZE queries and stacked/multi-statement input
 
 See [docs/EXPLAIN_ANALYZE_COMMAND.md](docs/EXPLAIN_ANALYZE_COMMAND.md) for complete guide.
 

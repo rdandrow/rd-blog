@@ -42,11 +42,13 @@ protected function enableQueryMonitoring(): void
 
    $enableN1Detection = config('app.debug');
    $isHttpRequest = ! app()->runningInConsole();
-   $logBindings = (bool) env('LOG_QUERY_BINDINGS', false);
+   $logBindings = $this->shouldLogQueryBindings();
 
    DB::listen(function ($query) use ($enableN1Detection, $isHttpRequest, $logBindings) {
       $request = request();
-      $bindings = $logBindings ? '[SANITIZED]' : '[REDACTED]';
+        $bindings = $logBindings
+           ? $this->sanitizeBindings($query->bindings)
+           : '[REDACTED]';
 
         // Slow query warning (>100ms)
         if ($query->time > 100) {
@@ -85,6 +87,23 @@ protected function enableQueryMonitoring(): void
             }
         }
     });
+}
+
+protected function shouldLogQueryBindings(): bool
+{
+   $value = getenv('LOG_QUERY_BINDINGS');
+
+   if ($value === false) {
+      $value = $_ENV['LOG_QUERY_BINDINGS'] ?? $_SERVER['LOG_QUERY_BINDINGS'] ?? null;
+   }
+
+   if ($value === null) {
+      return false;
+   }
+
+   $parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+   return $parsed ?? false;
 }
 ```
 
@@ -234,6 +253,8 @@ php artisan db:explain {query?} [options]
 | `--allow-write` | Allow mutating statements with EXPLAIN ANALYZE |
 | `--suggest` | Show optimization suggestions |
 
+Safety note: `db:explain` accepts a single statement per invocation. Stacked/multi-statement SQL input is rejected, even when `--allow-write` is set.
+
 #### Features
 
 1. **Color-Coded Output**:
@@ -316,6 +337,11 @@ php artisan db:explain "SELECT * FROM users" --format=json
 **EXPLAIN Without Execution (for UPDATEs/DELETEs):**
 ```bash
 php artisan db:explain "UPDATE blog_posts SET views = views + 1" --no-execute
+```
+
+**Rejected Multi-Statement Input:**
+```bash
+php artisan db:explain "SELECT * FROM blog_posts; SELECT * FROM users"
 ```
 
 **Complex Query with Multiple Options:**

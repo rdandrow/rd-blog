@@ -644,17 +644,15 @@ describe('PostgreSQL Batch Operations', function () {
             }))->toThrow(\InvalidArgumentException::class);
         });
 
-        it('rolls back on exception', function () {
+        it('bubbles exceptions from callback and preserves rollback behavior', function () {
             $user = User::factory()->create();
             BlogPost::factory(15)->create(['user_id' => $user->id]);
 
-            $result = BlogPost::processBatch(5, function ($posts) {
+            expect(fn () => BlogPost::processBatch(5, function ($posts) {
                 if ($posts->count() > 0) {
-                    throw new \Exception('Test exception');
+                    throw new \RuntimeException('Test exception');
                 }
-            });
-
-            expect($result)->toBeFalse();
+            }))->toThrow(\RuntimeException::class, 'Test exception');
         });
 
     });
@@ -705,6 +703,15 @@ class TestModelWithBatchOperations extends \Illuminate\Database\Eloquent\Model
 {
     use HasBatchOperations;
 
+    protected $table = 'blog_posts';
+    protected $guarded = [];
+}
+
+class TestPgsqlModelWithBatchOperations extends \Illuminate\Database\Eloquent\Model
+{
+    use HasBatchOperations;
+
+    protected $connection = 'pgsql';
     protected $table = 'blog_posts';
     protected $guarded = [];
 }
@@ -784,6 +791,19 @@ describe('Column Cache', function () {
 
         expect($affected)->toBe(1);
         expect($post->fresh()->title)->toBe('Updated After Clear');
+    });
+
+    it('keys cache by runtime connection name when default config differs', function () {
+        $cacheProperty = (new \ReflectionClass(TestPgsqlModelWithBatchOperations::class))->getProperty('columnCache');
+        $cacheProperty->setAccessible(true);
+
+        TestPgsqlModelWithBatchOperations::bulkDelete([-1]);
+
+        $keys = array_keys($cacheProperty->getValue());
+        $runtimeConnectionName = (new TestPgsqlModelWithBatchOperations)->getConnection()->getName();
+
+        expect($keys)->not->toBeEmpty();
+        expect(collect($keys)->contains(fn ($key) => str_starts_with($key, $runtimeConnectionName . '.')))->toBeTrue();
     });
 
 });

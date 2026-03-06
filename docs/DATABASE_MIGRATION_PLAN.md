@@ -153,6 +153,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO rd_blog_user
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_PORT=5432
+DB_SSLMODE=prefer
 DB_DATABASE=rd_blog_dev
 DB_USERNAME=rd_blog_user
 DB_PASSWORD=your_secure_password
@@ -178,9 +179,11 @@ DB_PASSWORD=your_secure_password
     'prefix' => '',
     'prefix_indexes' => true,
     'search_path' => 'public',
-    'sslmode' => 'prefer',
+    'sslmode' => env('DB_SSLMODE', 'prefer'),
 ],
 ```
+
+For production deployments with TLS, set `DB_SSLMODE=require` (or `verify-ca` / `verify-full` when certificate validation is configured).
 
 #### 1.5 Update Testing Configuration
 
@@ -225,7 +228,7 @@ php artisan db:seed
 # Backend tests
 ./vendor/bin/pest
 
-# Should pass: 902 tests (3,373 assertions)
+# Should pass: 906 tests (3,382 assertions)
 ```
 
 #### 2.4 Manual Testing Checklist

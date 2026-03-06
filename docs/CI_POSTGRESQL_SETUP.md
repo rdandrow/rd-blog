@@ -85,6 +85,8 @@ This guide documents the PostgreSQL configuration for CI/CD environments to ensu
 
 **Note:** `DB_CONNECTION=pgsql`, `DB_HOST=127.0.0.1`, and `DB_PORT=5432` are already present in `.env.example` — no string replacement or extra `echo` lines needed.
 
+`DB_SSLMODE` defaults to `prefer` for local/CI convenience. For production, prefer `require` or certificate-verified modes (`verify-ca` / `verify-full`).
+
 ### Migration Execution
 
 ```yaml
@@ -414,7 +416,7 @@ Service startup:     ~10-15 seconds
 PHP setup:           ~5 seconds
 Dependencies:        ~30-60 seconds (with cache)
 Migrations:          ~5-10 seconds
-Tests (902 tests):   ~12-20 seconds
+Tests (906 tests):   ~12-20 seconds
 Total:               ~60-100 seconds
 ```
 
@@ -439,6 +441,6 @@ Total:               ~60-100 seconds
 ✅ **Database credentials** properly configured  
 ✅ **Migrations** run before tests  
 ✅ **Parallel testing** enabled (CREATEDB privilege)  
-✅ **All 902 tests** should pass in CI  
+✅ **All 906 tests** should pass in CI  
 
 **Key Takeaway:** The PostgreSQL service must be configured in the GitHub Actions workflow with proper health checks, and database credentials must be set before running migrations and tests.

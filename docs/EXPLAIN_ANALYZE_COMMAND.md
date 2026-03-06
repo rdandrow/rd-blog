@@ -218,6 +218,8 @@ This runs `EXPLAIN` instead of `EXPLAIN ANALYZE`, so the query is not executed.
 
 By default, mutating statements are blocked when using `EXPLAIN ANALYZE` because ANALYZE executes the statement.
 
+In addition, stacked/multi-statement SQL input is always rejected (even with `--allow-write`). The command accepts exactly one statement, with an optional trailing semicolon.
+
 ```bash
 # Blocked by default (returns non-zero)
 php artisan db:explain "UPDATE blog_posts SET views = views + 1 WHERE id = 1"
@@ -227,6 +229,9 @@ php artisan db:explain "UPDATE blog_posts SET views = views + 1 WHERE id = 1" --
 
 # Explicitly allow execution (use with care)
 php artisan db:explain "UPDATE blog_posts SET views = views + 1 WHERE id = 1" --allow-write
+
+# Rejected: multiple statements in one invocation
+php artisan db:explain "SELECT * FROM blog_posts; SELECT * FROM users"
 ```
 
 ### Complex Multi-Join Query
@@ -418,6 +423,9 @@ diff before.txt after.txt
 ```bash
 # Safe: analyze without executing
 php artisan db:explain "DELETE FROM blog_posts WHERE created_at < '2020-01-01'" --no-execute
+
+# Keep one statement per run (stacked statements are blocked)
+php artisan db:explain "SELECT * FROM blog_posts WHERE is_published = true"
 ```
 
 ### 5. Automate Performance Testing

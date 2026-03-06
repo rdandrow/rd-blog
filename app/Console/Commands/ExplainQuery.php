@@ -347,7 +347,7 @@ class ExplainQuery extends Command
         if ($timeMs < 500) {
             return 'red';
         }
-        return 'red';
+        return 'magenta';
     }
 
     /**

@@ -345,6 +345,9 @@ public static function processBatch(
 **Validation**:
 - Invalid chunk sizes now fail fast with `InvalidArgumentException` (e.g., `0`, negative values)
 
+**Error behavior**:
+- Exceptions thrown inside the callback are propagated to the caller (not swallowed), and the surrounding transaction is rolled back.
+
 **Example - Process All Posts**:
 ```php
 $success = BlogPost::processBatch(100, function ($posts) {

@@ -261,9 +261,11 @@ trait HasBatchOperations
      */
     protected static function getValidColumnNames($model): array
     {
+        $connectionInstance = $model->getConnection();
+
         // Create cache key with connection name and schema-qualified table
         // This prevents cache collision across connections and schemas
-        $connection = $model->getConnectionName() ?? config('database.default');
+        $connection = $connectionInstance->getName() ?: ($model->getConnectionName() ?? config('database.default'));
         $table = $model->getTable();
         
         // Include schema in cache key for PostgreSQL multi-schema support
@@ -276,7 +278,7 @@ trait HasBatchOperations
         }
         
         // Get columns from database schema using the model's connection
-        $columns = $model->getConnection()->getSchemaBuilder()->getColumnListing($table);
+        $columns = $connectionInstance->getSchemaBuilder()->getColumnListing($table);
         
         self::$columnCache[$cacheKey] = $columns;
         
@@ -342,6 +344,7 @@ trait HasBatchOperations
      * @param int $chunkSize Number of records per batch
      * @param callable $callback Function to execute on each chunk
      * @return bool Success status
+     * @throws \Throwable
      */
     public static function processBatch(int $chunkSize, callable $callback): bool
     {
@@ -349,15 +352,12 @@ trait HasBatchOperations
 
         $model = new static;
         $connection = $model->getConnection();
-        
-        try {
-            $connection->transaction(function () use ($model, $chunkSize, $callback) {
-                $model->newQuery()->chunk($chunkSize, $callback);
-            });
-            return true;
-        } catch (\Exception $e) {
-            return false;
-        }
+
+        $connection->transaction(function () use ($model, $chunkSize, $callback) {
+            $model->newQuery()->chunk($chunkSize, $callback);
+        });
+
+        return true;
     }
 
     /**

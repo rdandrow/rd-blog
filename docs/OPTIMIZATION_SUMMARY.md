@@ -122,8 +122,8 @@ public function getAllPublishedPosts(array $filters = []): Collection
 **All optimizations tested and verified:**
 
 ```
-Tests:    902 passed (3,373 assertions)
-Duration: 11.54s
+Tests:    906 passed (3,382 assertions)
+Duration: 9.66s
 Parallel: 12 processes
 ```
 
@@ -342,7 +342,7 @@ php artisan migrate:rollback --path=database/migrations/2026_02_*
 
 ## Success Metrics
 
-✅ **902 tests passing** (3,373 assertions)  
+✅ **906 tests passing** (3,382 assertions)  
 ✅ **30x faster** tag-filtered queries  
 ✅ **16x faster** published post listings  
 ✅ **90x faster** cached repeated queries  

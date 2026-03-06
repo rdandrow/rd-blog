@@ -140,9 +140,9 @@ composer test
 ```
 
 **Results**:
-- ✅ **902 tests passing**
-- ✅ **3,373 assertions**
-- ✅ **7.68s execution time** (parallel)
+- ✅ **906 tests passing**
+- ✅ **3,382 assertions**
+- ✅ **7.68s execution time** (parallel, historical phase benchmark)
 - ✅ Performance benchmark checks use deterministic query characteristics (no timing thresholds)
 - ✅ Unit coverage validates both PostgreSQL and non-PostgreSQL search branches via connection-aware driver detection
 

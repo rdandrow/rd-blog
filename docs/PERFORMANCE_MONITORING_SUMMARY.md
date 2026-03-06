@@ -13,6 +13,7 @@ Real-time monitoring that logs slow queries and detects N+1 problems automatical
 - ⚠️ Warns on queries >100ms
 - 🚨 Errors on queries >500ms (with stack trace)
 - 🔍 Detects N+1 query problems (>50 queries)
+- 🌐 Scopes N+1 detection to HTTP requests (avoids console/test false positives)
 - 🔐 Redacts query bindings by default (`LOG_QUERY_BINDINGS=false`)
 - 🌍 Environment-aware (local/staging only, zero production overhead)
 
@@ -111,9 +112,9 @@ tail -1 storage/logs/laravel.log
 ## Testing Results
 
 **Test Suite Status:**
-- ✅ 902 tests passing
-- ✅ 3,373 assertions
-- ⚡ 8.78s execution time (12 parallel processes)
+- ✅ 906 tests passing
+- ✅ 3,382 assertions
+- ⚡ 9.66s execution time (12 parallel processes)
 
 **Monitoring Tests:**
 - ✅ Slow query detection works (>100ms → WARNING)

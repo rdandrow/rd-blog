@@ -54,15 +54,17 @@ Expected output:
 ### After Fix
 ```bash
 ./vendor/bin/pest --parallel --compact
-# Result: Tests: 902 passed (3,373 assertions)
+# Result: Tests: 906 passed (3,382 assertions)
 # Duration: 8.11s
 # Parallel: 12 processes
 ```
 
-### Performance Improvement
+### Performance Improvement (Historical Benchmark - February 2026)
 - **Sequential execution**: 24.28s (`./vendor/bin/pest`)
 - **Parallel execution**: 8.11s (`./vendor/bin/pest --parallel`)
 - **Speedup**: **3x faster** ⚡
+
+Current backend full-suite baseline is approximately **9.66s** in parallel (`composer test`).
 
 ## Complete Setup for New Environments
 
@@ -211,5 +213,5 @@ The following files have been updated to reflect this fix:
 ---
 
 **Fixed**: February 16, 2026  
-**Test Status**: ✅ 902/902 passing in parallel mode  
+**Test Status**: ✅ 906/906 passing in parallel mode  
 **Performance**: 8.11s (3x faster than sequential)
