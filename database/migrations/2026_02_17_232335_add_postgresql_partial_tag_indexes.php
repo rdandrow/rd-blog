@@ -6,6 +6,11 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
+     * PostgreSQL CREATE INDEX CONCURRENTLY cannot run inside a transaction.
+     */
+    public $withinTransaction = false;
+
+    /**
      * Run the migrations.
      * 
      * Partial tag indexes optimize queries for frequently accessed tags.
@@ -90,7 +95,7 @@ return new class extends Migration
         if ($includeDate) {
             // Composite index: tag filter + date ordering
             DB::statement("
-                CREATE INDEX {$indexName}
+                CREATE INDEX CONCURRENTLY IF NOT EXISTS {$indexName}
                 ON blog_posts (published_at DESC)
                 WHERE is_published = true 
                 AND (tags::jsonb) @> '{$tagJsonLiteral}'::jsonb
@@ -98,7 +103,7 @@ return new class extends Migration
         } else {
             // GIN index: optimized for tag containment queries
             DB::statement("
-                CREATE INDEX {$indexName}
+                CREATE INDEX CONCURRENTLY IF NOT EXISTS {$indexName}
                 ON blog_posts USING GIN ((tags::jsonb) jsonb_path_ops)
                 WHERE is_published = true 
                 AND (tags::jsonb) @> '{$tagJsonLiteral}'::jsonb
@@ -123,13 +128,13 @@ return new class extends Migration
 
         foreach ($hotTags as $tag) {
             $indexName = 'blog_posts_tag_' . strtolower(str_replace(['.', ' '], '_', $tag)) . '_index';
-            DB::statement("DROP INDEX IF EXISTS {$indexName}");
+            DB::statement("DROP INDEX CONCURRENTLY IF EXISTS {$indexName}");
         }
 
         // Drop composite tag + date indexes
         foreach (['Laravel', 'PHP', 'JavaScript', 'Vue.js', 'Tutorial'] as $tag) {
             $indexName = 'blog_posts_tag_' . strtolower(str_replace(['.', ' '], '_', $tag)) . '_date_index';
-            DB::statement("DROP INDEX IF EXISTS {$indexName}");
+            DB::statement("DROP INDEX CONCURRENTLY IF EXISTS {$indexName}");
         }
     }
 };

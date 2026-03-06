@@ -675,7 +675,7 @@ DROP INDEX IF EXISTS blog_posts_published_tags_index;
 ```sql
 -- For full-text search with metadata
 CREATE INDEX blog_posts_search_covering_index 
-ON blog_posts USING GIN (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(content, '')))
+ON blog_posts USING GIN (to_tsvector('<configured_language>', coalesce(title, '') || ' ' || coalesce(content, '')))
 INCLUDE (id, title, excerpt, published_at, user_id)
 WHERE is_published = true;
 ```

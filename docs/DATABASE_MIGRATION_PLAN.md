@@ -339,36 +339,44 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    public $withinTransaction = false;
+
     public function up(): void
     {
+        $language = (string) config('database.full_text_search.language', 'english');
+
+        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $language)) {
+            throw new RuntimeException("Invalid full-text search language config: {$language}");
+        }
+
         // Full-text search on blog posts
         DB::statement("
-            CREATE INDEX blog_posts_search_idx ON blog_posts 
-            USING GIN(to_tsvector('english', title || ' ' || excerpt || ' ' || content))
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_search_idx ON blog_posts 
+            USING GIN(to_tsvector('{$language}', title || ' ' || excerpt || ' ' || content))
         ");
         
         // Optimize tag searches (GIN index for JSON)
-        DB::statement("CREATE INDEX blog_posts_tags_idx ON blog_posts USING GIN(tags)");
+        DB::statement("CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_tags_idx ON blog_posts USING GIN(tags)");
         
         // Composite indexes for common queries
         DB::statement("
-            CREATE INDEX blog_posts_published_at_idx 
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_published_at_idx 
             ON blog_posts (is_published, published_at DESC) 
             WHERE is_published = true
         ");
         
         DB::statement("
-            CREATE INDEX comments_post_parent_idx 
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS comments_post_parent_idx 
             ON comments (blog_post_id, parent_id, created_at DESC)
         ");
     }
     
     public function down(): void
     {
-        DB::statement("DROP INDEX IF EXISTS blog_posts_search_idx");
-        DB::statement("DROP INDEX IF EXISTS blog_posts_tags_idx");
-        DB::statement("DROP INDEX IF EXISTS blog_posts_published_at_idx");
-        DB::statement("DROP INDEX IF EXISTS comments_post_parent_idx");
+        DB::statement("DROP INDEX CONCURRENTLY IF EXISTS blog_posts_search_idx");
+        DB::statement("DROP INDEX CONCURRENTLY IF EXISTS blog_posts_tags_idx");
+        DB::statement("DROP INDEX CONCURRENTLY IF EXISTS blog_posts_published_at_idx");
+        DB::statement("DROP INDEX CONCURRENTLY IF EXISTS comments_post_parent_idx");
     }
 };
 ```
@@ -382,10 +390,11 @@ public function applyFilters(Builder $query, array $filters): Builder
     // Use PostgreSQL full-text search instead of LIKE
     if ($search = $filters['search'] ?? null) {
         if (config('database.default') === 'pgsql') {
+                $language = config('database.full_text_search.language', 'english');
             $query->whereRaw("
-                to_tsvector('english', title || ' ' || excerpt || ' ' || content) 
-                @@ plainto_tsquery('english', ?)
-            ", [$search]);
+                to_tsvector(?, title || ' ' || excerpt || ' ' || content) 
+                @@ plainto_tsquery(?, ?)
+            ", [$language, $language, $search]);
         } else {
             // Fallback for SQLite (testing)
             $query->where(function (Builder $q) use ($search) {

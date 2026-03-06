@@ -55,11 +55,12 @@ Complete PostgreSQL optimization implementation including specialized indexes, f
 ```php
 // BlogPostService.php
 if (config('database.default') === 'pgsql') {
+   $language = config('database.full_text_search.language', 'english');
     $query->whereRaw(
-        "to_tsvector('english', coalesce(title, '') || ' ' || 
-         coalesce(excerpt, '') || ' ' || coalesce(content, '')) 
-         @@ plainto_tsquery('english', ?)",
-        [$search]
+      "to_tsvector(?, coalesce(title, '') || ' ' || 
+       coalesce(excerpt, '') || ' ' || coalesce(content, '')) 
+       @@ plainto_tsquery(?, ?)",
+      [$language, $language, $search]
     );
 }
 ```

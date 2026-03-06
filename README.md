@@ -6,7 +6,7 @@ A modern full-stack blog platform built with Laravel 12 and Vue.js 3, featuring 
 
 **Backend:** Laravel 12 • PHP 8.2+ • Inertia.js • PostgreSQL 16  
 **Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 7  
-**Testing:** Pest PHP (875 tests) • Vitest (1,774 tests) • Feature & Unit Tests
+**Testing:** Pest PHP (892 tests) • Vitest (1,784 tests) • Feature & Unit Tests
 
 ## Key Features
 
@@ -196,8 +196,8 @@ Visit `http://localhost:8000`
 
 ## Testing
 
-**Backend Test Suite:** 890 tests • 3326 assertions • ~8s parallel / ~24s sequential  
-**Frontend Test Suite:** 1,784 tests • 5,000+ assertions • ~35s execution
+**Backend Test Suite:** 892 tests • 3,331 assertions • ~8s parallel / ~24s sequential  
+**Frontend Test Suite:** 1,784 tests passed (+1 skipped) • 5,000+ assertions • ~35s execution
 
 ### Backend Tests (Pest PHP)
 
@@ -299,6 +299,39 @@ Default credentials used when secrets are absent:
 If you want CI to use different credentials (e.g. on a private fork), add any or all three as repository secrets under **Settings → Secrets and variables → Actions** and they will take precedence over the defaults.
 
 See [docs/CI_POSTGRESQL_SETUP.md](docs/CI_POSTGRESQL_SETUP.md) for the full CI PostgreSQL setup guide.
+
+CI also runs `php artisan db:check-fts-language` after migrations to ensure the configured full-text search language (`DB_FTS_LANGUAGE`) matches the language used by the `blog_posts_search_index`. If they diverge, CI fails with remediation guidance.
+
+**If CI fails with an FTS language mismatch:**
+
+```bash
+# 1) Set your desired language
+DB_FTS_LANGUAGE=english
+
+# 2) Create a migration to rebuild the FTS index with that language
+php artisan make:migration rebuild_blog_posts_search_index_language
+```
+
+```php
+public $withinTransaction = false;
+
+// up()
+$language = (string) config('database.full_text_search.language', 'english');
+if (!preg_match('/^[a-zA-Z0-9_.]+$/', $language)) {
+    throw new RuntimeException("Invalid full-text search language config: {$language}");
+}
+
+DB::statement('DROP INDEX CONCURRENTLY IF EXISTS blog_posts_search_index');
+DB::statement("CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_search_index
+  ON blog_posts USING GIN (
+    to_tsvector('{$language}', coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, ''))
+  )");
+
+// down() (optional rollback)
+DB::statement('DROP INDEX CONCURRENTLY IF EXISTS blog_posts_search_index');
+```
+
+After running the migration, re-run `php artisan db:check-fts-language` to confirm alignment.
 
 ## Production Deployment
 

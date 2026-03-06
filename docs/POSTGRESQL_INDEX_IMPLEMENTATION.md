@@ -61,7 +61,7 @@ Successfully added 10 PostgreSQL-specific indexes to optimize query performance 
 
 ✅ **Migration Applied**: Successfully ran `php artisan migrate`  
 ✅ **Indexes Created**: Verified all 10 indexes exist in PostgreSQL  
-✅ **Tests Pass**: All 804 Pest tests passing (including 5 new index tests)  
+✅ **Tests Pass**: All 892 Pest tests passing (including index and optimization coverage)  
 ✅ **No Regressions**: Performance maintained or improved  
 ✅ **Documentation**: Comprehensive guide created  
 
@@ -78,9 +78,9 @@ ON blog_posts USING GIN ((tags::jsonb) jsonb_path_ops)
 
 ### 2. Full-Text Search Index
 ```sql
-CREATE INDEX blog_posts_search_index 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_search_index 
 ON blog_posts USING GIN (
-    to_tsvector('english', 
+    to_tsvector('<configured_language>', 
         coalesce(title, '') || ' ' || 
         coalesce(excerpt, '') || ' ' || 
         coalesce(content, '')
@@ -89,11 +89,12 @@ ON blog_posts USING GIN (
 ```
 - Combines all searchable fields into one tsvector
 - English language tokenization
-- **Future Enhancement**: Update queries to use `@@` operator instead of `ILIKE`
+- Query path already uses `@@` + `plainto_tsquery` in `BlogPostService`
+- Guard command `php artisan db:check-fts-language` ensures index/query language alignment in CI
 
 ### 3. Partial Indexes
 ```sql
-CREATE INDEX blog_posts_published_date_index 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_published_date_index 
 ON blog_posts (published_at DESC) 
 WHERE is_published = true
 ```
@@ -138,26 +139,16 @@ ORDER BY pg_relation_size(indexrelid) DESC;
 
 ## Future Optimizations
 
-### 1. Update Search Queries (High Impact)
-Currently using `ILIKE` pattern matching:
-```php
-$query->where('title', 'ilike', "%{$search}%")
+### 1. Keep Search Language Aligned (High Impact)
+
+The index and query must use the same language config (`DB_FTS_LANGUAGE`).
+
+Validation command:
+```bash
+php artisan db:check-fts-language
 ```
 
-Should use native PostgreSQL full-text search:
-```php
-$query->whereRaw(
-    "to_tsvector('english', title || ' ' || excerpt || ' ' || content) @@ plainto_tsquery('english', ?)",
-    [$search]
-)
-```
-
-**Benefits:**
-- Leverages `blog_posts_search_index` GIN index
-- 20-100x faster searches
-- Supports stemming and relevance ranking
-
-**File to Update**: [app/Services/BlogPostService.php](../app/Services/BlogPostService.php#L19-L22)
+If mismatched, rebuild `blog_posts_search_index` in a new migration.
 
 ### 2. Add Covering Indexes (Medium Impact)
 For queries that only need specific columns:
@@ -193,7 +184,7 @@ DB::listen(function ($query) {
 ### Run All Tests
 ```bash
 ./vendor/bin/pest --compact
-# Expected: 2 skipped, 804 passed
+# Expected: all backend tests passing
 ```
 
 ### Benchmark Specific Queries
@@ -233,7 +224,7 @@ This will execute the `down()` method which drops all 10 indexes.
 - ✅ Published posts: **5-20x faster**
 - ✅ Featured posts: **3-10x faster**
 - ✅ Draft listings: **3-8x faster**
-- ⏳ Full-text search: **20-100x faster** (requires query update)
+- ✅ Full-text search: **20-100x faster** (already active in query path)
 
 ### Storage Overhead
 - Estimated index size: ~5-10 MB (with 25 posts)

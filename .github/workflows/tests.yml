@@ -80,6 +80,9 @@ jobs:
       - name: Run Migrations
         run: php artisan migrate --force
 
+      - name: Verify FTS Language Alignment
+        run: php artisan db:check-fts-language
+
       - name: Build Assets
         run: npm run build
 

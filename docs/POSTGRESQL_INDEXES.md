@@ -16,7 +16,8 @@ The migration `2026_02_16_000000_add_postgresql_optimized_indexes.php` adds 10 s
 ### 1. GIN Index for JSON Tags ⭐ CRITICAL
 
 ```sql
-CREATE INDEX blog_posts_tags_gin_index ON blog_posts USING GIN (tags)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_tags_gin_index
+ON blog_posts USING GIN ((tags::jsonb) jsonb_path_ops)
 ```
 
 **Purpose:** Optimize JSON array searches for blog post tags  
@@ -42,9 +43,9 @@ $query->whereJsonContains('tags', $filters['tag']);
 ### 2. Full-Text Search Index ⭐ CRITICAL
 
 ```sql
-CREATE INDEX blog_posts_search_index ON blog_posts 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_search_index ON blog_posts 
 USING GIN (
-    to_tsvector('english', 
+    to_tsvector('<configured_language>', 
         coalesce(title, '') || ' ' || 
         coalesce(excerpt, '') || ' ' || 
         coalesce(content, '')
@@ -55,9 +56,11 @@ USING GIN (
 **Purpose:** Optimize text search across title, excerpt, and content  
 **Query Pattern:**
 ```php
-$query->where('title', 'ilike', "%{$search}%")
-      ->orWhere('excerpt', 'ilike', "%{$search}%")
-      ->orWhere('content', 'ilike', "%{$search}%");
+$language = config('database.full_text_search.language', 'english');
+$query->whereRaw(
+    "to_tsvector(?, coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, '')) @@ plainto_tsquery(?, ?)",
+    [$language, $language, $search]
+);
 ```
 
 **Usage:**
@@ -67,18 +70,9 @@ $query->where('title', 'ilike', "%{$search}%")
 
 **Performance Impact:** 🟢 **20-100x faster** for full-text searches
 
-**Current Limitation:**
-The application currently uses `ILIKE` pattern matching, which this index won't accelerate. To leverage this index, the search queries should be updated to use PostgreSQL's full-text search:
-
-```php
-// Current (slower):
-$query->where('title', 'ilike', "%{$search}%");
-
-// Optimized (uses index):
-DB::raw("to_tsvector('english', title || ' ' || excerpt || ' ' || content) @@ plainto_tsquery('english', ?)", [$search])
-```
-
-**Future Enhancement:** Consider updating `BlogPostService::applyFilters()` to use `to_tsvector` and `plainto_tsquery` for better performance.
+**Current Status:**
+- Full-text search is active in `BlogPostService::applyFilters()`.
+- CI runs `php artisan db:check-fts-language` to detect index/query language drift.
 
 ---
 
@@ -334,17 +328,18 @@ LIMIT 10;
 
 ## Future Optimizations
 
-### 1. Implement Native Full-Text Search
+### 1. Extend Native Full-Text Search with Ranking
 
-Update `BlogPostService::applyFilters()` to use PostgreSQL's full-text search:
+Current implementation already uses PostgreSQL full-text search. Next enhancement is relevance ranking:
 
 ```php
 public function applyFilters(Builder $query, array $filters): Builder
 {
     if (!empty($filters['search'])) {
+        $language = config('database.full_text_search.language', 'english');
         $query->whereRaw(
-            "to_tsvector('english', title || ' ' || excerpt || ' ' || content) @@ plainto_tsquery('english', ?)",
-            [$filters['search']]
+            "to_tsvector(?, title || ' ' || excerpt || ' ' || content) @@ plainto_tsquery(?, ?)",
+            [$language, $language, $filters['search']]
         );
     }
     // ... rest of filters
@@ -447,7 +442,7 @@ echo "Speedup: " . round($time1 / $time2, 2) . "x faster";
 | Follows (both) | 🔶 Medium | Social counts | 2-5x |
 | Threaded Comments | 🔶 Medium | Comment threads | 3-7x |
 
-*Requires updating queries to use `to_tsvector`
+*Active in current implementation (language configurable)
 
 ---
 

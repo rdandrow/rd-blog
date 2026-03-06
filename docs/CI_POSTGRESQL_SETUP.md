@@ -1,6 +1,6 @@
 # CI PostgreSQL Setup Guide
 
-**Date**: March 4, 2026  
+**Date**: March 5, 2026  
 **CI Platform**: GitHub Actions  
 **Database**: PostgreSQL 16
 
@@ -90,12 +90,24 @@ This guide documents the PostgreSQL configuration for CI/CD environments to ensu
 ```yaml
 - name: Run Migrations
   run: php artisan migrate --force
+
+- name: Verify FTS Language Alignment
+  run: php artisan db:check-fts-language
 ```
 
 **Important:**
 - `--force` flag required in CI (non-interactive environment)
 - Runs all pending migrations before tests
 - Creates all tables, indexes, and optimizations
+- Validates full-text search language alignment immediately after migrations
+
+### FTS Language Guard (New)
+
+The workflow runs `php artisan db:check-fts-language` to verify:
+- `database.full_text_search.language` / `DB_FTS_LANGUAGE`
+- language embedded in `blog_posts_search_index`
+
+If they differ, CI fails fast with remediation guidance.
 
 ## Testing Configuration
 
@@ -197,6 +209,48 @@ Add migration step before tests:
 ```yaml
 - name: Run Migrations
   run: php artisan migrate --force
+```
+
+### Issue 6: FTS Language Mismatch
+
+**Error pattern:**
+```
+Full-text language mismatch detected.
+Config language : <x>
+Index language  : <y>
+```
+
+**Cause:** `DB_FTS_LANGUAGE` changed, but `blog_posts_search_index` was created with a different language.
+
+**Solution:** Rebuild the index with the configured language in a new migration.
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+  public $withinTransaction = false;
+
+  public function up(): void
+  {
+    $language = (string) config('database.full_text_search.language', 'english');
+
+    if (!preg_match('/^[a-zA-Z0-9_.]+$/', $language)) {
+      throw new RuntimeException("Invalid full-text search language config: {$language}");
+    }
+
+    DB::statement('DROP INDEX CONCURRENTLY IF EXISTS blog_posts_search_index');
+    DB::statement("\n            CREATE INDEX CONCURRENTLY IF NOT EXISTS blog_posts_search_index ON blog_posts\n            USING GIN (\n                to_tsvector('{$language}',\n                    coalesce(title, '') || ' ' ||\n                    coalesce(excerpt, '') || ' ' ||\n                    coalesce(content, '')\n                )\n            )\n        ");
+  }
+};
+```
+
+Then verify locally:
+```bash
+php artisan db:check-fts-language
 ```
 
 ## Verification

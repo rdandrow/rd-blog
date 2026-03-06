@@ -52,10 +52,11 @@ trait HasBatchOperations
         }
 
         $model = new static;
+        $connection = $model->getConnection();
         $inserted = 0;
         
         // Process in chunks to avoid parameter limits and memory issues
-        DB::transaction(function () use ($model, $records, $chunkSize, &$inserted) {
+        $connection->transaction(function () use ($model, $connection, $records, $chunkSize, &$inserted) {
             foreach (array_chunk($records, $chunkSize) as $chunk) {
                 // Normalize records to ensure consistent columns
                 $columns = array_keys($chunk[0]);
@@ -77,7 +78,7 @@ trait HasBatchOperations
                 }
                 
                 // Use Laravel's insert for reliable, cross-database compatibility
-                $model->getConnection()->table($model->getTable())->insert($normalized);
+                $connection->table($model->getTable())->insert($normalized);
                 $inserted += count($normalized);
             }
         });
@@ -129,6 +130,7 @@ trait HasBatchOperations
         }
 
         $model = new static;
+        $connection = $model->getConnection();
         $table = $model->getTable();
 
         // SECURITY: Validate $keyColumn before interpolating it into raw SQL.
@@ -160,7 +162,7 @@ trait HasBatchOperations
         // Process records in chunks to avoid parameter limits and memory issues
         $totalAffected = 0;
         
-        DB::transaction(function () use ($records, $columns, $keyColumn, $table, $chunkSize, &$totalAffected) {
+        $connection->transaction(function () use ($connection, $records, $columns, $keyColumn, $table, $chunkSize, &$totalAffected) {
             foreach (array_chunk($records, $chunkSize, true) as $chunk) {
                 // Build CASE statements for each column with parameterized queries
                 $caseStatements = [];
@@ -209,7 +211,7 @@ trait HasBatchOperations
                 $updates = implode(', ', $caseStatements);
                 $query = "UPDATE {$table} SET {$updates} WHERE {$keyColumn} IN ({$placeholders})";
                 
-                $totalAffected += DB::affectingStatement($query, $bindings);
+                $totalAffected += $connection->affectingStatement($query, $bindings);
             }
         });
         
@@ -320,9 +322,10 @@ trait HasBatchOperations
     public static function processBatch(int $chunkSize, callable $callback): bool
     {
         $model = new static;
+        $connection = $model->getConnection();
         
         try {
-            DB::transaction(function () use ($model, $chunkSize, $callback) {
+            $connection->transaction(function () use ($model, $chunkSize, $callback) {
                 $model->newQuery()->chunk($chunkSize, $callback);
             });
             return true;
@@ -347,6 +350,7 @@ trait HasBatchOperations
         }
 
         $model = new static;
+        $connection = $model->getConnection();
         $table = $model->getTable();
         
         // SECURITY: Validate column names against actual database columns
@@ -396,13 +400,13 @@ trait HasBatchOperations
         // Use the connection's query grammar to properly quote identifiers.
         // This handles reserved words and unusual names consistently with how
         // the insert column list is already quoted above.
-        $grammar = DB::connection($model->getConnectionName())->getQueryGrammar();
+        $grammar = $connection->getQueryGrammar();
         $quotedTable = $grammar->wrap($table);
         $quotedReturning = $grammar->wrap($returningColumn);
 
         $query = "INSERT INTO {$quotedTable} ({$columnList}) VALUES {$values} RETURNING {$quotedReturning}";
         
-        $results = DB::select($query, $bindings);
+        $results = $connection->select($query, $bindings);
         
         return array_map(fn($row) => is_object($row) ? $row->$returningColumn : $row[$returningColumn], $results);
     }
@@ -425,6 +429,7 @@ trait HasBatchOperations
         }
 
         $model = new static;
+        $connection = $model->getConnection();
         $table = $model->getTable();
         
         // Security: Validate column names against database schema to prevent SQL injection
@@ -441,7 +446,7 @@ trait HasBatchOperations
         // Process increments in chunks to avoid parameter limits
         $totalAffected = 0;
         
-        DB::transaction(function () use ($increments, $column, $keyColumn, $table, $chunkSize, &$totalAffected) {
+        $connection->transaction(function () use ($connection, $increments, $column, $keyColumn, $table, $chunkSize, &$totalAffected) {
             foreach (array_chunk($increments, $chunkSize, true) as $chunk) {
                 // Build CASE statement with parameterized queries
                 $cases = [];
@@ -462,7 +467,7 @@ trait HasBatchOperations
                 
                 $query = "UPDATE {$table} SET {$column} = {$caseStatement} WHERE {$keyColumn} IN ({$placeholders})";
                 
-                $totalAffected += DB::affectingStatement($query, $bindings);
+                $totalAffected += $connection->affectingStatement($query, $bindings);
             }
         });
         

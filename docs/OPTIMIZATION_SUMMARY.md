@@ -87,11 +87,12 @@ Native PostgreSQL full-text search with GIN index:
 
 ```php
 // Service method
+$language = config('database.full_text_search.language', 'english');
 $query->whereRaw(
-    "to_tsvector('english', coalesce(title, '') || ' ' || 
+    "to_tsvector(?, coalesce(title, '') || ' ' || 
      coalesce(excerpt, '') || ' ' || coalesce(content, '')) 
-     @@ plainto_tsquery('english', ?)",
-    [$search]
+     @@ plainto_tsquery(?, ?)",
+    [$language, $language, $search]
 );
 ```
 
@@ -121,7 +122,7 @@ public function getAllPublishedPosts(array $filters = []): Collection
 **All optimizations tested and verified:**
 
 ```
-Tests:    6 skipped, 862 passed (3,251 assertions)
+Tests:    892 passed (3,331 assertions)
 Duration: 11.54s
 Parallel: 12 processes
 ```

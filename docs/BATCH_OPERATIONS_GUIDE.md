@@ -486,11 +486,20 @@ foreach ($batches as $batch) {
 ### 2. Use Transactions for Related Updates
 
 ```php
-DB::transaction(function () use ($postUpdates, $commentUpdates) {
+// Use the same explicit connection when coordinating multiple models.
+// Do not rely on the global DB facade transaction if models may point to
+// different connections.
+$connection = BlogPost::query()->getConnection();
+
+$connection->transaction(function () use ($postUpdates, $commentUpdates) {
     BlogPost::bulkUpdate($postUpdates);
     Comment::bulkUpdate($commentUpdates);
 });
 ```
+
+**Important:** `HasBatchOperations` executes SQL on the model's own connection.
+For cross-model atomicity, ensure both models share the same connection, or split
+operations by connection boundary.
 
 ### 3. Validate Data Before Batch Operations
 
