@@ -126,7 +126,19 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function shouldLogQueryBindings(): bool
     {
-        return (bool) env('LOG_QUERY_BINDINGS', false);
+        $value = getenv('LOG_QUERY_BINDINGS');
+
+        if ($value === false) {
+            $value = $_ENV['LOG_QUERY_BINDINGS'] ?? $_SERVER['LOG_QUERY_BINDINGS'] ?? null;
+        }
+
+        if ($value === null) {
+            return false;
+        }
+
+        $parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        return $parsed ?? false;
     }
 
     /**

@@ -27,7 +27,7 @@ if (!empty($filters['search'])) {
     $search = $filters['search'];
     
     // Use PostgreSQL full-text search for better performance
-    if (config('database.default') === 'pgsql') {
+    if ($query->getConnection()->getDriverName() === 'pgsql') {
         $language = config('database.full_text_search.language', 'english');
         $query->whereRaw(
             "to_tsvector(?, coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, '')) @@ plainto_tsquery(?, ?)",
@@ -141,9 +141,10 @@ composer test
 
 **Results**:
 - ✅ **902 tests passing**
-- ✅ **3,365 assertions**
+- ✅ **3,373 assertions**
 - ✅ **7.68s execution time** (parallel)
 - ✅ Performance benchmark checks use deterministic query characteristics (no timing thresholds)
+- ✅ Unit coverage validates both PostgreSQL and non-PostgreSQL search branches via connection-aware driver detection
 
 ### Specific Test Verification
 
@@ -192,7 +193,7 @@ The implementation maintains full backward compatibility:
 
 ```php
 // Automatically uses optimal method based on database
-if (config('database.default') === 'pgsql') {
+if ($query->getConnection()->getDriverName() === 'pgsql') {
     // PostgreSQL: Use full-text search
     $query->whereRaw("to_tsvector(...) @@ plainto_tsquery(...)", [$search]);
 } else {
@@ -215,11 +216,20 @@ if (config('database.default') === 'pgsql') {
 Add relevance scoring to sort by match quality:
 
 ```php
-if (config('database.default') === 'pgsql') {
+if ($query->getConnection()->getDriverName() === 'pgsql') {
     $query->selectRaw('*, ts_rank(to_tsvector(...), plainto_tsquery(?)) as rank', [$search])
           ->whereRaw("to_tsvector(...) @@ plainto_tsquery(?)", [$search])
           ->orderBy('rank', 'desc');
 }
+```
+
+Use the same connection-aware driver detection in real code:
+
+```php
+if ($query->getConnection()->getDriverName() === 'pgsql') {
+    // PostgreSQL-specific ranking logic
+}
+```
 ```
 
 ### 2. Phrase Searches

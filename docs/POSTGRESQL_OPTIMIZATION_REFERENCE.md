@@ -54,7 +54,7 @@ Complete PostgreSQL optimization implementation including specialized indexes, f
 #### Implementation
 ```php
 // BlogPostService.php
-if (config('database.default') === 'pgsql') {
+if ($query->getConnection()->getDriverName() === 'pgsql') {
    $language = config('database.full_text_search.language', 'english');
     $query->whereRaw(
       "to_tsvector(?, coalesce(title, '') || ' ' || 
@@ -545,7 +545,7 @@ composer test:coverage
 ## Test Coverage
 
 **Total Tests**: 902 passing  
-**Assertions**: 3,365  
+**Assertions**: 3,373  
 **Execution Time**: ~8s (parallel)
 
 ### PostgreSQL-Specific Tests
@@ -889,7 +889,7 @@ DB_HOST=production-postgres-host
 ### Code Quality
 
 ✅ **902 tests passing** (0 failures)  
-✅ **3,365 assertions** (comprehensive coverage)  
+✅ **3,373 assertions** (comprehensive coverage)  
 ✅ **Type-safe queries** (whereRaw with bindings)  
 ✅ **Backward compatible** (MySQL/SQLite fallbacks)  
 ✅ **Well documented** (3,000+ lines of docs)

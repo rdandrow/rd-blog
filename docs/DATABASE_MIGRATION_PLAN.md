@@ -225,7 +225,7 @@ php artisan db:seed
 # Backend tests
 ./vendor/bin/pest
 
-# Should pass: 902 tests (3,365 assertions)
+# Should pass: 902 tests (3,373 assertions)
 ```
 
 #### 2.4 Manual Testing Checklist
@@ -389,7 +389,7 @@ public function applyFilters(Builder $query, array $filters): Builder
 {
     // Use PostgreSQL full-text search instead of LIKE
     if ($search = $filters['search'] ?? null) {
-        if (config('database.default') === 'pgsql') {
+        if ($query->getConnection()->getDriverName() === 'pgsql') {
                 $language = config('database.full_text_search.language', 'english');
             $query->whereRaw("
                 to_tsvector(?, title || ' ' || excerpt || ' ' || content) 

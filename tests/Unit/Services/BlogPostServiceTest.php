@@ -24,8 +24,16 @@ afterEach(function () {
 
 describe('applyFilters method', function () {
     test('filters posts by search term in title', function () {
-        // Arrange: Create a mock query builder
+        // Arrange: Create a mock query builder on PostgreSQL
+        $connection = Mockery::mock();
+        $connection->shouldReceive('getDriverName')
+            ->once()
+            ->andReturn('pgsql');
+
         $query = Mockery::mock(Builder::class);
+        $query->shouldReceive('getConnection')
+            ->once()
+            ->andReturn($connection);
         
         // Expect whereRaw for PostgreSQL full-text search
         $query->shouldReceive('whereRaw')
@@ -78,13 +86,21 @@ describe('applyFilters method', function () {
     });
 
     test('applies multiple filters simultaneously', function () {
-        // Arrange: Create a mock query builder
+        // Arrange: Create a mock query builder on non-PostgreSQL driver
+        $connection = Mockery::mock();
+        $connection->shouldReceive('getDriverName')
+            ->once()
+            ->andReturn('sqlite');
+
         $query = Mockery::mock(Builder::class);
+        $query->shouldReceive('getConnection')
+            ->once()
+            ->andReturn($connection);
         
         // Expect all filter methods to be called
-        $query->shouldReceive('whereRaw')
+        $query->shouldReceive('where')
             ->once()
-            ->with(Mockery::type('string'), Mockery::type('array'))
+            ->with(Mockery::on(fn ($arg) => $arg instanceof \Closure))
             ->andReturnSelf();
         $query->shouldReceive('whereJsonContains')
             ->once()

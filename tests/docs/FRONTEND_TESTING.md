@@ -13,7 +13,7 @@ Current frontend test run status:
 - **68 test files**
 - **1,785 tests total**
 - **1,784 passing, 1 skipped**
-- **Duration**: ~18s (`npm run test:run`)
+- **Duration**: ~18.80s (`npm run test:run`)
 
 Key coverage currently implemented:
 

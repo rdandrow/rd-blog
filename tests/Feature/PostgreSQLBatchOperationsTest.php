@@ -70,6 +70,18 @@ describe('PostgreSQL Batch Operations', function () {
         it('returns 0 for empty input', function () {
             $count = BlogPost::bulkInsert([]);
             expect($count)->toBe(0);
+
+            $user = User::factory()->create();
+            $records = [[
+                'title' => 'Invalid Chunk',
+                'slug' => 'invalid-chunk-bulk-insert',
+                'excerpt' => 'Excerpt',
+                'content' => 'Content',
+                'user_id' => $user->id,
+            ]];
+
+            expect(fn () => BlogPost::bulkInsert($records, chunkSize: 0))
+                ->toThrow(\InvalidArgumentException::class);
         });
 
         it('processes records across chunk boundaries', function () {
@@ -324,6 +336,13 @@ describe('PostgreSQL Batch Operations', function () {
         it('returns zero for empty updates', function () {
             $affected = BlogPost::bulkUpdate([]);
             expect($affected)->toBe(0);
+
+            $user = User::factory()->create();
+            $post = BlogPost::factory()->create(['user_id' => $user->id]);
+
+            expect(fn () => BlogPost::bulkUpdate([
+                $post->id => ['title' => 'Invalid chunk size'],
+            ], chunkSize: 0))->toThrow(\InvalidArgumentException::class);
         });
 
     });
@@ -544,6 +563,13 @@ describe('PostgreSQL Batch Operations', function () {
         it('returns zero for empty increments', function () {
             $affected = BlogPost::bulkIncrement([], 'reading_time');
             expect($affected)->toBe(0);
+
+            $user = User::factory()->create();
+            $post = BlogPost::factory()->create(['user_id' => $user->id]);
+
+            expect(fn () => BlogPost::bulkIncrement([
+                $post->id => 1,
+            ], 'reading_time', chunkSize: 0))->toThrow(\InvalidArgumentException::class);
         });
 
         it('processes increments across chunk boundaries', function () {
@@ -612,6 +638,10 @@ describe('PostgreSQL Batch Operations', function () {
 
             expect($result)->toBeTrue();
             expect($processedCount)->toBe(25);
+
+            expect(fn () => BlogPost::processBatch(0, function () {
+                // no-op
+            }))->toThrow(\InvalidArgumentException::class);
         });
 
         it('rolls back on exception', function () {

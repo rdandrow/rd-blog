@@ -54,7 +54,7 @@ Expected output:
 ### After Fix
 ```bash
 ./vendor/bin/pest --parallel --compact
-# Result: Tests: 902 passed (3,365 assertions)
+# Result: Tests: 902 passed (3,373 assertions)
 # Duration: 8.11s
 # Parallel: 12 processes
 ```

@@ -21,7 +21,7 @@ class BlogPostService
             $search = $filters['search'];
             
             // Use PostgreSQL full-text search for better performance
-            if (config('database.default') === 'pgsql') {
+            if ($this->isPostgreSqlConnection($query)) {
                 $language = config('database.full_text_search.language', 'english');
                 $query->whereRaw(
                     "to_tsvector(?, coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, '')) @@ plainto_tsquery(?, ?)",
@@ -49,6 +49,14 @@ class BlogPostService
         }
 
         return $query;
+    }
+
+    /**
+     * Determine whether the query is using a PostgreSQL connection.
+     */
+    protected function isPostgreSqlConnection(Builder $query): bool
+    {
+        return $query->getConnection()->getDriverName() === 'pgsql';
     }
 
     /**

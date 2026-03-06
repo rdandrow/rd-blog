@@ -196,8 +196,8 @@ Visit `http://localhost:8000`
 
 ## Testing
 
-**Backend Test Suite:** 902 tests • 3,365 assertions • ~9.5s parallel (`composer test`)  
-**Frontend Test Suite:** 1,784 passed (+1 skipped) from 1,785 total • ~18s execution (`npm run test:run`)
+**Backend Test Suite:** 902 tests • 3,373 assertions • ~9.23s parallel (`composer test`)  
+**Frontend Test Suite:** 1,784 passed (+1 skipped) from 1,785 total • ~18.80s execution (`npm run test:run`)
 
 ### Backend Tests (Pest PHP)
 

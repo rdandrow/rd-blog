@@ -339,8 +339,11 @@ public static function processBatch(
 ```
 
 **Parameters**:
-- `$chunkSize` - Number of records per batch
+- `$chunkSize` - Number of records per batch (must be `>= 1`)
 - `$callback` - Function to execute on each chunk
+
+**Validation**:
+- Invalid chunk sizes now fail fast with `InvalidArgumentException` (e.g., `0`, negative values)
 
 **Example - Process All Posts**:
 ```php
@@ -664,7 +667,14 @@ Run batch operation tests:
 
 # Run specific test
 ./vendor/bin/pest --filter="upsertBatch"
+
+# Validate chunk-size guards (P2 hardening)
+./vendor/bin/pest --filter="chunk size"
 ```
+
+Recent coverage includes:
+- Connection-aware branch tests for PostgreSQL vs non-PostgreSQL filtering in `BlogPostServiceTest`
+- Invalid chunk-size validation tests for `bulkInsert`, `bulkUpdate`, `bulkIncrement`, and `processBatch`
 
 ## Related Documentation
 

@@ -31,6 +31,16 @@ trait HasBatchOperations
     protected static array $columnCache = [];
 
     /**
+     * Validate chunk size for batch operations.
+     */
+    protected static function ensureValidChunkSize(int $chunkSize, string $method): void
+    {
+        if ($chunkSize < 1) {
+            throw new \InvalidArgumentException("Invalid chunk size for {$method}: {$chunkSize}. Chunk size must be greater than or equal to 1.");
+        }
+    }
+
+    /**
      * Insert multiple records efficiently using chunked inserts.
      *
      * Note: This bypasses Eloquent events and does not return model instances.
@@ -47,6 +57,8 @@ trait HasBatchOperations
      */
     public static function bulkInsert(array $records, int $chunkSize = 1000): int
     {
+        static::ensureValidChunkSize($chunkSize, 'bulkInsert');
+
         if (empty($records)) {
             return 0;
         }
@@ -125,6 +137,8 @@ trait HasBatchOperations
      */
     public static function bulkUpdate(array $records, string $keyColumn = 'id', int $chunkSize = 500): int
     {
+        static::ensureValidChunkSize($chunkSize, 'bulkUpdate');
+
         if (empty($records)) {
             return 0;
         }
@@ -331,6 +345,8 @@ trait HasBatchOperations
      */
     public static function processBatch(int $chunkSize, callable $callback): bool
     {
+        static::ensureValidChunkSize($chunkSize, 'processBatch');
+
         $model = new static;
         $connection = $model->getConnection();
         
@@ -434,6 +450,8 @@ trait HasBatchOperations
      */
     public static function bulkIncrement(array $increments, string $column, string $keyColumn = 'id', int $chunkSize = 1000): int
     {
+        static::ensureValidChunkSize($chunkSize, 'bulkIncrement');
+
         if (empty($increments)) {
             return 0;
         }
