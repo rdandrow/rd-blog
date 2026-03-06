@@ -111,6 +111,13 @@ class ExplainQuery extends Command
      */
     private function validateQuerySafety(string $query): bool
     {
+        if ($this->containsMultipleStatements($query)) {
+            $this->error('Multiple SQL statements are not allowed. Provide a single statement for analysis.');
+            $this->line('Tip: Remove stacked statements and run db:explain once per query.');
+
+            return false;
+        }
+
         // EXPLAIN (without ANALYZE) does not execute statements, so it is safe.
         if ($this->option('no-execute')) {
             return true;
@@ -130,6 +137,23 @@ class ExplainQuery extends Command
         $this->line('If you intentionally want execution, re-run with --allow-write.');
 
         return false;
+    }
+
+    /**
+     * Detect stacked SQL statements while allowing an optional trailing semicolon.
+     */
+    private function containsMultipleStatements(string $query): bool
+    {
+        $trimmed = trim($query);
+
+        if ($trimmed === '') {
+            return false;
+        }
+
+        // Allow exactly one trailing semicolon for a single statement.
+        $withoutTrailing = rtrim($trimmed, " \t\n\r;");
+
+        return str_contains($withoutTrailing, ';');
     }
 
     /**

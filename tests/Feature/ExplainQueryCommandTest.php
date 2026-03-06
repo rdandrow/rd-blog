@@ -111,6 +111,31 @@ describe('EXPLAIN ANALYZE Command', function () {
             ->assertExitCode(1);
     });
 
+    test('blocks stacked SQL statements by default', function () {
+        $this->artisan('db:explain', [
+            'query' => 'SELECT 1; UPDATE blog_posts SET updated_at = NOW() WHERE id = -1',
+        ])
+            ->expectsOutput('Multiple SQL statements are not allowed. Provide a single statement for analysis.')
+            ->assertExitCode(1);
+    });
+
+    test('blocks stacked SQL statements even when allow-write is set', function () {
+        $this->artisan('db:explain', [
+            'query' => 'SELECT 1; UPDATE blog_posts SET updated_at = NOW() WHERE id = -1',
+            '--allow-write' => true,
+        ])
+            ->expectsOutput('Multiple SQL statements are not allowed. Provide a single statement for analysis.')
+            ->assertExitCode(1);
+    });
+
+    test('allows single statement with trailing semicolon', function () {
+        $this->artisan('db:explain', [
+            'query' => 'SELECT 1;',
+        ])
+            ->expectsOutput('🔍 Analyzing Query Plan...')
+            ->assertExitCode(0);
+    });
+
     test('supports JSON format output', function () {
         $exitCode = $this->artisan('db:explain', [
             'query' => 'SELECT * FROM blog_posts LIMIT 1',
