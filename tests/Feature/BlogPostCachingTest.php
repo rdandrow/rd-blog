@@ -4,6 +4,7 @@ use App\Models\BlogPost;
 use App\Models\User;
 use App\Services\BlogPostService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use function Pest\Laravel\{actingAs};
 
 beforeEach(function () {
@@ -57,6 +58,62 @@ describe('BlogPostService Caching', function () {
             
             expect($cached5->pluck('id')->toArray())->toBe($posts5->pluck('id')->toArray())
                 ->and($cached10->pluck('id')->toArray())->toBe($posts10->pluck('id')->toArray());
+        });
+    });
+
+    describe('Cache Resilience', function () {
+        it('falls back to callback when tagged cache read-through throws', function () {
+            config(['cache.default' => 'redis']);
+
+            $service = new class {
+                use \App\Services\Concerns\CachesBlogData;
+
+                public function rememberProxy(string $key, callable $callback, ?int $ttl = null): mixed
+                {
+                    return $this->remember($key, $callback, $ttl);
+                }
+            };
+
+            $storeWithTags = new class {
+                public function tags(array $tags = []): self
+                {
+                    return $this;
+                }
+            };
+
+            Cache::shouldReceive('getStore')
+                ->once()
+                ->andReturn($storeWithTags);
+
+            Cache::shouldReceive('tags')
+                ->once()
+                ->with(['blog_posts'])
+                ->andReturn(new class {
+                    public function remember(string $key, int $ttl, callable $callback): mixed
+                    {
+                        throw new \RuntimeException('Redis unavailable');
+                    }
+                });
+
+            Log::shouldReceive('warning')
+                ->once()
+                ->withArgs(function (string $message, array $context): bool {
+                    return str_contains($message, 'Blog cache read-through failed')
+                        && ($context['driver'] ?? null) === 'redis'
+                        && ($context['key'] ?? null) === 'blog:test-key'
+                        && ($context['exception'] ?? null) === \RuntimeException::class;
+                });
+
+            $executed = 0;
+
+            $value = $service->rememberProxy('test-key', function () use (&$executed): string {
+                $executed++;
+
+                return 'fallback-value';
+            });
+
+            expect($value)->toBe('fallback-value')
+                ->and($executed)->toBe(1);
         });
     });
 

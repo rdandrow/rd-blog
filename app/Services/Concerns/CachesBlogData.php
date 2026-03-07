@@ -3,6 +3,7 @@
 namespace App\Services\Concerns;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 
 /**
@@ -39,19 +40,33 @@ trait CachesBlogData
         $ttl = $ttl ?? $this->cacheTtl;
         $store = Cache::getStore();
         $driver = config('cache.default');
-        
-        // Use cache tags only for drivers that properly support them (Redis, Memcached)
-        // Array, file, and database drivers have tags() method but don't actually support tags
-        if (in_array($driver, ['redis', 'memcached']) && method_exists($store, 'tags')) {
-            $fullKey = $this->cachePrefix . $key;
-            return Cache::tags(['blog_posts'])->remember($fullKey, $ttl, $callback);
+
+        try {
+            // Use cache tags only for drivers that properly support them (Redis, Memcached)
+            // Array, file, and database drivers have tags() method but don't actually support tags
+            if (in_array($driver, ['redis', 'memcached']) && method_exists($store, 'tags')) {
+                $fullKey = $this->cachePrefix . $key;
+
+                return Cache::tags(['blog_posts'])->remember($fullKey, $ttl, $callback);
+            }
+
+            // Fallback: Use versioned cache keys for instant invalidation
+            // When cache is invalidated, the version bumps and old keys become stale
+            $version = \App\Models\BlogPost::getCacheVersion();
+            $versionedKey = $this->cachePrefix . "v{$version}:" . $key;
+
+            return Cache::remember($versionedKey, $ttl, $callback);
+        } catch (\Throwable $exception) {
+            // Keep request paths alive when cache infrastructure is unavailable.
+            Log::warning('Blog cache read-through failed; falling back to direct callback execution.', [
+                'driver' => $driver,
+                'key' => $this->cachePrefix . $key,
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return $callback();
         }
-        
-        // Fallback: Use versioned cache keys for instant invalidation
-        // When cache is invalidated, the version bumps and old keys become stale
-        $version = \App\Models\BlogPost::getCacheVersion();
-        $versionedKey = $this->cachePrefix . "v{$version}:" . $key;
-        return Cache::remember($versionedKey, $ttl, $callback);
     }
 
     /**
