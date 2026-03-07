@@ -41,6 +41,24 @@ trait HasBatchOperations
     }
 
     /**
+     * Ensure a method is executed only on PostgreSQL connections.
+     */
+    protected static function ensurePostgreSqlConnection($connection, string $method): void
+    {
+        $driver = $connection->getDriverName();
+
+        if ($driver !== 'pgsql') {
+            throw new \RuntimeException(
+                sprintf(
+                    '%s() requires PostgreSQL (pgsql) because it uses PostgreSQL-specific SQL. Current driver: %s.',
+                    $method,
+                    $driver
+                )
+            );
+        }
+    }
+
+    /**
      * Insert multiple records efficiently using chunked inserts.
      *
      * Note: This bypasses Eloquent events and does not return model instances.
@@ -146,6 +164,9 @@ trait HasBatchOperations
         $model = new static;
         $connection = $model->getConnection();
         $table = $model->getTable();
+
+        // Uses PostgreSQL-specific JSON cast syntax (?::json) in CASE expressions.
+        static::ensurePostgreSqlConnection($connection, 'bulkUpdate');
 
         // SECURITY: Validate $keyColumn before interpolating it into raw SQL.
         // Must be done first, before getValidColumnNames() result is used for

@@ -310,6 +310,33 @@ describe('PostgreSQL Batch Operations', function () {
             ))->toThrow(\InvalidArgumentException::class);
         });
 
+        it('throws a clear exception on non-PostgreSQL drivers', function () {
+            $model = new class {
+                use HasBatchOperations;
+
+                public function getConnection()
+                {
+                    return new class {
+                        public function getDriverName(): string
+                        {
+                            return 'mysql';
+                        }
+                    };
+                }
+
+                public function getTable(): string
+                {
+                    return 'blog_posts';
+                }
+            };
+
+            $modelClass = $model::class;
+
+            expect(fn () => $modelClass::bulkUpdate([
+                1 => ['title' => 'X'],
+            ]))->toThrow(\RuntimeException::class, 'requires PostgreSQL');
+        });
+
         it('generates wrapped identifiers in bulkUpdate SQL', function () {
             $user = User::factory()->create();
             $post = BlogPost::factory()->create(['user_id' => $user->id, 'title' => 'Original']);
