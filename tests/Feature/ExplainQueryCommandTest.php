@@ -178,6 +178,26 @@ describe('EXPLAIN ANALYZE Command', function () {
             ->assertExitCode(1);
     });
 
+    test('handles unreadable file gracefully', function () {
+        $tempFile = tempnam(sys_get_temp_dir(), 'explain_unreadable_');
+        file_put_contents($tempFile, 'SELECT 1');
+
+        // Remove all permissions to simulate an unreadable SQL file.
+        chmod($tempFile, 0o000);
+
+        try {
+            $this->artisan('db:explain', [
+                '--file' => $tempFile,
+            ])
+                ->expectsOutputToContain('Unable to read file')
+                ->assertExitCode(1);
+        } finally {
+            // Restore permissions so the temp file can always be cleaned up.
+            chmod($tempFile, 0o600);
+            unlink($tempFile);
+        }
+    });
+
     test('handles invalid SQL gracefully', function () {
         $this->artisan('db:explain', [
             'query' => 'INVALID SQL QUERY',

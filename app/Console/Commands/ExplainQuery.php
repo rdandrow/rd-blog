@@ -87,7 +87,19 @@ class ExplainQuery extends Command
                 $this->error("File not found: {$file}");
                 return null;
             }
-            $query = file_get_contents($file);
+
+            if (! is_file($file) || ! is_readable($file)) {
+                $this->error("Unable to read file: {$file}");
+                return null;
+            }
+
+            // Handle rare runtime failures (permissions/race/IO) without surfacing PHP warnings.
+            $query = @file_get_contents($file);
+            if ($query === false) {
+                $this->error("Unable to read file: {$file}");
+                return null;
+            }
+
             $this->comment("Reading query from: {$file}");
             $this->newLine();
         } else {
