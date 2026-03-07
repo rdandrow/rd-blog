@@ -342,14 +342,13 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 
 ##### `System/ErrorHandlingTest.php`
 - **Purpose**: Error handling and graceful degradation
-- **Structure**: 6 describe blocks
-  - Database Connection Failures (2 tests)
+- **Structure**: 4 describe blocks
   - Transaction Rollback (1 test)
   - File System Errors (5 tests)
   - Invalid Input (5 tests)
   - 404 Errors (3 tests)
-- **Tests**: 16 tests (1 passing, 15 pre-existing database mock failures)
-- **Groups**: `error-handling`, `database`, `filesystem`, `validation`, `404`, `500`
+- **Tests**: 14 tests, 21 assertions
+- **Groups**: `error-handling`, `database`, `filesystem`, `validation`, `404`
 - **Custom Expectations**: `toBeNotFound()`
 - **Features**: Graceful failures, error message sanitization
 

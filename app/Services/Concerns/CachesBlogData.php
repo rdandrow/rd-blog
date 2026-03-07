@@ -76,7 +76,8 @@ trait CachesBlogData
      * For tagged stores (Redis/Memcached) it forgets within the 'blog_posts' tag.
      * For versioned stores it forgets the current versioned key (blog:v{n}:{key}).
      *
-     * Note: For versioned stores, bumping the cache version via BlogPost::invalidateCaches()
+    * Note: For versioned stores, bumping the cache version via
+    * BlogPost::invalidateBlogCache() (or BlogPost::bumpCacheVersion())
      * is the preferred way to invalidate all blog cache keys at once. Use forget() only
      * when you need to invalidate a single key without a full cache bust.
      *

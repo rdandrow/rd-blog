@@ -6,7 +6,7 @@ A modern full-stack blog platform built with Laravel 12 and Vue.js 3, featuring 
 
 **Backend:** Laravel 12 • PHP 8.2+ • Inertia.js • PostgreSQL 16  
 **Frontend:** Vue.js 3 (Composition API) • TypeScript • Tailwind CSS v4 • Vite 7  
-**Testing:** Pest PHP (906 tests) • Vitest (1,785 tests) • Feature & Unit Tests
+**Testing:** Pest PHP (912 tests) • Vitest (1,785 tests) • Feature & Unit Tests
 
 ## Key Features
 
@@ -196,8 +196,8 @@ Visit `http://localhost:8000`
 
 ## Testing
 
-**Backend Test Suite:** 906 tests • 3,382 assertions • ~9.66s parallel (`composer test`)  
-**Frontend Test Suite:** 1,784 passed (+1 skipped) from 1,785 total • ~18.80s execution (`npm run test:run`)
+**Backend Test Suite:** 912 tests • 3,397 assertions • ~10.50s parallel (`composer test`)  
+**Frontend Test Suite:** 1,784 passed (+1 skipped) from 1,785 total • ~19.68s execution (`npm run test:run`)
 
 ### Backend Tests (Pest PHP)
 
@@ -228,7 +228,7 @@ composer test:coverage
 ```
 
 **Parallel Testing Performance:**
-- Current full-suite baseline: ~9.66s (12 processes)
+- Current full-suite baseline: ~10.50s (12 processes)
 - Historical benchmark (initial parallel rollout): ~24s sequential → ~8s parallel
 - Observed speedup: **~3x faster** ⚡
 
