@@ -162,10 +162,201 @@ class ExplainQuery extends Command
             return false;
         }
 
-        // Allow exactly one trailing semicolon for a single statement.
-        $withoutTrailing = rtrim($trimmed, " \t\n\r;");
+        $firstTopLevelSemicolon = $this->findFirstTopLevelSemicolon($trimmed);
 
-        return str_contains($withoutTrailing, ';');
+        // No top-level statement terminator means this is a single statement.
+        if ($firstTopLevelSemicolon === null) {
+            return false;
+        }
+
+        // If any non-trivia SQL appears after the first top-level semicolon,
+        // treat the input as multiple statements.
+        return $this->hasMeaningfulSqlAfterTerminator($trimmed, $firstTopLevelSemicolon);
+    }
+
+    /**
+     * Find the first semicolon that is not inside quotes or comments.
+     */
+    private function findFirstTopLevelSemicolon(string $sql): ?int
+    {
+        $length = strlen($sql);
+        $inSingleQuote = false;
+        $inDoubleQuote = false;
+        $lineComment = false;
+        $blockCommentDepth = 0;
+        $dollarQuoteTag = null;
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $sql[$i];
+            $next = $i + 1 < $length ? $sql[$i + 1] : '';
+
+            if ($lineComment) {
+                if ($char === "\n" || $char === "\r") {
+                    $lineComment = false;
+                }
+
+                continue;
+            }
+
+            if ($blockCommentDepth > 0) {
+                if ($char === '/' && $next === '*') {
+                    $blockCommentDepth++;
+                    $i++;
+                    continue;
+                }
+
+                if ($char === '*' && $next === '/') {
+                    $blockCommentDepth--;
+                    $i++;
+                }
+
+                continue;
+            }
+
+            if ($dollarQuoteTag !== null) {
+                $tagLength = strlen($dollarQuoteTag);
+
+                if (substr($sql, $i, $tagLength) === $dollarQuoteTag) {
+                    $dollarQuoteTag = null;
+                    $i += $tagLength - 1;
+                }
+
+                continue;
+            }
+
+            if ($inSingleQuote) {
+                if ($char === "'") {
+                    if ($next === "'") {
+                        $i++;
+                    } else {
+                        $inSingleQuote = false;
+                    }
+                }
+
+                continue;
+            }
+
+            if ($inDoubleQuote) {
+                if ($char === '"') {
+                    if ($next === '"') {
+                        $i++;
+                    } else {
+                        $inDoubleQuote = false;
+                    }
+                }
+
+                continue;
+            }
+
+            if ($char === '-' && $next === '-') {
+                $lineComment = true;
+                $i++;
+                continue;
+            }
+
+            if ($char === '/' && $next === '*') {
+                $blockCommentDepth = 1;
+                $i++;
+                continue;
+            }
+
+            if ($char === "'") {
+                $inSingleQuote = true;
+                continue;
+            }
+
+            if ($char === '"') {
+                $inDoubleQuote = true;
+                continue;
+            }
+
+            if ($char === '$') {
+                $tag = $this->matchDollarQuoteTag($sql, $i);
+
+                if ($tag !== null) {
+                    $dollarQuoteTag = $tag;
+                    $i += strlen($tag) - 1;
+                    continue;
+                }
+            }
+
+            if ($char === ';') {
+                return $i;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine whether non-trivia SQL exists after a top-level semicolon.
+     */
+    private function hasMeaningfulSqlAfterTerminator(string $sql, int $semicolonOffset): bool
+    {
+        $length = strlen($sql);
+
+        for ($i = $semicolonOffset + 1; $i < $length; $i++) {
+            $char = $sql[$i];
+            $next = $i + 1 < $length ? $sql[$i + 1] : '';
+
+            if (ctype_space($char) || $char === ';') {
+                continue;
+            }
+
+            if ($char === '-' && $next === '-') {
+                $i += 2;
+                while ($i < $length && $sql[$i] !== "\n" && $sql[$i] !== "\r") {
+                    $i++;
+                }
+                continue;
+            }
+
+            if ($char === '/' && $next === '*') {
+                $i += 2;
+                $depth = 1;
+
+                while ($i < $length && $depth > 0) {
+                    $current = $sql[$i];
+                    $following = $i + 1 < $length ? $sql[$i + 1] : '';
+
+                    if ($current === '/' && $following === '*') {
+                        $depth++;
+                        $i += 2;
+                        continue;
+                    }
+
+                    if ($current === '*' && $following === '/') {
+                        $depth--;
+                        $i += 2;
+                        continue;
+                    }
+
+                    $i++;
+                }
+
+                $i--;
+                continue;
+            }
+
+            // Any remaining token means there is another statement.
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Match PostgreSQL dollar-quote tags like $$...$$ or $tag$...$tag$.
+     */
+    private function matchDollarQuoteTag(string $sql, int $offset): ?string
+    {
+        $remaining = substr($sql, $offset);
+
+        if (! preg_match('/^\$([A-Za-z_][A-Za-z0-9_]*)?\$/', $remaining, $matches)) {
+            return null;
+        }
+
+        return '$' . ($matches[1] ?? '') . '$';
     }
 
     /**

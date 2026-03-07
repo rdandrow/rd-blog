@@ -136,6 +136,35 @@ describe('EXPLAIN ANALYZE Command', function () {
             ->assertExitCode(0);
     });
 
+    test('allows semicolon inside single-quoted string literal', function () {
+        $this->artisan('db:explain', [
+            'query' => "SELECT ';' AS s",
+        ])
+            ->expectsOutput('🔍 Analyzing Query Plan...')
+            ->assertExitCode(0);
+    });
+
+    test('allows semicolon inside SQL comments', function () {
+        $query = <<<'SQL'
+            SELECT 1 /* ; inside block comment */
+            -- ; inside line comment
+            SQL;
+
+        $this->artisan('db:explain', [
+            'query' => $query,
+        ])
+            ->expectsOutput('🔍 Analyzing Query Plan...')
+            ->assertExitCode(0);
+    });
+
+    test('allows semicolon inside dollar-quoted strings', function () {
+        $this->artisan('db:explain', [
+            'query' => 'SELECT $$a;b$$ AS s',
+        ])
+            ->expectsOutput('🔍 Analyzing Query Plan...')
+            ->assertExitCode(0);
+    });
+
     test('supports JSON format output', function () {
         $exitCode = $this->artisan('db:explain', [
             'query' => 'SELECT * FROM blog_posts LIMIT 1',
