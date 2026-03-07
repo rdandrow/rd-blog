@@ -189,9 +189,11 @@ For production deployments with TLS, set `DB_SSLMODE=require` (or `verify-ca` / 
 
 **phpunit.xml** - Use PostgreSQL for realistic testing:
 ```xml
-<env name="DB_CONNECTION" value="pgsql"/>
-<env name="DB_DATABASE" value="rd_blog_test"/>
+<env name="DB_CONNECTION" value="pgsql" force="false"/>
+<env name="DB_DATABASE" value="rd_blog_test" force="false"/>
 ```
+
+Use `force="false"` so CI/job-level env vars can override these local fallbacks.
 
 **Why PostgreSQL for Testing?**
 - ✅ Tests actual production database behavior

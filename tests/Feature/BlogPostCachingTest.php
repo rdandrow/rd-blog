@@ -74,16 +74,9 @@ describe('BlogPostService Caching', function () {
                 }
             };
 
-            $storeWithTags = new class {
-                public function tags(array $tags = []): self
-                {
-                    return $this;
-                }
-            };
-
-            Cache::shouldReceive('getStore')
+            Cache::shouldReceive('supportsTags')
                 ->once()
-                ->andReturn($storeWithTags);
+                ->andReturn(true);
 
             Cache::shouldReceive('tags')
                 ->once()
@@ -496,8 +489,8 @@ describe('BlogPostService Caching', function () {
             expect($posts3)->toHaveCount(6); // Now includes the new post
         });
 
-        it('bumps cache version on model events', function () {
-            config(['cache.default' => 'array']);
+        it('bumps cache version on model events for non-tagged stores', function () {
+            config(['cache.default' => 'file']);
             Cache::flush();
             
             $author = User::factory()->create();

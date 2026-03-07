@@ -148,12 +148,8 @@ class BlogPost extends Model
      */
     public static function invalidateBlogCache(): void
     {
-        $store = Cache::getStore();
-        $driver = config('cache.default');
-        
-        // Use cache tags only for drivers that properly support them (Redis, Memcached)
-        // Array, file, and database drivers have tags() method but don't actually support tags
-        if (in_array($driver, ['redis', 'memcached']) && method_exists($store, 'tags')) {
+        // Use tag flushing when the active store reports tag support.
+        if (Cache::supportsTags()) {
             Cache::tags(['blog_posts'])->flush();
             return;
         }

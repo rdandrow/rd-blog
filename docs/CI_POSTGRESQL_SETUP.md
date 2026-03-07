@@ -117,21 +117,22 @@ If they differ, CI fails fast with remediation guidance.
 
 ```xml
 <php>
-    <env name="DB_CONNECTION" value="pgsql"/>
-    <env name="DB_HOST"       value="127.0.0.1"/>
-    <env name="DB_PORT"       value="5432"/>
-    <env name="DB_DATABASE"   value="rd_blog_test"/>
-    <env name="DB_USERNAME"   value="rd_blog_user"/>
-    <!-- DB_PASSWORD must be set in your shell environment or .env — never hardcode credentials here -->
+  <!-- Local fallbacks only; CI/job env vars override these values -->
+  <env name="DB_CONNECTION" value="pgsql" force="false"/>
+  <env name="DB_HOST"       value="127.0.0.1" force="false"/>
+  <env name="DB_PORT"       value="5432" force="false"/>
+  <env name="DB_DATABASE"   value="rd_blog_test" force="false"/>
+  <env name="DB_USERNAME"   value="rd_blog_user" force="false"/>
+  <!-- DB_PASSWORD should come from CI/job env vars, shell, or .env — never hardcode credentials here -->
     <!-- Other test environment variables -->
 </php>
 ```
 
 **Ensures:**
-- Tests always use PostgreSQL with a consistent, complete connection tuple
-- Consistent test database name and user (`rd_blog_user`)
+- Local test runs have sane PostgreSQL defaults
+- CI/job-level env vars remain source-of-truth and overridable as documented
 - Isolated from development database
-- `DB_PASSWORD` must be supplied via shell environment or `.env` (not committed)
+- `DB_PASSWORD` must be supplied via CI/job env vars, shell environment, or `.env` (not committed)
 
 ## Troubleshooting
 
@@ -441,6 +442,6 @@ Total:               ~60-100 seconds
 ✅ **Database credentials** properly configured  
 ✅ **Migrations** run before tests  
 ✅ **Parallel testing** enabled (CREATEDB privilege)  
-✅ **All 906 tests** should pass in CI  
+✅ **All 912 tests** should pass in CI  
 
 **Key Takeaway:** The PostgreSQL service must be configured in the GitHub Actions workflow with proper health checks, and database credentials must be set before running migrations and tests.

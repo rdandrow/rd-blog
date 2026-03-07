@@ -85,10 +85,7 @@ describe('File System Errors', function () {
 
     it('handles cache service unavailability', function () {
         // Simulate cache backend outage for blog cache keys and verify graceful fallback.
-        $mockStore = \Mockery::mock('stdClass');
-        $mockStore->shouldReceive('tags')->andReturnSelf();
-
-        \Illuminate\Support\Facades\Cache::shouldReceive('getStore')->andReturn($mockStore);
+        \Illuminate\Support\Facades\Cache::shouldReceive('supportsTags')->andReturn(true);
         \Illuminate\Support\Facades\Cache::shouldReceive('get')->andReturn(null);
         \Illuminate\Support\Facades\Cache::shouldReceive('put')->andReturn(false);
         \Illuminate\Support\Facades\Cache::shouldReceive('forever')->andReturn(true);

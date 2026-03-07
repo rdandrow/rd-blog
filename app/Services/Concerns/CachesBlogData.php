@@ -38,13 +38,11 @@ trait CachesBlogData
     protected function remember(string $key, callable $callback, ?int $ttl = null): mixed
     {
         $ttl = $ttl ?? $this->cacheTtl;
-        $store = Cache::getStore();
         $driver = config('cache.default');
 
         try {
-            // Use cache tags only for drivers that properly support them (Redis, Memcached)
-            // Array, file, and database drivers have tags() method but don't actually support tags
-            if (in_array($driver, ['redis', 'memcached']) && method_exists($store, 'tags')) {
+            // Use tags only when the active cache store reports support.
+            if (Cache::supportsTags()) {
                 $fullKey = $this->cachePrefix . $key;
 
                 return Cache::tags(['blog_posts'])->remember($fullKey, $ttl, $callback);
@@ -86,10 +84,7 @@ trait CachesBlogData
      */
     protected function forget(string $key): bool
     {
-        $store = Cache::getStore();
-        $driver = config('cache.default');
-
-        if (in_array($driver, ['redis', 'memcached']) && method_exists($store, 'tags')) {
+        if (Cache::supportsTags()) {
             return Cache::tags(['blog_posts'])->forget($this->cachePrefix . $key);
         }
 
