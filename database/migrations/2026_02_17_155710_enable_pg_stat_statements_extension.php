@@ -40,25 +40,31 @@ return new class extends Migration
 
         try {
             DB::statement('CREATE EXTENSION IF NOT EXISTS pg_stat_statements');
-        } catch (\Exception $e) {
-            // Extension requires superuser - skip silently in test environments
-            $message = $e->getMessage();
-            if (str_contains($message, 'permission denied') || str_contains($message, 'Insufficient privilege')) {
-                if (app()->environment(['testing', 'local'])) {
-                    // Silent skip for testing/development
-                    return;
-                }
-                
-                throw new \RuntimeException(
-                    "pg_stat_statements requires superuser privileges.\n" .
-                    "Please run as PostgreSQL superuser:\n" .
-                    "  psql {$this->getDatabaseName()} -c \"CREATE EXTENSION IF NOT EXISTS pg_stat_statements;\"\n" .
-                    "Then run: php artisan migrate:status to verify.",
-                    0,
-                    $e
-                );
+        } catch (\Throwable $e) {
+            if (! $this->isPgStatStatementsRecoverableSetupIssue($e)) {
+                throw $e;
             }
-            throw $e;
+
+            if (app()->environment(['testing', 'local'])) {
+                // Silent skip for testing/development where superuser access
+                // and shared_preload_libraries changes are commonly unavailable.
+                return;
+            }
+
+            throw new \RuntimeException(
+                "Unable to enable pg_stat_statements automatically.\n" .
+                "Common causes:\n" .
+                "  1) Missing superuser/CREATE EXTENSION privileges\n" .
+                "  2) pg_stat_statements not loaded via shared_preload_libraries\n\n" .
+                "To fix:\n" .
+                "  psql {$this->getDatabaseName()} -c \"SHOW shared_preload_libraries;\"\n" .
+                "  # Ensure postgresql.conf includes: shared_preload_libraries = 'pg_stat_statements'\n" .
+                "  # Restart PostgreSQL after changing postgresql.conf\n" .
+                "  psql {$this->getDatabaseName()} -c \"CREATE EXTENSION IF NOT EXISTS pg_stat_statements;\"\n" .
+                "Then run: php artisan migrate:status to verify.",
+                0,
+                $e
+            );
         }
     }
 
@@ -68,6 +74,18 @@ return new class extends Migration
     protected function getDatabaseName(): string
     {
         return DB::connection()->getDatabaseName();
+    }
+
+    /**
+     * Determine whether extension setup failed due to common environment constraints.
+     */
+    protected function isPgStatStatementsRecoverableSetupIssue(\Throwable $e): bool
+    {
+        $message = strtolower($e->getMessage());
+
+        return str_contains($message, 'permission denied')
+            || str_contains($message, 'insufficient privilege')
+            || str_contains($message, 'must be loaded via shared_preload_libraries');
     }
 
     /**

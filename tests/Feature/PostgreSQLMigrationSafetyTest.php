@@ -20,4 +20,15 @@ describe('PostgreSQL migration safety', function () {
         }
     });
 
+    it('handles pg_stat_statements preload/privilege setup failures with actionable guidance', function () {
+        $file = base_path('database/migrations/2026_02_17_155710_enable_pg_stat_statements_extension.php');
+        $content = file_get_contents($file);
+
+        expect($content)->not->toBeFalse()
+            ->and($content)->toContain('shared_preload_libraries')
+            ->and($content)->toContain('isPgStatStatementsRecoverableSetupIssue')
+            ->and($content)->toContain('SHOW shared_preload_libraries')
+            ->and($content)->toContain("app()->environment(['testing', 'local'])");
+    });
+
 });
