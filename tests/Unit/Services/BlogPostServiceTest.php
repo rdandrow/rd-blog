@@ -23,7 +23,7 @@ afterEach(function () {
 });
 
 describe('applyFilters method', function () {
-    test('filters posts by search term in title', function () {
+    test('uses PostgreSQL full-text search when driver is pgsql', function () {
         // Arrange: Create a mock query builder on PostgreSQL
         $connection = Mockery::mock();
         $connection->shouldReceive('getDriverName')

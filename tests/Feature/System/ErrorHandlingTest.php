@@ -84,8 +84,8 @@ describe('File System Errors', function () {
     })->group('error-handling', 'filesystem');
 
     it('handles cache service unavailability', function () {
-        // Simulate cache backend outage for blog cache keys and verify graceful fallback.
-        \Illuminate\Support\Facades\Cache::shouldReceive('supportsTags')->andReturn(true);
+        // Simulate cache backend outage on the non-tagged path and verify graceful fallback.
+        \Illuminate\Support\Facades\Cache::shouldReceive('supportsTags')->andReturn(false);
         \Illuminate\Support\Facades\Cache::shouldReceive('get')->andReturn(null);
         \Illuminate\Support\Facades\Cache::shouldReceive('put')->andReturn(false);
         \Illuminate\Support\Facades\Cache::shouldReceive('forever')->andReturn(true);

@@ -527,6 +527,33 @@ describe('PostgreSQL Batch Operations', function () {
                 ->toThrow(\InvalidArgumentException::class);
         });
 
+        it('throws a clear exception on non-PostgreSQL drivers', function () {
+            $model = new class {
+                use HasBatchOperations;
+
+                public function getConnection()
+                {
+                    return new class {
+                        public function getDriverName(): string
+                        {
+                            return 'mysql';
+                        }
+                    };
+                }
+
+                public function getTable(): string
+                {
+                    return 'blog_posts';
+                }
+            };
+
+            $modelClass = $model::class;
+
+            expect(fn () => $modelClass::insertReturning([
+                ['title' => 'X'],
+            ]))->toThrow(\RuntimeException::class, 'requires PostgreSQL');
+        });
+
     });
 
     describe('bulkIncrement', function () {

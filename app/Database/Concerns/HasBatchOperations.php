@@ -399,6 +399,9 @@ trait HasBatchOperations
         $model = new static;
         $connection = $model->getConnection();
         $table = $model->getTable();
+
+        // Uses PostgreSQL-specific RETURNING clause and jsonb casts (?::jsonb).
+        static::ensurePostgreSqlConnection($connection, 'insertReturning');
         
         // SECURITY: Validate column names against actual database columns
         $validColumns = static::getValidColumnNames($model);
