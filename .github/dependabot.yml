@@ -1,0 +1,119 @@
+version: 2
+updates:
+  - package-ecosystem: "composer"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "php"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      composer-production-minor-patch:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      composer-development-minor-patch:
+        dependency-type: "development"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      composer-production-major:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+      composer-development-major:
+        dependency-type: "development"
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:15"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "javascript"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    ignore:
+      - dependency-name: "@rollup/rollup-*"
+      - dependency-name: "@tailwindcss/oxide-*"
+      - dependency-name: "lightningcss-*"
+    groups:
+      npm-production-minor-patch:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      npm-development-minor-patch:
+        dependency-type: "development"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      npm-production-major:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+      npm-development-major:
+        dependency-type: "development"
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "UTC"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      github-actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      github-actions-major:
+        patterns:
+          - "*"
+        update-types:
+          - "major"

@@ -333,6 +333,26 @@ DB::statement('DROP INDEX CONCURRENTLY IF EXISTS blog_posts_search_index');
 
 After running the migration, re-run `php artisan db:check-fts-language` to confirm alignment.
 
+## Dependency Updates (Dependabot)
+
+Automated dependency updates are enabled via `.github/dependabot.yml`.
+
+### What is covered
+
+- `composer` (PHP/Laravel dependencies)
+- `npm` (frontend/build/test dependencies)
+- `github-actions` (CI action versions)
+
+### Update policy
+
+- PRs target `develop`
+- Weekly update schedule for all ecosystems
+- Minor/patch updates are grouped separately from major updates
+- Production and development dependencies are grouped separately for Composer and npm
+- Platform-specific optional npm binaries are ignored to reduce PR noise
+
+If you need to adjust cadence, grouping, or ignore rules, edit `.github/dependabot.yml`.
+
 ## Production Deployment
 
 ```bash
