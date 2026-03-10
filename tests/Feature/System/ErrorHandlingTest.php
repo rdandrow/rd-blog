@@ -84,9 +84,21 @@ describe('File System Errors', function () {
     })->group('error-handling', 'filesystem');
 
     it('handles cache service unavailability', function () {
-        // Test that app continues to work without cache
+        // Simulate cache backend outage on the non-tagged path and verify graceful fallback.
+        \Illuminate\Support\Facades\Cache::shouldReceive('supportsTags')->andReturn(false);
         \Illuminate\Support\Facades\Cache::shouldReceive('get')->andReturn(null);
         \Illuminate\Support\Facades\Cache::shouldReceive('put')->andReturn(false);
+        \Illuminate\Support\Facades\Cache::shouldReceive('forever')->andReturn(true);
+        \Illuminate\Support\Facades\Cache::shouldReceive('remember')->andReturnUsing(function ($key, $ttl, $callback) {
+            // Emulate an unavailable cache backend for application blog cache keys.
+            if (is_string($key) && str_contains($key, 'blog:')) {
+                throw new \RuntimeException('Cache backend unavailable');
+            }
+
+            return $callback();
+        });
+        \Illuminate\Support\Facades\Cache::shouldReceive('forget')->andReturn(true);
+        \Illuminate\Support\Facades\Cache::shouldReceive('has')->andReturn(false);
         
         $response = $this->get(route('home'));
         

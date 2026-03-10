@@ -14,6 +14,30 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    # Safe CI defaults are used when repository secrets are absent (e.g. fork PRs).
+    # On push to protected branches, configure the secrets below to override:
+    #   DB_TEST_USERNAME / DB_TEST_PASSWORD / DB_TEST_DATABASE
+    # These credentials are ephemeral and only reachable inside the CI runner.
+    env:
+      DB_USERNAME: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_user' }}
+      DB_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'secret' }}
+      DB_DATABASE: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ${{ secrets.DB_TEST_USERNAME || 'rd_blog_user' }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_TEST_PASSWORD || 'secret' }}
+          POSTGRES_DB: ${{ secrets.DB_TEST_DATABASE || 'rd_blog_test' }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,6 +46,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.4
+          extensions: pdo, pdo_pgsql, pgsql
           tools: composer:v2
           coverage: xdebug
 
@@ -40,8 +65,23 @@ jobs:
       - name: Copy Environment File
         run: cp .env.example .env
 
+      - name: Configure Database
+        # DB_CONNECTION, DB_HOST, and DB_PORT are already set in .env.example.
+        # Append the remaining credentials so artisan commands (migrate, etc.) resolve them.
+        run: |
+          echo "DB_DATABASE=${{ env.DB_DATABASE }}" >> .env
+          echo "DB_USERNAME=${{ env.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ env.DB_PASSWORD }}" >> .env
+          php artisan config:clear
+
       - name: Generate Application Key
         run: php artisan key:generate
+
+      - name: Run Migrations
+        run: php artisan migrate --force
+
+      - name: Verify FTS Language Alignment
+        run: php artisan db:check-fts-language
 
       - name: Build Assets
         run: npm run build
@@ -51,5 +91,5 @@ jobs:
 
       - name: Frontend Tests
         run: npm run test:run
-        env: 
+        env:
           LARAVEL_BYPASS_ENV_CHECK: 1

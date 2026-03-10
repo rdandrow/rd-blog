@@ -4,12 +4,12 @@ This document provides a comprehensive overview of the test suite for the RD Blo
 
 ## Test Statistics
 
-- **Total Tests**: 636 tests (422 feature + 214 unit)
-- **Total Assertions**: 2,673
-- **Execution Time**: ~15.85 seconds (optimized from ~17s)
+- **Total Tests**: 906 tests (580 feature + 326 unit)
+- **Total Assertions**: 3,382
+- **Execution Time**: ~9.66 seconds (`composer test`, 12 parallel processes)
 - **Parallel Processes**: 12
 - **Test Framework**: Pest PHP 4.1 (built on PHPUnit 11.x)
-- **Last Updated**: January 2026
+- **Last Updated**: March 2026
 - **Recent Optimizations**: Phase 1-3 refactoring complete (see below)
 
 ## Test Architecture
@@ -69,8 +69,8 @@ All tests follow modern Pest patterns:
 - 20 files improved
 - ~140+ individual optimizations applied
 - ~300 lines of code reduced
-- Execution time improved from 17.00s to 15.85s
-- Zero regressions - all 636 tests passing
+- Historical phase benchmark: execution time improved from 17.00s to 15.85s
+- Zero regressions - all 906 tests passing
 
 ### Test Constants (Pest.php)
 
@@ -342,14 +342,13 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 
 ##### `System/ErrorHandlingTest.php`
 - **Purpose**: Error handling and graceful degradation
-- **Structure**: 6 describe blocks
-  - Database Connection Failures (2 tests)
+- **Structure**: 4 describe blocks
   - Transaction Rollback (1 test)
   - File System Errors (5 tests)
   - Invalid Input (5 tests)
   - 404 Errors (3 tests)
-- **Tests**: 16 tests (1 passing, 15 pre-existing database mock failures)
-- **Groups**: `error-handling`, `database`, `filesystem`, `validation`, `404`, `500`
+- **Tests**: 14 tests, 21 assertions
+- **Groups**: `error-handling`, `database`, `filesystem`, `validation`, `404`
 - **Custom Expectations**: `toBeNotFound()`
 - **Features**: Graceful failures, error message sanitization
 
@@ -394,7 +393,7 @@ Feature tests verify complete user-facing functionality including HTTP requests,
 
 ### Unit Tests (`tests/Unit/`)
 
-Unit tests verify isolated pieces of code without external dependencies. Our suite includes **278 unit tests** covering:
+Unit tests verify isolated pieces of code without external dependencies. Our suite currently includes **326 unit tests**.
 
 #### Structure
 ```
@@ -408,7 +407,7 @@ tests/Unit/
 │   └── Resources/       # API transformations (BlogPostResource)
 ```
 
-#### Completed Unit Test Files (278 tests total)
+#### Unit Test Areas
 
 **Models** (79 tests):
 - `BlogPostTest.php` - 22 tests (slug generation, reading time calculation)
@@ -463,12 +462,12 @@ All unit tests now include PHPDoc annotations documenting their test groups for 
 
 **By Directory (Most Practical):**
 ```bash
-./vendor/bin/pest tests/Unit/Models           # All model tests (37 tests)
-./vendor/bin/pest tests/Unit/Services         # All service tests (5 tests)
-./vendor/bin/pest tests/Unit/Policies         # All policy tests (24 tests)
-./vendor/bin/pest tests/Unit/Actions/Fortify  # All Fortify action tests (50 tests)
-./vendor/bin/pest tests/Unit/Http/Requests    # All request validation tests (62 tests)
-./vendor/bin/pest tests/Unit/Http/Resources   # All resource transformation tests (18 tests)
+./vendor/bin/pest tests/Unit/Models
+./vendor/bin/pest tests/Unit/Services
+./vendor/bin/pest tests/Unit/Policies
+./vendor/bin/pest tests/Unit/Actions/Fortify
+./vendor/bin/pest tests/Unit/Http/Requests
+./vendor/bin/pest tests/Unit/Http/Resources
 ```
 
 **By Specific File:**
@@ -481,7 +480,7 @@ All unit tests now include PHPDoc annotations documenting their test groups for 
 
 **All Unit Tests:**
 ```bash
-./vendor/bin/pest tests/Unit                   # All 211 unit tests
+./vendor/bin/pest tests/Unit                   # All 326 unit tests
 ./vendor/bin/pest tests/Unit --compact         # Compact output
 ```
 
@@ -574,12 +573,12 @@ composer test
 
 ### Run Specific Test File
 ```bash
-./vendor/bin/pest tests/Feature/BlogPostTest.php
+./vendor/bin/pest tests/Feature/Admin/BlogPostTest.php
 ```
 
 ### Run by Group
 ```bash
-./vendor/bin/pest --group=authentication
+./vendor/bin/pest --group=auth
 ./vendor/bin/pest --group=crud
 ./vendor/bin/pest --group=performance
 ```
@@ -609,7 +608,7 @@ composer test
 ./vendor/bin/pest --profile
 ```
 
-For more testing strategies and patterns, see `tests/PEST_BEST_PRACTICES.md`.
+For more testing strategies and patterns, see `tests/docs/PEST_BEST_PRACTICES.md`.
 
 ## Best Practices Guide
 
@@ -989,8 +988,8 @@ public function test_create_user(): void
 - [ ] Verify behavior, not implementation
 
 For more detailed examples and patterns, see:
-- `tests/PEST_BEST_PRACTICES.md` - Pest-specific patterns and advanced techniques
-- `tests/PHPUNIT_BEST_PRACTICES.md` - PHPUnit unit testing comprehensive guide
+- `tests/docs/PEST_BEST_PRACTICES.md` - Pest-specific patterns and advanced techniques
+- `tests/docs/PHPUNIT_BEST_PRACTICES.md` - PHPUnit unit testing comprehensive guide
 
 ## Test Coverage Highlights
 
@@ -1124,8 +1123,8 @@ For more detailed examples and patterns, see:
 - Document complex test scenarios
 
 For comprehensive patterns and examples:
-- `tests/PEST_BEST_PRACTICES.md` - Pest-specific patterns
-- `tests/PHPUNIT_BEST_PRACTICES.md` - PHPUnit unit testing guide
+- `tests/docs/PEST_BEST_PRACTICES.md` - Pest-specific patterns
+- `tests/docs/PHPUNIT_BEST_PRACTICES.md` - PHPUnit unit testing guide
 
 ## Test Execution Performance
 
@@ -1146,7 +1145,7 @@ When adding new features:
 2. Update this README with test documentation (structure, groups, custom expectations)
 3. Update test statistics in the overview section
 4. Document any new test helpers, custom expectations, or datasets
-5. Update `tests/PEST_BEST_PRACTICES.md` if introducing new patterns
+5. Update `tests/docs/PEST_BEST_PRACTICES.md` if introducing new patterns
 
 ---
 

@@ -11,7 +11,7 @@ This document outlines best practices for improving our Pest PHP test suite base
 
 This document provides comprehensive context beyond the quick-reference patterns in the README.
 
-## Current Status (January 2026)
+## Current Status (March 2026)
 
 **Completed Refactoring:**
 - All feature tests refactored with `describe()` blocks
@@ -31,9 +31,9 @@ This document provides comprehensive context beyond the quick-reference patterns
 - **✨ Phase 6: Performance profiling** - optimized slow tests (2.8s improvement, 8.1% faster)
 
 **Test Suite Statistics:**
-- **Total Tests**: 671 (427 feature + 244 unit: 217 + 20 middleware + 7 listeners)
-- **Total Assertions**: 2,715
-- **Execution Time**: 17.60s (improved from 17.80s - 1.1% improvement)
+- **Total Tests**: 906 (580 feature + 326 unit)
+- **Total Assertions**: 3,382
+- **Execution Time**: 9.66s (`composer test`, 12 parallel processes)
 - **Files Optimized**: 28 files improved across all phases
 - **Code Reduced**: ~300 lines of duplicated code eliminated
 - **Zero Regressions**: All tests passing after optimizations
@@ -116,7 +116,7 @@ tests/Feature/
 |-----------------|-----------|-----------|
 | `app/Models/BlogPost.php` | `tests/Unit/Models/BlogPostTest.php` | Unit |
 | `app/Services/BlogPostService.php` | `tests/Unit/Services/BlogPostServiceTest.php` | Unit |
-| `app/Http/Controllers/BlogPostController.php` | `tests/Feature/BlogPostTest.php` | Feature |
+| `app/Http/Controllers/BlogPostController.php` | `tests/Feature/Admin/BlogPostTest.php` | Feature |
 | `app/Policies/BlogPostPolicy.php` | `tests/Unit/Policies/BlogPostPolicyTest.php` | Unit |
 | `app/Actions/Fortify/CreateNewUser.php` | `tests/Unit/Actions/Fortify/CreateNewUserTest.php` | Unit |
 
@@ -300,7 +300,7 @@ This approach combines **structural organization** (directories) with **logical 
 3. **Added rate limiter resets**: Clear rate limiters before tests to ensure consistent behavior
 
 **Results:**
-- Test execution time: 17.80s → 16.35s (8.1% improvement)
+- Historical phase benchmark: 17.80s → 16.35s (8.1% improvement)
 - Slowest test: 2.04s → 0.38s (81% improvement)
 - Rate limiting tests: 2.72s → 2.19s (19% improvement)
 
@@ -792,7 +792,7 @@ composer test
 
 ### Run Specific Files
 ```bash
-./vendor/bin/pest tests/Feature/BlogPostTest.php
+./vendor/bin/pest tests/Feature/Admin/BlogPostTest.php
 ./vendor/bin/pest tests/Feature/Settings/
 ```
 
@@ -1034,7 +1034,7 @@ Add to your GitHub Actions or CI pipeline:
 ### Completed ✅
 - [✅] ~~Implement `beforeAll()` for expensive setup operations~~ (Limitation: Not supported in `describe()` blocks)
 - [✅] ~~Add more domain-specific custom expectations~~ (Completed in Phase 4)
-- [✅] ~~Profile and optimize slow tests~~ (Completed in Phase 6 - 17.80s → 16.35s)
+- [✅] ~~Profile and optimize slow tests~~ (Completed in Phase 6 - historical benchmark: 17.80s → 16.35s)
 - [✅] ~~Add snapshot testing for API responses~~ (Completed in Phase 5)
 - [✅] ~~Explore mutation testing with Infection~~ (Completed in Phase 6 - Configured for Models, Resources, Actions)
 - [✅] ~~Add test coverage reporting and enforce minimums~~ (Completed in Phase 7 - Xdebug/PCOV documented)
@@ -1050,7 +1050,7 @@ Add to your GitHub Actions or CI pipeline:
 
 ### Current State
 All high and medium priority enhancements have been completed. The test suite is now fully optimized with:
-- **671 tests** running in **17.60 seconds** (1.1% improvement from 17.80s baseline)
+- **906 tests** running in **9.66 seconds** (`composer test` baseline)
 - **9 completed optimization phases** (constants, helpers, data providers, expectations, snapshots, mutation testing, coverage docs, traits, performance)
 - **Zero regressions** after all optimizations
 - **Comprehensive coverage** with snapshot testing, custom expectations, shared utilities, middleware unit tests, and listener unit tests

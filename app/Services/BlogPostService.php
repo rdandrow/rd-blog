@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Models\BlogPost;
 use App\Models\User;
+use App\Services\Concerns\CachesBlogData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class BlogPostService
 {
+    use CachesBlogData;
     /**
      * Apply search and filter conditions to a query.
      */
@@ -16,11 +18,24 @@ class BlogPostService
     {
         // Apply search filter
         if (!empty($filters['search'])) {
-            $query->where(function (Builder $q) use ($filters) {
-                $q->where('title', 'like', "%{$filters['search']}%")
-                  ->orWhere('excerpt', 'like', "%{$filters['search']}%")
-                  ->orWhere('content', 'like', "%{$filters['search']}%");
-            });
+            $search = $filters['search'];
+            
+            // Use PostgreSQL full-text search for better performance
+            if ($this->isPostgreSqlConnection($query)) {
+                $language = config('database.full_text_search.language', 'english');
+                $query->whereRaw(
+                    "to_tsvector(?, coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, '')) @@ plainto_tsquery(?, ?)",
+                    [$language, $language, $search]
+                );
+            } else {
+                // Fallback for other databases (portable case-insensitive pattern matching)
+                $searchLower = strtolower($search);
+                $query->where(function (Builder $q) use ($searchLower) {
+                    $q->whereRaw('LOWER(title) LIKE ?', ["%{$searchLower}%"])
+                      ->orWhereRaw('LOWER(excerpt) LIKE ?', ["%{$searchLower}%"])
+                      ->orWhereRaw('LOWER(content) LIKE ?', ["%{$searchLower}%"]);
+                });
+            }
         }
 
         // Apply tag filter
@@ -37,10 +52,24 @@ class BlogPostService
     }
 
     /**
+     * Determine whether the query is using a PostgreSQL connection.
+     */
+    protected function isPostgreSqlConnection(Builder $query): bool
+    {
+        return $query->getConnection()->getDriverName() === 'pgsql';
+    }
+
+    /**
      * Get featured blog posts.
      */
     public function getFeaturedPosts(int $limit = 2, array $filters = []): Collection
     {
+        // Use cache if no filters or only common filters
+        if (empty($filters) || $this->isCacheable($filters)) {
+            return $this->cacheFeaturedPosts($limit, $filters);
+        }
+
+        // Bypass cache for complex filters
         $query = BlogPost::with('author')
             ->published()
             ->where('is_featured', true);
@@ -57,6 +86,12 @@ class BlogPostService
      */
     public function getRecentPosts(int $limit = 6, array $filters = []): Collection
     {
+        // Use cache if no filters or only common filters
+        if (empty($filters) || $this->isCacheable($filters)) {
+            return $this->cacheRecentPosts($limit, $filters);
+        }
+
+        // Bypass cache for complex filters
         $query = BlogPost::with('author')
             ->published()
             ->where('is_featured', false);
@@ -85,15 +120,7 @@ class BlogPostService
      */
     public function getAvailableTags(): Collection
     {
-        return BlogPost::published()
-            ->select('tags')
-            ->whereNotNull('tags')
-            ->get()
-            ->pluck('tags')
-            ->flatten()
-            ->unique()
-            ->sort()
-            ->values();
+        return $this->cacheAvailableTags();
     }
 
     /**
@@ -101,9 +128,7 @@ class BlogPostService
      */
     public function getAvailableAuthors(): Collection
     {
-        return User::whereHas('blogPosts', function (Builder $query) {
-            $query->published();
-        })->get(['id', 'name']);
+        return $this->cacheAvailableAuthors();
     }
 
     /**
@@ -132,5 +157,55 @@ class BlogPostService
             'available_tags' => $this->getAvailableTags(),
             'available_authors' => $this->getAvailableAuthors(),
         ];
+    }
+
+    /**
+     * Get the most recently published blog posts.
+     *
+     * Named "popular" for API intent, but ordered by published_at because
+     * view/engagement tracking is not yet implemented. Replace the ordering
+     * in cachePopularPosts() once real popularity metrics are available.
+     */
+    public function getPopularPosts(int $limit = 10): Collection
+    {
+        return $this->cachePopularPosts($limit);
+    }
+
+    /**
+     * Get blog post statistics.
+     */
+    public function getPostStats(): array
+    {
+        return $this->cachePostStats();
+    }
+
+    /**
+     * Check if filters are cacheable.
+     * 
+     * Only cache common filter combinations to avoid cache pollution.
+     */
+    protected function isCacheable(array $filters): bool
+    {
+        // Only cache tag and author filters (most common)
+        $allowedKeys = ['tag', 'author'];
+        
+        foreach (array_keys($filters) as $key) {
+            if (!in_array($key, $allowedKeys)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Invalidate all blog caches.
+     * 
+     * Call this after creating/updating/deleting posts.
+     * This delegates to the model's cache invalidation logic.
+     */
+    public function invalidateCache(): void
+    {
+        BlogPost::invalidateBlogCache();
     }
 }

@@ -23,14 +23,25 @@ afterEach(function () {
 });
 
 describe('applyFilters method', function () {
-    test('filters posts by search term in title', function () {
-        // Arrange: Create a mock query builder
-        $query = Mockery::mock(Builder::class);
-        
-        // Expect where clause with closure for search
-        $query->shouldReceive('where')
+    test('uses PostgreSQL full-text search when driver is pgsql', function () {
+        // Arrange: Create a mock query builder on PostgreSQL
+        $connection = Mockery::mock();
+        $connection->shouldReceive('getDriverName')
             ->once()
-            ->with(Mockery::type('Closure'))
+            ->andReturn('pgsql');
+
+        $query = Mockery::mock(Builder::class);
+        $query->shouldReceive('getConnection')
+            ->once()
+            ->andReturn($connection);
+        
+        // Expect whereRaw for PostgreSQL full-text search
+        $query->shouldReceive('whereRaw')
+            ->once()
+            ->with(
+                Mockery::type('string'),
+                Mockery::type('array')
+            )
             ->andReturnSelf();
         
         // Act: Apply search filter
@@ -75,13 +86,21 @@ describe('applyFilters method', function () {
     });
 
     test('applies multiple filters simultaneously', function () {
-        // Arrange: Create a mock query builder
+        // Arrange: Create a mock query builder on non-PostgreSQL driver
+        $connection = Mockery::mock();
+        $connection->shouldReceive('getDriverName')
+            ->once()
+            ->andReturn('sqlite');
+
         $query = Mockery::mock(Builder::class);
+        $query->shouldReceive('getConnection')
+            ->once()
+            ->andReturn($connection);
         
         // Expect all filter methods to be called
         $query->shouldReceive('where')
             ->once()
-            ->with(Mockery::type('Closure'))
+            ->with(Mockery::on(fn ($arg) => $arg instanceof \Closure))
             ->andReturnSelf();
         $query->shouldReceive('whereJsonContains')
             ->once()
@@ -109,6 +128,7 @@ describe('applyFilters method', function () {
         
         // Expect no methods to be called
         $query->shouldReceive('where')->never();
+        $query->shouldReceive('whereRaw')->never();
         $query->shouldReceive('whereJsonContains')->never();
         
         // Act: Apply empty filters

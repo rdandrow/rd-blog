@@ -95,7 +95,21 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => 'prefer',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            // PDO connection attributes — add real PDO::* integer constants here if needed.
+            // e.g. PDO::ATTR_PERSISTENT => true
+            'options' => [],
+
+            // PgBouncer / connection-pool metadata.
+            // These keys are NOT passed to PDO; they are here for documentation and
+            // can be read at runtime via config('database.connections.pgsql.pgbouncer.*').
+            // To use PgBouncer, set DB_PORT=6432 in .env.
+            // See docs/CONNECTION_POOLING_GUIDE.md for full setup instructions.
+            'pgbouncer' => [
+                'pool_size' => env('DB_POOL_SIZE', 20),
+                'pool_mode' => env('DB_POOL_MODE', 'transaction'),
+            ],
         ],
 
         'sqlsrv' => [
@@ -129,6 +143,23 @@ return [
     'migrations' => [
         'table' => 'migrations',
         'update_date_on_publish' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Full-Text Search Configuration
+    |--------------------------------------------------------------------------
+    |
+    | PostgreSQL full-text search configuration. The text search configuration
+    | determines the language-specific rules for stemming, stop words, etc.
+    |
+    | Common configurations: english, spanish, french, german, portuguese, etc.
+    | See: https://www.postgresql.org/docs/current/textsearch-controls.html
+    |
+    */
+
+    'full_text_search' => [
+        'language' => env('DB_FTS_LANGUAGE', 'english'),
     ],
 
     /*

@@ -8,6 +8,7 @@
  */
 
 use App\Models\User;
+use App\Services\BlogImageService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -309,11 +310,11 @@ describe('Image Upload Storage', function () {
 describe('Image Upload Error Handling', function () {
     it('handles storage failures gracefully', function () {
         $admin = createTestAdmin();
-        
-        // Make storage read-only to simulate failure
-        Storage::fake('public');
-        Storage::shouldReceive('disk')->andReturnSelf();
-        Storage::shouldReceive('put')->andThrow(new \Exception('Storage unavailable'));
+
+        // Mock BlogImageService to simulate a storage failure
+        $this->mock(BlogImageService::class, function ($mock) {
+            $mock->shouldReceive('upload')->andThrow(new \Exception('Storage unavailable'));
+        });
 
         $image = UploadedFile::fake()->image('test.jpg');
         $response = authenticatedPost($admin, route('admin.blog-posts.upload-image'), [
@@ -326,7 +327,7 @@ describe('Image Upload Error Handling', function () {
         expect($data)
             ->toHaveKey('success', false)
             ->toHaveKey('error');
-    })->skip('Requires complex mocking')->group('blog-posts', 'image-upload', 'error-handling');
+    })->group('blog-posts', 'image-upload', 'error-handling');
 
     it('returns error when no file is provided', function () {
         $admin = createTestAdmin();

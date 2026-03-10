@@ -1,10 +1,10 @@
 # Vitest Coverage Plan
 
-This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FRONTEND_TESTING.md) (note: parts may be outdated) and aligns with Vitest docs: https://vitest.dev/
+This plan builds on existing guidance in [FRONTEND_TESTING.md](./FRONTEND_TESTING.md) and aligns with Vitest docs: https://vitest.dev/
 
 ## Current Test Status
 
-**Total: 1,773 tests across 68 test files** (1,772 passing, 1 skipped)
+**Total: 1,785 tests across 68 test files** (1,784 passing, 1 skipped)
 
 ### Completed Coverage:
 - ✅ **Composables** (270 tests): useAutoSave (46), useMarkdown (48), useBlogUtils (26), useInitials (17), useAppearance (31), useTwoFactorAuth (31), useBlogPostForm (59), useClickOutside (9), useSearchState (8)
@@ -16,7 +16,7 @@ This plan builds on existing guidance in [tests/FRONTEND_TESTING.md](../tests/FR
 - ✅ **Sidebar Components** (138 tests): SidebarHeader (11), SidebarFooter (11), SidebarMenuItem (10), SidebarMenuBadge (17), SidebarTrigger (16), SidebarGroup (13), SidebarGroupContent (10), SidebarMenu (12), SidebarMenuSubItem (10), SidebarSeparator (11), SidebarGroupLabel (17) - **85%+ coverage achieved**
 - ✅ **Navigation Components** (90 tests): NavUser (22), NavMain (20), NavFooter (28), UserMenuContent (20) - **Complete navigation test coverage with mocked reka-ui components**
 - ✅ **Admin Pages** (249 tests): Blog Post Create (47), Blog Post Edit (44), Blog Post Index (36), Blog Post Show (34), AdminUsers (30), MemberUsers (27), Drafts (31) - **Complete blog post lifecycle & user management tested**
-- ✅ **Auth Pages** (240 tests): Login (26), Register (29), TwoFactorChallenge (38), AcceptInvitation (38), ForgotPassword (25), ResetPassword (35), VerifyEmail (27), ConfirmPassword (22) - **95%+ coverage achieved**
+- ✅ **Auth Pages** (241 tests): Login (26), Register (29), TwoFactorChallenge (38), AcceptInvitation (38), ForgotPassword (25), ResetPassword (35), VerifyEmail (27), ConfirmPassword (23) - **95%+ coverage achieved**
 - ✅ **Public Pages** (130 tests): BlogPost (55), Blog (25 passing, 1 skipped), AuthorProfile (50)
 - ✅ **Settings Pages** (120 tests): Appearance (11), Password (31), Profile (42), TwoFactor (36)
 - ✅ **Test Infrastructure**: Setup file (4 tests)
