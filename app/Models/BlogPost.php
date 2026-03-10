@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BlogPost extends Model
@@ -136,8 +137,15 @@ class BlogPost extends Model
      */
     public static function bumpCacheVersion(): void
     {
-        $currentVersion = static::getCacheVersion();
-        Cache::forever('blog:cache_version', $currentVersion + 1);
+        try {
+            $currentVersion = static::getCacheVersion();
+            Cache::forever('blog:cache_version', $currentVersion + 1);
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to bump blog cache version; continuing without cache invalidation.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -148,15 +156,22 @@ class BlogPost extends Model
      */
     public static function invalidateBlogCache(): void
     {
-        // Use tag flushing when the active store reports tag support.
-        if (Cache::supportsTags()) {
-            Cache::tags(['blog_posts'])->flush();
-            return;
+        try {
+            // Use tag flushing when the active store reports tag support.
+            if (Cache::supportsTags()) {
+                Cache::tags(['blog_posts'])->flush();
+                return;
+            }
+
+            // Fallback: Bump cache version to instantly invalidate all versioned keys
+            // This is more efficient and reliable than trying to enumerate and delete keys
+            static::bumpCacheVersion();
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to invalidate blog cache; continuing without cache invalidation.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
         }
-        
-        // Fallback: Bump cache version to instantly invalidate all versioned keys
-        // This is more efficient and reliable than trying to enumerate and delete keys
-        static::bumpCacheVersion();
     }
 
     /**

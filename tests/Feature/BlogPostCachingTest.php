@@ -108,6 +108,44 @@ describe('BlogPostService Caching', function () {
             expect($value)->toBe('fallback-value')
                 ->and($executed)->toBe(1);
         });
+
+        it('does not fail model writes when cache invalidation throws in hooks', function () {
+            Cache::shouldReceive('supportsTags')
+                ->andReturn(true);
+
+            Cache::shouldReceive('tags')
+                ->andReturn(new class {
+                    public function flush(): void
+                    {
+                        throw new \RuntimeException('Cache unavailable during invalidation');
+                    }
+                });
+
+            Log::shouldReceive('warning')
+                ->atLeast()
+                ->once()
+                ->withArgs(fn (string $message, array $context): bool =>
+                    str_contains($message, 'Failed to invalidate blog cache')
+                    && ($context['exception'] ?? null) === \RuntimeException::class
+                );
+
+            $author = User::factory()->create();
+
+            // create
+            $post = BlogPost::factory()->create([
+                'user_id' => $author->id,
+                'is_published' => true,
+            ]);
+            expect($post->exists)->toBeTrue();
+
+            // update
+            $updated = $post->update(['title' => 'Cache Outage Safe Update']);
+            expect($updated)->toBeTrue();
+
+            // delete
+            $post->delete();
+            expect(BlogPost::whereKey($post->id)->exists())->toBeFalse();
+        });
     });
 
     describe('Available Tags Caching', function () {
