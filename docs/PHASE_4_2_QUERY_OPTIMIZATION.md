@@ -50,7 +50,7 @@ if (!empty($filters['search'])) {
 - ✅ **Language-aware tokenization** - Better results for English content
 - ✅ **Case-insensitive by default** - No need for ILIKE
 - ✅ **Stemming support** - Finds word variations (e.g., "program" finds "programming")
-- ✅ **Backward compatible** - Falls back to ILIKE for non-PostgreSQL databases
+- ✅ **Backward compatible** - Falls back to portable `LOWER(...) LIKE` matching for non-PostgreSQL databases
 
 ### 2. Unit Test Updates
 
@@ -172,7 +172,7 @@ composer test
 - ✅ Case-insensitive by default
 
 ### Other Databases (Fallback Path)
-- ✅ Uses `ILIKE` pattern matching
+- ✅ Uses portable `LOWER(...) LIKE` pattern matching
 - ✅ Still case-insensitive
 - ✅ Works on SQLite (testing)
 - ✅ Works on MySQL/MariaDB
@@ -195,12 +195,15 @@ The implementation maintains full backward compatibility:
 // Automatically uses optimal method based on database
 if ($query->getConnection()->getDriverName() === 'pgsql') {
     // PostgreSQL: Use full-text search
-    $query->whereRaw("to_tsvector(...) @@ plainto_tsquery(...)", [$search]);
+    $query->whereRaw("to_tsvector(...) @@ plainto_tsquery(...)", [$language, $language, $search]);
 } else {
-    // SQLite/MySQL: Use ILIKE pattern matching
-    $query->where('title', 'ilike', "%{$search}%")
-          ->orWhere('excerpt', 'ilike', "%{$search}%")
-          ->orWhere('content', 'ilike', "%{$search}%");
+    // SQLite/MySQL: Use portable case-insensitive pattern matching
+    $searchLower = strtolower($search);
+    $query->where(function (Builder $q) use ($searchLower) {
+        $q->whereRaw('LOWER(title) LIKE ?', ["%{$searchLower}%"])
+          ->orWhereRaw('LOWER(excerpt) LIKE ?', ["%{$searchLower}%"])
+          ->orWhereRaw('LOWER(content) LIKE ?', ["%{$searchLower}%"]);
+    });
 }
 ```
 

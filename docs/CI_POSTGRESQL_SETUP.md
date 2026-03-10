@@ -417,7 +417,7 @@ Service startup:     ~10-15 seconds
 PHP setup:           ~5 seconds
 Dependencies:        ~30-60 seconds (with cache)
 Migrations:          ~5-10 seconds
-Tests (906 tests):   ~12-20 seconds
+Tests (full suite):  ~12-20 seconds
 Total:               ~60-100 seconds
 ```
 
@@ -442,6 +442,6 @@ Total:               ~60-100 seconds
 ✅ **Database credentials** properly configured  
 ✅ **Migrations** run before tests  
 ✅ **Parallel testing** enabled (CREATEDB privilege)  
-✅ **All 912 tests** should pass in CI  
+✅ **Full test suite** should pass in CI  
 
 **Key Takeaway:** The PostgreSQL service must be configured in the GitHub Actions workflow with proper health checks, and database credentials must be set before running migrations and tests.

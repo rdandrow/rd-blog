@@ -76,12 +76,12 @@ $query->whereRaw(
 
 ---
 
-### 3. Composite Index for Published Posts 🔥 HIGH VALUE
+### 3. Partial Index for Published Posts 🔥 HIGH VALUE
 
 ```sql
 CREATE INDEX blog_posts_published_date_index 
-ON blog_posts (is_published, published_at DESC) 
-WHERE is_published = true AND published_at <= NOW()
+ON blog_posts (published_at DESC) 
+WHERE is_published = true
 ```
 
 **Purpose:** Optimize queries for published posts sorted by date  
@@ -102,7 +102,8 @@ BlogPost::where('is_published', true)
 **Why Partial Index?**
 - Only indexes published posts (excludes drafts)
 - Smaller index size = faster queries
-- Covers both WHERE conditions and ORDER BY in one index
+- Covers the hot filter (`is_published = true`) plus ordering (`published_at DESC`)
+- `published_at <= NOW()` remains a runtime filter (not part of index predicate)
 
 ---
 
@@ -110,7 +111,7 @@ BlogPost::where('is_published', true)
 
 ```sql
 CREATE INDEX blog_posts_featured_published_index 
-ON blog_posts (is_featured, published_at DESC) 
+ON blog_posts (published_at DESC) 
 WHERE is_published = true AND is_featured = true
 ```
 
@@ -127,6 +128,11 @@ BlogPost::published()
 - Highlighted content showcase
 
 **Performance Impact:** 🟡 **3-10x faster** for featured post queries
+
+**Why this shape?**
+- `is_published = true` and `is_featured = true` are enforced by the partial predicate
+- `published_at DESC` is the indexed sort key used by the query
+- Keeping key columns narrow reduces index size and maintenance overhead
 
 ---
 

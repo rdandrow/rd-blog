@@ -93,9 +93,9 @@ Blogs are naturally cache-friendly:
    - Clears all related caches when posts change
 
 4. **tests/Feature/BlogPostCachingTest.php** (365 lines)
-    - 20 comprehensive tests
-    - 72 assertions
-   - Covers all caching scenarios
+    - Comprehensive feature coverage for caching behavior
+    - Includes invalidation, fallback, and filter-aware scenarios
+    - Covers all caching scenarios
 
 ## Usage Examples
 
@@ -283,7 +283,7 @@ blog:featured_posts:10:a1b2c3d4e5f6...  // with filters
 
 ### Test Coverage
 
-**15 Tests, 50 Assertions:**
+**Coverage highlights:**
 
 1. ✅ Caches popular posts by published date
 2. ✅ Caches different limits separately
@@ -639,7 +639,7 @@ class CacheMetrics
 ✅ **Implemented:**
 - Reusable `CachesBlogData` trait
 - Automatic cache invalidation
-- 20 passing tests with 72 assertions
+- Comprehensive feature tests covering core caching scenarios
 - Support for filtered queries
 - Smart cache key generation
 
