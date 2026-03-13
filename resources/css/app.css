@@ -251,7 +251,7 @@
 }
 
 /* Markdown table wrapper for responsive scrolling */
-.prose :where(table):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+.prose :where(table):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
     display: block;
     width: 100%;
     overflow-x: auto;
@@ -337,7 +337,8 @@
     }
 
     @keyframes gradientShift {
-        0%, 100% {
+        0%,
+        100% {
             background-position: 0% 50%;
         }
         50% {

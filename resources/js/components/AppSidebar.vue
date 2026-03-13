@@ -14,7 +14,15 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, FileText, FilePenLine, Users, UserCog } from 'lucide-vue-next';
+import {
+    BookOpen,
+    FilePenLine,
+    FileText,
+    Folder,
+    LayoutGrid,
+    UserCog,
+    Users,
+} from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 

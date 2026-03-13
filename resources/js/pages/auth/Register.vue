@@ -65,7 +65,9 @@ import { Form, Head } from '@inertiajs/vue3';
                         name="password"
                         placeholder="Password (minimum 14 characters)"
                     />
-                    <p class="text-xs text-muted-foreground">Must be at least 14 characters long</p>
+                    <p class="text-xs text-muted-foreground">
+                        Must be at least 14 characters long
+                    </p>
                     <InputError :message="errors.password" />
                 </div>
 
@@ -84,19 +86,30 @@ import { Form, Head } from '@inertiajs/vue3';
                 </div>
 
                 <!-- Two-Factor Authentication Notice -->
-                <div class="grid gap-3 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <div
+                    class="grid gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950"
+                >
                     <div class="flex items-center space-x-2">
-                        <div class="h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center">
-                            <svg class="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 8 8">
-                                <path d="M4 0L7 3H5v3H3V3H1z"/>
+                        <div
+                            class="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500"
+                        >
+                            <svg
+                                class="h-2 w-2 text-white"
+                                fill="currentColor"
+                                viewBox="0 0 8 8"
+                            >
+                                <path d="M4 0L7 3H5v3H3V3H1z" />
                             </svg>
                         </div>
-                        <Label class="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        <Label
+                            class="text-sm font-medium text-blue-800 dark:text-blue-200"
+                        >
                             Two-Factor Authentication Required
                         </Label>
                     </div>
                     <p class="text-xs text-blue-700 dark:text-blue-300">
-                        For your security, you'll be asked to set up two-factor authentication after creating your account.
+                        For your security, you'll be asked to set up two-factor
+                        authentication after creating your account.
                     </p>
                 </div>
 

@@ -89,11 +89,20 @@ const user = page.props.auth.user;
                             autocomplete="url"
                             placeholder="https://example.com"
                         />
-                        <p class="text-xs text-muted-foreground mt-1">Enter your website URL (protocol is optional, https:// will be added automatically)</p>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            Enter your website URL (protocol is optional,
+                            https:// will be added automatically)
+                        </p>
                         <InputError class="mt-2" :message="errors.website" />
                     </div>
 
-                    <div v-if="user.role === 'admin' || user.role === 'master_admin'" class="grid gap-2">
+                    <div
+                        v-if="
+                            user.role === 'admin' ||
+                            user.role === 'master_admin'
+                        "
+                        class="grid gap-2"
+                    >
                         <Label for="bio">Bio</Label>
                         <Textarea
                             id="bio"

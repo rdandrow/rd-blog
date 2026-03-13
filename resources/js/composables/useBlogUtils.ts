@@ -17,12 +17,13 @@ export function formatDate(dateString: string): string {
 export function useActiveFilters(
     searchInput: ComputedRef<string> | { value: string },
     selectedTag: ComputedRef<string> | { value: string },
-    selectedAuthor: ComputedRef<string> | { value: string }
+    selectedAuthor: ComputedRef<string> | { value: string },
 ): ComputedRef<boolean> {
     return computed(() => {
         const search = 'value' in searchInput ? searchInput.value : searchInput;
         const tag = 'value' in selectedTag ? selectedTag.value : selectedTag;
-        const author = 'value' in selectedAuthor ? selectedAuthor.value : selectedAuthor;
+        const author =
+            'value' in selectedAuthor ? selectedAuthor.value : selectedAuthor;
         return !!(search || tag || author);
     });
 }

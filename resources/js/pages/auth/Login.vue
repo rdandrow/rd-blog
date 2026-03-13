@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import { Form, Head, usePage } from '@inertiajs/vue3';
+import { computed, onMounted, ref } from 'vue';
 
 defineProps<{
     status?: string;
@@ -23,7 +23,9 @@ const page = usePage();
 const passwordInput = ref<{ input: HTMLInputElement | null } | null>(null);
 
 // Pre-fill email from flash data (e.g., after invitation acceptance)
-const prefilledEmail = computed(() => page.props.flash?.email as string | undefined);
+const prefilledEmail = computed(
+    () => page.props.flash?.email as string | undefined,
+);
 
 // Focus password field if email is pre-filled
 onMounted(() => {

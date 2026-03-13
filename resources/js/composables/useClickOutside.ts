@@ -2,13 +2,13 @@ import { onMounted, onUnmounted, Ref } from 'vue';
 
 /**
  * Composable to handle click outside events for dropdowns, modals, etc.
- * 
+ *
  * @param elementRef - Ref to the HTML element to monitor
  * @param callback - Function to call when clicking outside the element
  */
 export function useClickOutside(
     elementRef: Ref<HTMLElement | null>,
-    callback: () => void
+    callback: () => void,
 ) {
     const handleClickOutside = (event: MouseEvent) => {
         const target = event.target as Node;
