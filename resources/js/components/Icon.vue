@@ -19,6 +19,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const className = computed(() => cn('h-4 w-4', props.class));
 
+const normalizedSize = computed(() => {
+    const numericSize = Number(props.size);
+    return Number.isFinite(numericSize) && numericSize > 0 ? props.size : 24;
+});
+
 const icon = computed(() => {
     const iconName = props.name.charAt(0).toUpperCase() + props.name.slice(1);
     return (icons as Record<string, any>)[iconName];
@@ -29,7 +34,7 @@ const icon = computed(() => {
     <component
         :is="icon"
         :class="className"
-        :size="size"
+        :size="normalizedSize"
         :stroke-width="strokeWidth"
         :color="color"
     />
