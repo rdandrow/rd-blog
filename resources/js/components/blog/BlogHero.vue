@@ -121,11 +121,6 @@ const heroStyles = computed(() => {
 <style scoped>
 /* Custom gradient animation */
 
-/* Smooth scroll behavior */
-html {
-    scroll-behavior: smooth;
-}
-
 /* Button hover effects */
 button {
     transform-origin: center;

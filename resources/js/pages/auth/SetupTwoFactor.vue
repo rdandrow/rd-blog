@@ -189,7 +189,7 @@ const qrCodeSvg = computed(() => {
         <!-- Quick setup info -->
         <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-3">
             <p class="text-xs text-amber-800">
-                � <strong>Required:</strong> Two-factor authentication is
+                ⚠️ <strong>Required:</strong> Two-factor authentication is
                 mandatory for all accounts to ensure security. Complete this
                 setup to access your dashboard.
             </p>

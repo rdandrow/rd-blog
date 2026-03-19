@@ -21,6 +21,7 @@ interface BlogPost {
 interface Props {
     posts: BlogPost[];
     loading?: boolean;
+    // Set true only when parent supports server-side pagination.
     hasMore?: boolean;
 }
 
@@ -30,7 +31,8 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
     loading: false,
-    hasMore: true,
+    // Local lists should naturally reach end-of-posts unless parent overrides.
+    hasMore: false,
 });
 
 const emit = defineEmits<Emits>();
