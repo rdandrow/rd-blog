@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthLayout from '@/layouts/AuthLayout.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 interface Props {
@@ -29,7 +29,7 @@ const confirmTwoFactor = () => {
         },
         onError: () => {
             confirmForm.reset('code');
-        }
+        },
     });
 };
 
@@ -53,35 +53,38 @@ const qrCodeSvg = computed(() => {
         <!-- Step 1: Setup Instructions -->
         <div v-if="step === 'setup'" class="space-y-6">
             <div class="text-center">
-                <h3 class="text-lg font-semibold text-foreground mb-2">
+                <h3 class="mb-2 text-lg font-semibold text-foreground">
                     Scan QR Code
                 </h3>
-                <p class="text-sm text-muted-foreground mb-4">
-                    Use your authenticator app (Google Authenticator, Authy, etc.) to scan this QR code:
+                <p class="mb-4 text-sm text-muted-foreground">
+                    Use your authenticator app (Google Authenticator, Authy,
+                    etc.) to scan this QR code:
                 </p>
             </div>
 
             <!-- QR Code -->
             <div class="flex justify-center">
-                <div class="p-4 bg-white rounded-lg border">
+                <div class="rounded-lg border bg-white p-4">
                     <div v-html="qrCodeSvg"></div>
                 </div>
             </div>
 
             <!-- Manual Entry -->
             <div class="text-center">
-                <p class="text-xs text-muted-foreground mb-2">
+                <p class="mb-2 text-xs text-muted-foreground">
                     Can't scan? Enter this key manually:
                 </p>
-                <code class="px-2 py-1 bg-muted text-muted-foreground rounded text-xs font-mono">
+                <code
+                    class="rounded bg-muted px-2 py-1 font-mono text-xs text-muted-foreground"
+                >
                     {{ secretKey }}
                 </code>
             </div>
 
             <!-- Action Buttons -->
             <div class="space-y-3">
-                <Button 
-                    @click="step = 'verify'" 
+                <Button
+                    @click="step = 'verify'"
                     class="w-full"
                     variant="default"
                 >
@@ -93,10 +96,10 @@ const qrCodeSvg = computed(() => {
         <!-- Step 2: Verify Setup -->
         <div v-else-if="step === 'verify'" class="space-y-6">
             <div class="text-center">
-                <h3 class="text-lg font-semibold text-foreground mb-2">
+                <h3 class="mb-2 text-lg font-semibold text-foreground">
                     Verify Setup
                 </h3>
-                <p class="text-sm text-muted-foreground mb-4">
+                <p class="mb-4 text-sm text-muted-foreground">
                     Enter the 6-digit code from your authenticator app:
                 </p>
             </div>
@@ -120,18 +123,21 @@ const qrCodeSvg = computed(() => {
                 </div>
 
                 <div class="space-y-3">
-                    <Button 
-                        type="submit" 
+                    <Button
+                        type="submit"
                         class="w-full"
-                        :disabled="confirmForm.processing || confirmForm.code.length !== 6"
+                        :disabled="
+                            confirmForm.processing ||
+                            confirmForm.code.length !== 6
+                        "
                     >
                         <Spinner v-if="confirmForm.processing" />
                         Verify & Enable 2FA
                     </Button>
 
-                    <Button 
-                        @click="step = 'setup'" 
-                        variant="ghost" 
+                    <Button
+                        @click="step = 'setup'"
+                        variant="ghost"
                         class="w-full"
                         type="button"
                     >
@@ -144,21 +150,23 @@ const qrCodeSvg = computed(() => {
         <!-- Step 3: Recovery Codes -->
         <div v-else-if="step === 'recovery'" class="space-y-6">
             <div class="text-center">
-                <h3 class="text-lg font-semibold text-foreground mb-2">
+                <h3 class="mb-2 text-lg font-semibold text-foreground">
                     Save Recovery Codes
                 </h3>
-                <p class="text-sm text-muted-foreground mb-4">
-                    Store these recovery codes in a safe place. You can use them to access your account if you lose your authentication device.
+                <p class="mb-4 text-sm text-muted-foreground">
+                    Store these recovery codes in a safe place. You can use them
+                    to access your account if you lose your authentication
+                    device.
                 </p>
             </div>
 
             <!-- Recovery Codes -->
-            <div class="bg-muted p-4 rounded-lg">
-                <div class="grid grid-cols-2 gap-2 text-sm font-mono">
-                    <code 
-                        v-for="code in recoveryCodes" 
+            <div class="rounded-lg bg-muted p-4">
+                <div class="grid grid-cols-2 gap-2 font-mono text-sm">
+                    <code
+                        v-for="code in recoveryCodes"
                         :key="code"
-                        class="px-2 py-1 bg-background rounded text-center"
+                        class="rounded bg-background px-2 py-1 text-center"
                     >
                         {{ code }}
                     </code>
@@ -166,24 +174,24 @@ const qrCodeSvg = computed(() => {
             </div>
 
             <!-- Warning -->
-            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div class="rounded-lg border border-yellow-200 bg-yellow-50 p-3">
                 <p class="text-xs text-yellow-800">
-                    ⚠️ <strong>Important:</strong> These codes will only be shown once. Save them securely before proceeding.
+                    ⚠️ <strong>Important:</strong> These codes will only be
+                    shown once. Save them securely before proceeding.
                 </p>
             </div>
 
-            <Button 
-                @click="proceedAfterRecovery" 
-                class="w-full"
-            >
+            <Button @click="proceedAfterRecovery" class="w-full">
                 I've Saved My Recovery Codes
             </Button>
         </div>
 
         <!-- Quick setup info -->
-        <div class="mt-6 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-3">
             <p class="text-xs text-amber-800">
-                � <strong>Required:</strong> Two-factor authentication is mandatory for all accounts to ensure security. Complete this setup to access your dashboard.
+                ⚠️ <strong>Required:</strong> Two-factor authentication is
+                mandatory for all accounts to ensure security. Complete this
+                setup to access your dashboard.
             </p>
         </div>
     </AuthLayout>

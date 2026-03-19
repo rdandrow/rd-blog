@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import AppSidebarLayout from '@/layouts/app/AppSidebarLayout.vue';
 import AppLandingHeaderLayout from '@/layouts/app/AppLandingHeaderLayout.vue';
-import { usePage } from '@inertiajs/vue3';
+import AppSidebarLayout from '@/layouts/app/AppSidebarLayout.vue';
 import type { BreadcrumbItemType } from '@/types';
+import { usePage } from '@inertiajs/vue3';
 
 interface Props {
     breadcrumbs?: BreadcrumbItemType[];

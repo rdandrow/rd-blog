@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
-import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -13,6 +10,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 interface Member {
     id: number;
@@ -69,7 +69,7 @@ function createUser() {
 
 function deleteUser() {
     if (!selectedUser.value) return;
-    
+
     router.delete(`/admin/users/${selectedUser.value.id}`, {
         onSuccess: () => {
             showDeleteDialog.value = false;
@@ -81,33 +81,37 @@ function getInvitationStatus(user: Member) {
     if (user.invitation_accepted_at) {
         return {
             text: 'Accepted',
-            class: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+            class: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
         };
     }
     if (user.invitation_expired) {
         return {
             text: 'Expired',
-            class: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+            class: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
         };
     }
     if (user.invitation_sent_at) {
         return {
             text: 'Pending',
-            class: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+            class: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
         };
     }
     return {
         text: 'N/A',
-        class: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+        class: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
     };
 }
 
 function resendInvitation(userId: number) {
-    router.post(`/admin/users/${userId}/resend-invitation`, {}, {
-        onSuccess: () => {
-            // Success message will be shown via flash message
+    router.post(
+        `/admin/users/${userId}/resend-invitation`,
+        {},
+        {
+            onSuccess: () => {
+                // Success message will be shown via flash message
+            },
         },
-    });
+    );
 }
 </script>
 
@@ -129,50 +133,85 @@ function resendInvitation(userId: number) {
                     </Button>
                 </div>
 
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800">
+                <div
+                    class="overflow-hidden bg-white shadow-sm sm:rounded-lg dark:bg-gray-800"
+                >
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <table
+                            class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
+                        >
                             <thead class="bg-gray-50 dark:bg-gray-900">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+                                    >
                                         Name
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+                                    >
                                         Email
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+                                    >
                                         Invitation Status
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+                                    >
                                         Created
                                     </th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                                    <th
+                                        class="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400"
+                                    >
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="member in members.data" :key="member.id">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                            <tbody
+                                class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800"
+                            >
+                                <tr
+                                    v-for="member in members.data"
+                                    :key="member.id"
+                                >
+                                    <td
+                                        class="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900 dark:text-gray-100"
+                                    >
                                         {{ member.name }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    <td
+                                        class="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400"
+                                    >
                                         {{ member.email }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span
                                             class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                                            :class="getInvitationStatus(member).class"
+                                            :class="
+                                                getInvitationStatus(member)
+                                                    .class
+                                            "
                                         >
-                                            {{ getInvitationStatus(member).text }}
+                                            {{
+                                                getInvitationStatus(member).text
+                                            }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    <td
+                                        class="px-6 py-4 text-sm whitespace-nowrap text-gray-500 dark:text-gray-400"
+                                    >
                                         {{ member.created_at }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <td
+                                        class="px-6 py-4 text-right text-sm font-medium whitespace-nowrap"
+                                    >
                                         <Button
-                                            v-if="member.invitation_expired && !member.invitation_accepted_at"
+                                            v-if="
+                                                member.invitation_expired &&
+                                                !member.invitation_accepted_at
+                                            "
                                             variant="outline"
                                             size="sm"
                                             @click="resendInvitation(member.id)"
@@ -202,7 +241,8 @@ function resendInvitation(userId: number) {
                 <DialogHeader>
                     <DialogTitle>Invite Member User</DialogTitle>
                     <DialogDescription>
-                        Send an invitation email to a new member user. They will receive a link to set their password.
+                        Send an invitation email to a new member user. They will
+                        receive a link to set their password.
                     </DialogDescription>
                 </DialogHeader>
                 <div class="grid gap-4 py-4">
@@ -239,8 +279,8 @@ function resendInvitation(userId: number) {
                 <DialogHeader>
                     <DialogTitle>Delete User</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to delete {{ selectedUser?.name }}? This action
-                        cannot be undone.
+                        Are you sure you want to delete
+                        {{ selectedUser?.name }}? This action cannot be undone.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
