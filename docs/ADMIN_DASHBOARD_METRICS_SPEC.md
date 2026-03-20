@@ -40,6 +40,17 @@ It is structured to be implementation-ready for backend and frontend tasks.
 | 2FA adoption rate | `users.two_factor_confirmed_at` |
 | Invitation funnel (pending/accepted/expired) | `users.invitation_*` fields |
 
+### C. Metric Scope by Role (Implemented)
+
+| Role | Available Scopes | Scope Meaning |
+|---|---|---|
+| `admin` | `personal` only | Metrics computed from blog posts authored by the authenticated admin |
+| `master_admin` | `personal`, `global` | `personal` = authored by master admin; `global` = all published posts/users |
+
+Current implementation details:
+- Scope selection metadata is returned as `meta.available_scopes` with `meta.default_scope = "personal"`.
+- Scoped metric payloads are returned in `metricsByScope.personal` and (for master admins) `metricsByScope.global`.
+
 ---
 
 ## 2) Dashboard V1 Layout (Recommended)
@@ -244,43 +255,30 @@ $viewsTrend = DB::table('blog_post_views as v')
 `GET /admin/dashboard` Inertia props (example):
 ```json
 {
-  "kpis": {
-    "published_posts": 123,
-    "draft_posts": 14,
-    "total_followers": 982,
-    "total_comments": 4560,
-    "total_likes": 7391,
-    "avg_comments_per_post": 37.07,
-    "avg_likes_per_post": 60.09,
-    "two_factor_rate": 92.4,
-    "total_views": null,
-    "avg_views_per_post": null
-  },
-  "trends": {
-    "activity_30d": {
-      "posts": [{"day": "2026-02-19", "count": 2}],
-      "comments": [{"day": "2026-02-19", "count": 14}],
-      "likes": [{"day": "2026-02-19", "count": 26}],
-      "views": []
+  "metricsByScope": {
+    "personal": {
+      "total_blog_post_views": null,
+      "average_views_per_blog_post": null,
+      "total_followers": 12,
+      "comments_per_blog_post": [
+        {"id": 10, "title": "...", "slug": "...", "comments_count": 8}
+      ],
+      "views_30d": []
     },
-    "followers_30d": [{"day": "2026-02-19", "count": 4}]
-  },
-  "tables": {
-    "top_posts_by_comments": [
-      {
-        "id": 1,
-        "title": "...",
-        "slug": "...",
-        "comments_count": 120,
-        "likes_count": 98
-      }
-    ],
-    "top_authors_30d": [
-      {"id": 4, "name": "...", "published_posts_count": 8}
-    ]
+    "global": {
+      "total_blog_post_views": null,
+      "average_views_per_blog_post": null,
+      "total_followers": 982,
+      "comments_per_blog_post": [
+        {"id": 1, "title": "...", "slug": "...", "comments_count": 120}
+      ],
+      "views_30d": []
+    }
   },
   "meta": {
     "views_tracking_enabled": false,
+    "available_scopes": ["personal", "global"],
+    "default_scope": "personal",
     "generated_at": "2026-03-19T00:00:00Z"
   }
 }
@@ -307,7 +305,33 @@ $viewsTrend = DB::table('blog_post_views as v')
 
 ---
 
-## 7) Suggested Acceptance Criteria
+## 7) Test Coverage Plan (Backend + Vitest)
+
+### Backend (Feature tests)
+- ✅ `tests/Feature/Admin/DashboardTest.php`
+  - guest redirect
+  - authenticated access
+  - admin receives personal scope only
+  - master admin receives personal + global scopes
+
+### Frontend (Vitest)
+- `tests/frontend/pages/Dashboard.test.ts`
+  - renders requested metric cards
+  - hides scope switch for personal-only payload
+  - shows scope switch when both scopes are available
+  - toggles personal/global and updates rendered values
+  - renders comments table rows for active scope
+
+### Suggested next unit-test extraction
+- If dashboard query logic grows, extract scope aggregation into a dedicated service (e.g., `DashboardMetricsService`) and add unit tests for:
+  - role/scope resolution
+  - follower counting strategy by scope
+  - comments-per-post ordering/limit behavior
+  - null placeholder behavior for not-yet-captured view metrics
+
+---
+
+## 8) Suggested Acceptance Criteria
 
 1. Admin dashboard displays all Phase 1 KPIs from live DB data.
 2. Trends render 30-day data with missing dates backfilled to `0`.

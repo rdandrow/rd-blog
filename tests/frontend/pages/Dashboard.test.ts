@@ -1,0 +1,131 @@
+import Dashboard from '@/pages/Dashboard.vue';
+import { mount } from '@vue/test-utils';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@inertiajs/vue3', () => ({
+    Head: {
+        name: 'Head',
+        template: '<div data-testid="head">{{ title }}</div>',
+        props: ['title'],
+    },
+}));
+
+vi.mock('@/layouts/AppLayout.vue', () => ({
+    default: {
+        name: 'AppLayout',
+        template: '<div data-testid="app-layout"><slot /></div>',
+        props: ['breadcrumbs'],
+    },
+}));
+
+vi.mock('@/routes', () => ({
+    dashboard: () => ({ url: '/admin/dashboard' }),
+}));
+
+const createPersonalMetrics = () => ({
+    total_blog_post_views: null,
+    average_views_per_blog_post: null,
+    total_followers: 3,
+    comments_per_blog_post: [
+        { id: 1, title: 'My Post', slug: 'my-post', comments_count: 2 },
+    ],
+    views_30d: [],
+});
+
+const createGlobalMetrics = () => ({
+    total_blog_post_views: null,
+    average_views_per_blog_post: null,
+    total_followers: 10,
+    comments_per_blog_post: [
+        { id: 2, title: 'Global Post', slug: 'global-post', comments_count: 5 },
+    ],
+    views_30d: [],
+});
+
+describe('Dashboard Page', () => {
+    it('renders requested metric cards with placeholders for unavailable views data', () => {
+        const wrapper = mount(Dashboard, {
+            props: {
+                metricsByScope: {
+                    personal: createPersonalMetrics(),
+                },
+                meta: {
+                    views_tracking_enabled: false,
+                    available_scopes: ['personal'],
+                    default_scope: 'personal',
+                },
+            },
+        });
+
+        expect(wrapper.text()).toContain('Total Blog Post Views');
+        expect(wrapper.text()).toContain('Average Views per Blog Post');
+        expect(wrapper.text()).toContain('Total Number of Followers');
+        expect(wrapper.text()).toContain('Not available yet');
+        expect(wrapper.text()).toContain('3');
+    });
+
+    it('hides scope switch when only personal scope is available', () => {
+        const wrapper = mount(Dashboard, {
+            props: {
+                metricsByScope: {
+                    personal: createPersonalMetrics(),
+                },
+                meta: {
+                    views_tracking_enabled: false,
+                    available_scopes: ['personal'],
+                    default_scope: 'personal',
+                },
+            },
+        });
+
+        expect(wrapper.text()).not.toContain('Global');
+    });
+
+    it('shows scope switch and toggles between personal and global metrics', async () => {
+        const wrapper = mount(Dashboard, {
+            props: {
+                metricsByScope: {
+                    personal: createPersonalMetrics(),
+                    global: createGlobalMetrics(),
+                },
+                meta: {
+                    views_tracking_enabled: false,
+                    available_scopes: ['personal', 'global'],
+                    default_scope: 'personal',
+                },
+            },
+        });
+
+        expect(wrapper.text()).toContain('Personal');
+        expect(wrapper.text()).toContain('Global');
+        expect(wrapper.text()).toContain('My Post');
+        expect(wrapper.text()).toContain('3');
+
+        const globalButton = wrapper.findAll('button').find((b) => b.text() === 'Global');
+        expect(globalButton).toBeTruthy();
+        await globalButton!.trigger('click');
+
+        expect(wrapper.text()).toContain('Global Post');
+        expect(wrapper.text()).toContain('10');
+    });
+
+    it('renders empty-state text when active scope has no comments rows', () => {
+        const wrapper = mount(Dashboard, {
+            props: {
+                metricsByScope: {
+                    personal: {
+                        ...createPersonalMetrics(),
+                        comments_per_blog_post: [],
+                    },
+                },
+                meta: {
+                    views_tracking_enabled: false,
+                    available_scopes: ['personal'],
+                    default_scope: 'personal',
+                },
+            },
+        });
+
+        expect(wrapper.text()).toContain('No published posts available yet.');
+    });
+});
