@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\BlogPostResource;
 use App\Models\BlogPost;
 use App\Services\BlogPostService;
+use App\Services\BlogPostViewTrackingService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,7 +14,8 @@ use Laravel\Fortify\Features;
 class PublicBlogController extends Controller
 {
     public function __construct(
-        private readonly BlogPostService $blogPostService
+        private readonly BlogPostService $blogPostService,
+        private readonly BlogPostViewTrackingService $blogPostViewTrackingService,
     ) {}
 
     /**
@@ -84,6 +86,8 @@ class PublicBlogController extends Controller
         if ($user && $post->author) {
             $isFollowingAuthor = $user->following()->where('following_id', $post->author->id)->exists();
         }
+
+        $this->blogPostViewTrackingService->trackView($post, $request);
 
         return Inertia::render('BlogPost', [
             'post' => [

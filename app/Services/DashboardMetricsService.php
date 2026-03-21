@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\BlogPost;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardMetricsService
 {
@@ -13,10 +14,12 @@ class DashboardMetricsService
     /**
      * Get role-aware dashboard scope payload.
      *
-     * @return array{metricsByScope: array<string, array<string, mixed>>, availableScopes: array<int, string>, defaultScope: string}
+     * @return array{metricsByScope: array<string, array<string, mixed>>, availableScopes: array<int, string>, defaultScope: string, viewsTrackingEnabled: bool}
      */
     public function getScopedMetricsForUser(User $user): array
     {
+        $viewsTrackingEnabled = $this->isViewsTrackingEnabled();
+
         $metricsByScope = [
             'personal' => $this->getRequestedMetrics($user),
         ];
@@ -32,6 +35,7 @@ class DashboardMetricsService
             'metricsByScope' => $metricsByScope,
             'availableScopes' => $availableScopes,
             'defaultScope' => 'personal',
+            'viewsTrackingEnabled' => $viewsTrackingEnabled,
         ];
     }
 
@@ -58,16 +62,53 @@ class DashboardMetricsService
             ? $user->followers()->count()
             : DB::table('user_follows')->count();
 
+        $totalBlogPostViews = null;
+        $averageViewsPerBlogPost = null;
+        $views30d = [];
+
+        if ($this->isViewsTrackingEnabled()) {
+            $viewsBaseQuery = DB::table('blog_post_views as v')
+                ->join('blog_posts as p', 'p.id', '=', 'v.blog_post_id')
+                ->where('p.is_published', true)
+                ->whereNotNull('p.published_at')
+                ->where('p.published_at', '<=', now())
+                ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id));
+
+            $totalBlogPostViews = (clone $viewsBaseQuery)->count();
+
+            $publishedPostsForScope = BlogPost::published()
+                ->when($user !== null, fn ($query) => $query->where('user_id', $user->id))
+                ->count();
+
+            $averageViewsPerBlogPost = $publishedPostsForScope > 0
+                ? round($totalBlogPostViews / $publishedPostsForScope, 2)
+                : 0;
+
+            $rawViews30d = (clone $viewsBaseQuery)
+                ->where('v.viewed_at', '>=', now()->subDays(29)->startOfDay())
+                ->selectRaw('DATE(v.viewed_at) as day, COUNT(*) as count')
+                ->groupBy('day')
+                ->orderBy('day')
+                ->get();
+
+            $views30d = $this->backfill30DayTrend($rawViews30d);
+        }
+
         $highValueMetrics = $this->getHighValueMetrics($user);
 
         return [
-            'total_blog_post_views' => null,
-            'average_views_per_blog_post' => null,
+            'total_blog_post_views' => $totalBlogPostViews,
+            'average_views_per_blog_post' => $averageViewsPerBlogPost,
             'total_followers' => $totalFollowers,
             'comments_per_blog_post' => $commentsPerPost,
-            'views_30d' => [],
+            'views_30d' => $views30d,
             'high_value_metrics' => $highValueMetrics,
         ];
+    }
+
+    public function isViewsTrackingEnabled(): bool
+    {
+        return Schema::hasTable('blog_post_views');
     }
 
     /**

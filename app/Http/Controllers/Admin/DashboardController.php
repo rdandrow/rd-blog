@@ -28,7 +28,7 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             'metricsByScope' => $scopePayload['metricsByScope'],
             'meta' => [
-                'views_tracking_enabled' => false,
+                'views_tracking_enabled' => $scopePayload['viewsTrackingEnabled'],
                 'available_scopes' => $scopePayload['availableScopes'],
                 'default_scope' => $scopePayload['defaultScope'],
             ],

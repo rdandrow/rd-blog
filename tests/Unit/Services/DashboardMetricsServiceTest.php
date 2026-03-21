@@ -446,4 +446,118 @@ describe('DashboardMetricsService', function () {
             ->and(collect($personalHigh['follower_growth_30d'])->sum('count'))->toBe(2)
             ->and(collect($globalHigh['follower_growth_30d'])->sum('count'))->toBe(3);
     });
+
+    test('requested view metrics are calculated for global scope when tracking exists', function () {
+        $authorOne = User::factory()->create();
+        $authorTwo = User::factory()->create();
+
+        $postOne = BlogPost::factory()->create([
+            'user_id' => $authorOne->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $postTwo = BlogPost::factory()->create([
+            'user_id' => $authorTwo->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        DB::table('blog_post_views')->insert([
+            [
+                'blog_post_id' => $postOne->id,
+                'user_id' => null,
+                'session_id' => 's1',
+                'ip_hash' => 'h1',
+                'user_agent_hash' => 'u1',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'blog_post_id' => $postTwo->id,
+                'user_id' => null,
+                'session_id' => 's2',
+                'ip_hash' => 'h2',
+                'user_agent_hash' => 'u2',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'blog_post_id' => $postTwo->id,
+                'user_id' => null,
+                'session_id' => 's3',
+                'ip_hash' => 'h3',
+                'user_agent_hash' => 'u3',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $metrics = $this->service->getRequestedMetrics();
+
+        expect($metrics['total_blog_post_views'])->toBe(3)
+            ->and($metrics['average_views_per_blog_post'])->toBe(1.5)
+            ->and($metrics['views_30d'])->toHaveCount(30)
+            ->and(collect($metrics['views_30d'])->sum('count'))->toBe(3);
+    });
+
+    test('requested view metrics are scoped by authored posts for personal scope', function () {
+        $admin = User::factory()->admin()->create();
+        $otherAuthor = User::factory()->create();
+
+        $adminPost = BlogPost::factory()->create([
+            'user_id' => $admin->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $otherPost = BlogPost::factory()->create([
+            'user_id' => $otherAuthor->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        DB::table('blog_post_views')->insert([
+            [
+                'blog_post_id' => $adminPost->id,
+                'user_id' => null,
+                'session_id' => 'a1',
+                'ip_hash' => 'ha1',
+                'user_agent_hash' => 'ua1',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'blog_post_id' => $adminPost->id,
+                'user_id' => null,
+                'session_id' => 'a2',
+                'ip_hash' => 'ha2',
+                'user_agent_hash' => 'ua2',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'blog_post_id' => $otherPost->id,
+                'user_id' => null,
+                'session_id' => 'o1',
+                'ip_hash' => 'ho1',
+                'user_agent_hash' => 'uo1',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $metrics = $this->service->getRequestedMetrics($admin);
+
+        expect($metrics['total_blog_post_views'])->toBe(2)
+            ->and($metrics['average_views_per_blog_post'])->toBe(2.0)
+            ->and($metrics['views_30d'])->toHaveCount(30)
+            ->and(collect($metrics['views_30d'])->sum('count'))->toBe(2);
+    });
 });

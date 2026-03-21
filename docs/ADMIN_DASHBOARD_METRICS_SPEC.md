@@ -12,6 +12,7 @@ It is structured to be implementation-ready for backend and frontend tasks.
 - Date: 2026-03-21
 - Section 1.B high-value metrics: Implemented in dashboard payload and UI.
 - Section 2 Dashboard V1 layout: Implemented (KPI row, charts row, and tables row).
+- Section 4 view tracking addition: Implemented (`blog_post_views` schema, public post tracking, and dashboard metric activation).
 - 30-day capturable trends (`posts_published_30d`, `comments_created_30d`, `likes_created_30d`, `follower_growth_30d`): Implemented with fixed 30-point zero-filled backfilling.
 - Scope behavior: `admin` = personal only; `master_admin` = personal + global.
 - Global-only metrics in personal scope: `two_factor_adoption_rate` and `invitation_funnel` remain `null` by design.
@@ -24,8 +25,8 @@ It is structured to be implementation-ready for backend and frontend tasks.
 - [x] Section 2 Dashboard V1 layout is implemented (KPI/Charts/Tables rows).
 - [x] Role scope behavior is implemented (`admin` personal-only, `master_admin` personal + global).
 - [x] Capturable 30-day trends are backfilled to fixed 30-day arrays.
-- [ ] View tracking schema + ingestion (`blog_post_views`) is implemented.
-- [ ] Requested view KPIs/trends are activated from tracked data.
+- [x] View tracking schema + ingestion (`blog_post_views`) is implemented.
+- [x] Requested view KPIs/trends are activated from tracked data.
 - [ ] Dashboard aggregate caching/rollups hardening is implemented.
 
 ---
@@ -36,11 +37,11 @@ It is structured to be implementation-ready for backend and frontend tasks.
 
 | Metric | Status | Source |
 |---|---|---|
-| Total blog post views | Not currently capturable | Requires new `blog_post_views` tracking |
-| Average views per blog post | Not currently capturable | Requires new `blog_post_views` tracking |
+| Total blog post views | Implemented | `blog_post_views` |
+| Average views per blog post | Implemented | `blog_post_views` + published `blog_posts` |
 | Total Number of Followers | Capturable now | `user_follows` |
 | Comments per blog post | Capturable now | `comments`, `blog_posts` |
-| 30-day view graph for posted articles | Not currently capturable | Requires new `blog_post_views` tracking |
+| 30-day view graph for posted articles | Implemented (data payload active) | `blog_post_views` + published `blog_posts` |
 
 ### B. High-Value Metrics Already Capturable
 
@@ -83,7 +84,7 @@ Current implementation notes:
 - KPI row is implemented with: Published Posts, Draft Posts, Total Followers, Total Comments, Total Likes, 2FA Adoption Rate.
 - Charts row is implemented with: 30-day content activity (posts/comments/likes) and 30-day follower growth.
 - Tables row is implemented with: Top 10 posts by comments (with likes) and Top 10 authors by published posts (last 30d).
-- Requested view metrics remain displayed as pending until `blog_post_views` tracking is implemented.
+- Requested view metrics are now activated from tracked `blog_post_views` data.
 
 ## KPI Row (Top)
 1. Published Posts
@@ -267,7 +268,7 @@ $topAuthorsByPublishedPosts30d = DB::table('blog_posts as p')
 
 ---
 
-## 4) View Tracking Addition (Required for Requested View Metrics)
+## 4) View Tracking Addition (Implemented)
 
 To support requested metrics, add a `blog_post_views` table.
 
@@ -400,7 +401,7 @@ Dashboard UI currently consumes these `high_value_metrics` fields:
 - `top_authors_by_published_posts_30d`
 
 Fields currently present but not rendered in the Dashboard UI:
-- Top-level: `total_blog_post_views`, `average_views_per_blog_post`, `views_30d`
+- Top-level: `views_30d`
 - `high_value_metrics`: `featured_posts`, `avg_comments_per_published_post`, `avg_likes_per_published_post`, `active_authors_30d`, `invitation_funnel`
 
 ---

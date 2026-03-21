@@ -16,8 +16,8 @@ describe('DashboardController', function () {
         $scopePayload = [
             'metricsByScope' => [
                 'personal' => [
-                    'total_blog_post_views' => null,
-                    'average_views_per_blog_post' => null,
+                    'total_blog_post_views' => 0,
+                    'average_views_per_blog_post' => 0,
                     'total_followers' => 2,
                     'comments_per_blog_post' => [],
                     'views_30d' => [],
@@ -25,6 +25,7 @@ describe('DashboardController', function () {
             ],
             'availableScopes' => ['personal'],
             'defaultScope' => 'personal',
+            'viewsTrackingEnabled' => true,
         ];
 
         $service = Mockery::mock(DashboardMetricsService::class);
@@ -46,7 +47,7 @@ describe('DashboardController', function () {
             ->and($payload['props']['metricsByScope'])->toBe($scopePayload['metricsByScope'])
             ->and($payload['props']['meta']['available_scopes'])->toBe(['personal'])
             ->and($payload['props']['meta']['default_scope'])->toBe('personal')
-            ->and($payload['props']['meta']['views_tracking_enabled'])->toBeFalse();
+            ->and($payload['props']['meta']['views_tracking_enabled'])->toBeTrue();
     })->group('dashboard', 'dashboard-contract', 'unit', 'controller');
 
     test('returns inertia payload with personal and global scopes for master admin contract', function () {
@@ -56,15 +57,15 @@ describe('DashboardController', function () {
         $scopePayload = [
             'metricsByScope' => [
                 'personal' => [
-                    'total_blog_post_views' => null,
-                    'average_views_per_blog_post' => null,
+                    'total_blog_post_views' => 0,
+                    'average_views_per_blog_post' => 0,
                     'total_followers' => 1,
                     'comments_per_blog_post' => [],
                     'views_30d' => [],
                 ],
                 'global' => [
-                    'total_blog_post_views' => null,
-                    'average_views_per_blog_post' => null,
+                    'total_blog_post_views' => 0,
+                    'average_views_per_blog_post' => 0,
                     'total_followers' => 9,
                     'comments_per_blog_post' => [],
                     'views_30d' => [],
@@ -72,6 +73,7 @@ describe('DashboardController', function () {
             ],
             'availableScopes' => ['personal', 'global'],
             'defaultScope' => 'personal',
+            'viewsTrackingEnabled' => true,
         ];
 
         $service = Mockery::mock(DashboardMetricsService::class);
@@ -93,6 +95,6 @@ describe('DashboardController', function () {
             ->and($payload['props']['metricsByScope'])->toBe($scopePayload['metricsByScope'])
             ->and($payload['props']['meta']['available_scopes'])->toBe(['personal', 'global'])
             ->and($payload['props']['meta']['default_scope'])->toBe('personal')
-            ->and($payload['props']['meta']['views_tracking_enabled'])->toBeFalse();
+            ->and($payload['props']['meta']['views_tracking_enabled'])->toBeTrue();
     })->group('dashboard', 'dashboard-contract', 'unit', 'controller');
 });
