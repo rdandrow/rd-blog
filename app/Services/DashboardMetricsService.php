@@ -4,12 +4,15 @@ namespace App\Services;
 
 use App\Models\BlogPost;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class DashboardMetricsService
 {
     private const TREND_DAYS = 30;
+    private const CACHE_KEY_VERSION = 1;
+    private const DEFAULT_CACHE_TTL_SECONDS = 600;
 
     /**
      * Get role-aware dashboard scope payload.
@@ -21,13 +24,13 @@ class DashboardMetricsService
         $viewsTrackingEnabled = $this->isViewsTrackingEnabled();
 
         $metricsByScope = [
-            'personal' => $this->getRequestedMetrics($user),
+            'personal' => $this->getCachedRequestedMetrics($user, $viewsTrackingEnabled),
         ];
 
         $availableScopes = ['personal'];
 
         if ($user->isMasterAdmin()) {
-            $metricsByScope['global'] = $this->getRequestedMetrics();
+            $metricsByScope['global'] = $this->getCachedRequestedMetrics(null, $viewsTrackingEnabled);
             $availableScopes[] = 'global';
         }
 
@@ -42,8 +45,10 @@ class DashboardMetricsService
     /**
      * Build Section 1A metric set.
      */
-    public function getRequestedMetrics(?User $user = null): array
+    public function getRequestedMetrics(?User $user = null, ?bool $viewsTrackingEnabled = null): array
     {
+        $viewsTrackingEnabled ??= $this->isViewsTrackingEnabled();
+
         $commentsQuery = BlogPost::published();
 
         if ($user !== null) {
@@ -66,7 +71,7 @@ class DashboardMetricsService
         $averageViewsPerBlogPost = null;
         $views30d = [];
 
-        if ($this->isViewsTrackingEnabled()) {
+        if ($viewsTrackingEnabled) {
             $viewsBaseQuery = DB::table('blog_post_views as v')
                 ->join('blog_posts as p', 'p.id', '=', 'v.blog_post_id')
                 ->where('p.is_published', true)
@@ -104,6 +109,49 @@ class DashboardMetricsService
             'views_30d' => $views30d,
             'high_value_metrics' => $highValueMetrics,
         ];
+    }
+
+    private function getCachedRequestedMetrics(?User $user, bool $viewsTrackingEnabled): array
+    {
+        if (!config('dashboard.cache.enabled', true)) {
+            return $this->getRequestedMetrics($user, $viewsTrackingEnabled);
+        }
+
+        $ttlSeconds = $this->dashboardCacheTtlSeconds();
+
+        if ($ttlSeconds <= 0) {
+            return $this->getRequestedMetrics($user, $viewsTrackingEnabled);
+        }
+
+        $cacheKey = $this->dashboardCacheKey($user, $viewsTrackingEnabled);
+
+        return Cache::remember(
+            $cacheKey,
+            now()->addSeconds($ttlSeconds),
+            fn () => $this->getRequestedMetrics($user, $viewsTrackingEnabled)
+        );
+    }
+
+    private function dashboardCacheKey(?User $user, bool $viewsTrackingEnabled): string
+    {
+        $scope = $user !== null ? 'personal' : 'global';
+        $userId = $user?->id ?? 0;
+        $role = $user?->role ?? 'none';
+        $viewsFlag = $viewsTrackingEnabled ? 1 : 0;
+
+        return sprintf(
+            'dashboard:metrics:v%d:scope:%s:user:%d:role:%s:views:%d',
+            self::CACHE_KEY_VERSION,
+            $scope,
+            $userId,
+            $role,
+            $viewsFlag,
+        );
+    }
+
+    private function dashboardCacheTtlSeconds(): int
+    {
+        return max(0, (int) config('dashboard.cache.ttl_seconds', self::DEFAULT_CACHE_TTL_SECONDS));
     }
 
     public function isViewsTrackingEnabled(): bool

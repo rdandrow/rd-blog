@@ -167,7 +167,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </p>
                 </div>
                 <div class="rounded-xl border border-border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">Total Number of Followers</p>
+                    <p class="text-sm text-muted-foreground">
+                        Total Number of Followers
+                    </p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
                         {{ activeMetrics.total_followers }}
                     </p>
@@ -178,20 +180,29 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <div class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Total Comments</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ activeMetrics.high_value_metrics.total_comments_on_published_posts }}
+                        {{
+                            activeMetrics.high_value_metrics
+                                .total_comments_on_published_posts
+                        }}
                     </p>
                 </div>
                 <div class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Total Likes</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ activeMetrics.high_value_metrics.total_likes_on_published_posts }}
+                        {{
+                            activeMetrics.high_value_metrics
+                                .total_likes_on_published_posts
+                        }}
                     </p>
                 </div>
                 <div class="rounded-xl border border-border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">2FA Adoption Rate</p>
+                    <p class="text-sm text-muted-foreground">
+                        2FA Adoption Rate
+                    </p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
                         {{
-                            activeMetrics.high_value_metrics.two_factor_adoption_rate === null
+                            activeMetrics.high_value_metrics
+                                .two_factor_adoption_rate === null
                                 ? 'Not available in personal scope'
                                 : `${activeMetrics.high_value_metrics.two_factor_adoption_rate}%`
                         }}
@@ -206,16 +217,30 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
                     <div class="rounded-lg border border-border p-3">
-                        <h3 class="text-sm font-medium text-foreground">30-Day Content Activity</h3>
-                        <p class="mt-1 text-xs text-muted-foreground">Posts / Comments / Likes</p>
+                        <h3 class="text-sm font-medium text-foreground">
+                            30-Day Content Activity
+                        </h3>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            Posts / Comments / Likes
+                        </p>
                         <div class="mt-3 max-h-64 overflow-y-auto">
                             <table class="min-w-full text-xs">
                                 <thead>
-                                    <tr class="border-b border-border text-left">
-                                        <th class="px-2 py-1 font-medium">Day</th>
-                                        <th class="px-2 py-1 font-medium">Posts</th>
-                                        <th class="px-2 py-1 font-medium">Comments</th>
-                                        <th class="px-2 py-1 font-medium">Likes</th>
+                                    <tr
+                                        class="border-b border-border text-left"
+                                    >
+                                        <th class="px-2 py-1 font-medium">
+                                            Day
+                                        </th>
+                                        <th class="px-2 py-1 font-medium">
+                                            Posts
+                                        </th>
+                                        <th class="px-2 py-1 font-medium">
+                                            Comments
+                                        </th>
+                                        <th class="px-2 py-1 font-medium">
+                                            Likes
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -224,38 +249,65 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         :key="point.day"
                                         class="border-b border-border/60"
                                     >
-                                        <td class="px-2 py-1">{{ point.day }}</td>
-                                        <td class="px-2 py-1">{{ point.posts }}</td>
-                                        <td class="px-2 py-1">{{ point.comments }}</td>
-                                        <td class="px-2 py-1">{{ point.likes }}</td>
+                                        <td class="px-2 py-1">
+                                            {{ point.day }}
+                                        </td>
+                                        <td class="px-2 py-1">
+                                            {{ point.posts }}
+                                        </td>
+                                        <td class="px-2 py-1">
+                                            {{ point.comments }}
+                                        </td>
+                                        <td class="px-2 py-1">
+                                            {{ point.likes }}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                     <div class="rounded-lg border border-border p-3">
-                        <h3 class="text-sm font-medium text-foreground">30-Day Follower Growth</h3>
+                        <h3 class="text-sm font-medium text-foreground">
+                            30-Day Follower Growth
+                        </h3>
                         <p class="mt-1 text-xs text-muted-foreground">
-                            {{ activeDayCount(activeMetrics.high_value_metrics.follower_growth_30d) > 0
-                                ? `${activeDayCount(activeMetrics.high_value_metrics.follower_growth_30d)} day(s) with activity`
-                                : 'No activity in last 30 days' }}
+                            {{
+                                activeDayCount(
+                                    activeMetrics.high_value_metrics
+                                        .follower_growth_30d,
+                                ) > 0
+                                    ? `${activeDayCount(activeMetrics.high_value_metrics.follower_growth_30d)} day(s) with activity`
+                                    : 'No activity in last 30 days'
+                            }}
                         </p>
                         <div class="mt-3 max-h-64 overflow-y-auto">
                             <table class="min-w-full text-xs">
                                 <thead>
-                                    <tr class="border-b border-border text-left">
-                                        <th class="px-2 py-1 font-medium">Day</th>
-                                        <th class="px-2 py-1 font-medium">Followers</th>
+                                    <tr
+                                        class="border-b border-border text-left"
+                                    >
+                                        <th class="px-2 py-1 font-medium">
+                                            Day
+                                        </th>
+                                        <th class="px-2 py-1 font-medium">
+                                            Followers
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr
-                                        v-for="point in activeMetrics.high_value_metrics.follower_growth_30d"
+                                        v-for="point in activeMetrics
+                                            .high_value_metrics
+                                            .follower_growth_30d"
                                         :key="point.day"
                                         class="border-b border-border/60"
                                     >
-                                        <td class="px-2 py-1">{{ point.day }}</td>
-                                        <td class="px-2 py-1">{{ point.count }}</td>
+                                        <td class="px-2 py-1">
+                                            {{ point.day }}
+                                        </td>
+                                        <td class="px-2 py-1">
+                                            {{ point.count }}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -271,10 +323,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
                     <div class="rounded-lg border border-border p-3">
-                        <h3 class="text-sm font-medium text-foreground">Top 10 Posts by Comments (with likes)</h3>
+                        <h3 class="text-sm font-medium text-foreground">
+                            Top 10 Posts by Comments (with likes)
+                        </h3>
 
                         <div
-                            v-if="activeMetrics.comments_per_blog_post.length === 0"
+                            v-if="
+                                activeMetrics.comments_per_blog_post.length ===
+                                0
+                            "
                             class="mt-3 text-xs text-muted-foreground"
                         >
                             No published posts available yet.
@@ -283,10 +340,18 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <div v-else class="mt-3 overflow-x-auto">
                             <table class="min-w-full text-xs">
                                 <thead>
-                                    <tr class="border-b border-border text-left">
-                                        <th class="px-2 py-1 font-medium">Post</th>
-                                        <th class="px-2 py-1 font-medium">Comments</th>
-                                        <th class="px-2 py-1 font-medium">Likes</th>
+                                    <tr
+                                        class="border-b border-border text-left"
+                                    >
+                                        <th class="px-2 py-1 font-medium">
+                                            Post
+                                        </th>
+                                        <th class="px-2 py-1 font-medium">
+                                            Comments
+                                        </th>
+                                        <th class="px-2 py-1 font-medium">
+                                            Likes
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -295,19 +360,31 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         :key="post.id"
                                         class="border-b border-border/60"
                                     >
-                                        <td class="px-2 py-1">{{ post.title }}</td>
-                                        <td class="px-2 py-1">{{ post.comments_count }}</td>
-                                        <td class="px-2 py-1">{{ post.likes_count }}</td>
+                                        <td class="px-2 py-1">
+                                            {{ post.title }}
+                                        </td>
+                                        <td class="px-2 py-1">
+                                            {{ post.comments_count }}
+                                        </td>
+                                        <td class="px-2 py-1">
+                                            {{ post.likes_count }}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                     <div class="rounded-lg border border-border p-3">
-                        <h3 class="text-sm font-medium text-foreground">Top 10 Authors by Published Posts (last 30d)</h3>
+                        <h3 class="text-sm font-medium text-foreground">
+                            Top 10 Authors by Published Posts (last 30d)
+                        </h3>
 
                         <div
-                            v-if="activeMetrics.high_value_metrics.top_authors_by_published_posts_30d.length === 0"
+                            v-if="
+                                activeMetrics.high_value_metrics
+                                    .top_authors_by_published_posts_30d
+                                    .length === 0
+                            "
                             class="mt-3 text-xs text-muted-foreground"
                         >
                             No authors with published posts in the last 30 days.
@@ -316,19 +393,31 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <div v-else class="mt-3 overflow-x-auto">
                             <table class="min-w-full text-xs">
                                 <thead>
-                                    <tr class="border-b border-border text-left">
-                                        <th class="px-2 py-1 font-medium">Author</th>
-                                        <th class="px-2 py-1 font-medium">Published Posts</th>
+                                    <tr
+                                        class="border-b border-border text-left"
+                                    >
+                                        <th class="px-2 py-1 font-medium">
+                                            Author
+                                        </th>
+                                        <th class="px-2 py-1 font-medium">
+                                            Published Posts
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr
-                                        v-for="author in activeMetrics.high_value_metrics.top_authors_by_published_posts_30d"
+                                        v-for="author in activeMetrics
+                                            .high_value_metrics
+                                            .top_authors_by_published_posts_30d"
                                         :key="author.id"
                                         class="border-b border-border/60"
                                     >
-                                        <td class="px-2 py-1">{{ author.name }}</td>
-                                        <td class="px-2 py-1">{{ author.published_posts_count }}</td>
+                                        <td class="px-2 py-1">
+                                            {{ author.name }}
+                                        </td>
+                                        <td class="px-2 py-1">
+                                            {{ author.published_posts_count }}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -344,7 +433,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
                     <div class="rounded-lg border border-border p-3">
-                        <p class="text-sm text-muted-foreground">Total Blog Post Views</p>
+                        <p class="text-sm text-muted-foreground">
+                            Total Blog Post Views
+                        </p>
                         <p class="mt-1 text-xl font-semibold text-foreground">
                             {{
                                 activeMetrics.total_blog_post_views === null
@@ -354,10 +445,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </p>
                     </div>
                     <div class="rounded-lg border border-border p-3">
-                        <p class="text-sm text-muted-foreground">Average Views per Blog Post</p>
+                        <p class="text-sm text-muted-foreground">
+                            Average Views per Blog Post
+                        </p>
                         <p class="mt-1 text-xl font-semibold text-foreground">
                             {{
-                                activeMetrics.average_views_per_blog_post === null
+                                activeMetrics.average_views_per_blog_post ===
+                                null
                                     ? 'Not available yet'
                                     : activeMetrics.average_views_per_blog_post
                             }}

@@ -16,7 +16,7 @@ It is structured to be implementation-ready for backend and frontend tasks.
 - Section 3 query mapping: Implemented in service layer with role-aware scope behavior.
 - Section 4 view tracking addition: Implemented (`blog_post_views` schema, public post tracking, and dashboard metric activation).
 - Section 5 API contract: Implemented (`metricsByScope` + `meta` with `views_tracking_enabled`, `available_scopes`, `default_scope`, `generated_at`).
-- Section 6 hardening: Pending (caching/rollups not yet implemented).
+- Section 6 hardening: Implemented (TTL cache for scoped dashboard aggregates + scheduled cache warming command).
 - 30-day capturable trends (`posts_published_30d`, `comments_created_30d`, `likes_created_30d`, `follower_growth_30d`): Implemented with fixed 30-point zero-filled backfilling.
 - Scope behavior: `admin` = personal only; `master_admin` = personal + global.
 - Global-only metrics in personal scope: `two_factor_adoption_rate` and `invitation_funnel` remain `null` by design.
@@ -33,7 +33,7 @@ It is structured to be implementation-ready for backend and frontend tasks.
 - [x] View tracking schema + ingestion (`blog_post_views`) is implemented.
 - [x] Requested view KPIs/trends are activated from tracked data.
 - [x] Section 5 API contract and metadata (`generated_at`, scope + tracking flags) are implemented.
-- [ ] Dashboard aggregate caching/rollups hardening is implemented.
+- [x] Dashboard aggregate caching/rollups hardening is implemented.
 
 ---
 
@@ -427,9 +427,9 @@ Fields currently present but not rendered in the Dashboard UI:
 - Enable requested view KPIs and 30-day view trend.
 
 ### Phase 3 (Hardening)
-- Status: ⏳ Pending
+- Status: ✅ Completed
 - Add caching for dashboard aggregates (5–15 min TTL).
-- Add background rollups if traffic grows.
+- Add background cache warming for admin scope payloads (scheduled command).
 - Add tests for metric queries and trend shape consistency.
 
 ---
@@ -443,12 +443,17 @@ Fields currently present but not rendered in the Dashboard UI:
   - admin receives personal scope only
   - master admin receives personal + global scopes
   - end-to-end `meta.generated_at` validity assertions for both roles
+- ✅ `tests/Feature/WarmDashboardMetricsCacheCommandTest.php`
+  - reports disabled-cache mode
+  - warms admin + master admin scope payloads
+  - supports targeted warming via `--user-id`
 
 ### Backend (Unit tests)
 - ✅ `tests/Unit/Services/DashboardMetricsServiceTest.php`
   - role/scope resolution
   - scoped aggregation for comments/followers/high-value metrics
   - 30-day trend backfilling to fixed 30-point arrays with zero-fill
+  - scoped metrics cache behavior (stable until cache clear/expiry)
 - ✅ `tests/Unit/Http/Controllers/Admin/DashboardControllerTest.php`
   - Inertia payload contract for admin
   - Inertia payload contract for master admin

@@ -34,6 +34,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule): void {
         // Cleanup expired invitations daily at 2am
         $schedule->command('invitations:cleanup --force')->dailyAt('02:00');
+
+        // Warm dashboard metrics cache for admin scopes every 5 minutes.
+        $schedule->command('dashboard:warm-metrics-cache')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->when(fn (): bool => config('dashboard.warm.enabled', true));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

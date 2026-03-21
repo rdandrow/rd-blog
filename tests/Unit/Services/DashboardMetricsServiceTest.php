@@ -5,11 +5,14 @@ use App\Models\Comment;
 use App\Models\User;
 use App\Services\DashboardMetricsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
 beforeEach(function () {
+    Cache::flush();
+    config(['dashboard.cache.enabled' => false]);
     $this->service = new DashboardMetricsService();
 });
 
@@ -32,6 +35,40 @@ describe('DashboardMetricsService', function () {
         expect($result['metricsByScope'])->toHaveKeys(['personal', 'global'])
             ->and($result['availableScopes'])->toBe(['personal', 'global'])
             ->and($result['defaultScope'])->toBe('personal');
+    });
+
+    test('scoped metrics caching keeps payload stable until cache is cleared', function () {
+        config([
+            'dashboard.cache.enabled' => true,
+            'dashboard.cache.ttl_seconds' => 600,
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        BlogPost::factory()->create([
+            'user_id' => $admin->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $first = $this->service->getScopedMetricsForUser($admin);
+
+        BlogPost::factory()->create([
+            'user_id' => $admin->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $second = $this->service->getScopedMetricsForUser($admin);
+
+        expect($first['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(1)
+            ->and($second['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(1);
+
+        Cache::flush();
+
+        $third = $this->service->getScopedMetricsForUser($admin);
+
+        expect($third['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(2);
     });
 
     test('personal metrics include only authored published posts in comments table', function () {
