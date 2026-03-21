@@ -10,9 +10,13 @@ It is structured to be implementation-ready for backend and frontend tasks.
 ## Last Updated Implementation Status
 
 - Date: 2026-03-21
+- Section 1.A requested metrics: Implemented (active from `blog_post_views` when tracking is available).
 - Section 1.B high-value metrics: Implemented in dashboard payload and UI.
 - Section 2 Dashboard V1 layout: Implemented (KPI row, charts row, and tables row).
+- Section 3 query mapping: Implemented in service layer with role-aware scope behavior.
 - Section 4 view tracking addition: Implemented (`blog_post_views` schema, public post tracking, and dashboard metric activation).
+- Section 5 API contract: Implemented (`metricsByScope` + `meta` with `views_tracking_enabled`, `available_scopes`, `default_scope`, `generated_at`).
+- Section 6 hardening: Pending (caching/rollups not yet implemented).
 - 30-day capturable trends (`posts_published_30d`, `comments_created_30d`, `likes_created_30d`, `follower_growth_30d`): Implemented with fixed 30-point zero-filled backfilling.
 - Scope behavior: `admin` = personal only; `master_admin` = personal + global.
 - Global-only metrics in personal scope: `two_factor_adoption_rate` and `invitation_funnel` remain `null` by design.
@@ -20,13 +24,15 @@ It is structured to be implementation-ready for backend and frontend tasks.
 
 ### Update Checklist
 
-- [x] Section 1.A requested metrics payload is wired (view metrics intentionally `null`/empty until tracking exists).
+- [x] Section 1.A requested metrics payload is wired and active from tracked data.
 - [x] Section 1.B high-value metrics are implemented and rendered.
 - [x] Section 2 Dashboard V1 layout is implemented (KPI/Charts/Tables rows).
+- [x] Section 3 metric query mapping is implemented in backend services.
 - [x] Role scope behavior is implemented (`admin` personal-only, `master_admin` personal + global).
 - [x] Capturable 30-day trends are backfilled to fixed 30-day arrays.
 - [x] View tracking schema + ingestion (`blog_post_views`) is implemented.
 - [x] Requested view KPIs/trends are activated from tracked data.
+- [x] Section 5 API contract and metadata (`generated_at`, scope + tracking flags) are implemented.
 - [ ] Dashboard aggregate caching/rollups hardening is implemented.
 
 ---
@@ -327,13 +333,13 @@ $viewsTrend = DB::table('blog_post_views as v')
 {
   "metricsByScope": {
     "personal": {
-      "total_blog_post_views": null,
-      "average_views_per_blog_post": null,
+      "total_blog_post_views": 42,
+      "average_views_per_blog_post": 7,
       "total_followers": 12,
       "comments_per_blog_post": [
-        {"id": 10, "title": "...", "slug": "...", "comments_count": 8, "likes_count": 3}
+        {"id": 10, "title": "Understanding Laravel Queues", "slug": "understanding-laravel-queues", "comments_count": 8, "likes_count": 3}
       ],
-      "views_30d": [],
+      "views_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 2}, {"day": "2026-03-21", "count": 5}],
       "high_value_metrics": {
         "published_posts": 6,
         "draft_posts": 2,
@@ -343,23 +349,23 @@ $viewsTrend = DB::table('blog_post_views as v')
         "avg_comments_per_published_post": 4,
         "avg_likes_per_published_post": 6.67,
         "active_authors_30d": 1,
-        "top_authors_by_published_posts_30d": [{"id": 10, "name": "...", "published_posts_count": 6}],
-        "follower_growth_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 2}],
-        "posts_published_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 1}],
-        "comments_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 3}],
-        "likes_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 4}],
+        "top_authors_by_published_posts_30d": [{"id": 10, "name": "Ryan Dandrow", "published_posts_count": 6}],
+        "follower_growth_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 1}, {"day": "2026-03-21", "count": 2}],
+        "posts_published_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 0}, {"day": "2026-03-21", "count": 1}],
+        "comments_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 1}, {"day": "2026-03-21", "count": 3}],
+        "likes_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 2}, {"day": "2026-03-21", "count": 4}],
         "two_factor_adoption_rate": null,
         "invitation_funnel": {"pending": null, "accepted": null, "expired": null}
       }
     },
     "global": {
-      "total_blog_post_views": null,
-      "average_views_per_blog_post": null,
+      "total_blog_post_views": 5240,
+      "average_views_per_blog_post": 43.67,
       "total_followers": 982,
       "comments_per_blog_post": [
-        {"id": 1, "title": "...", "slug": "...", "comments_count": 120, "likes_count": 180}
+        {"id": 1, "title": "Laravel Performance Tuning Guide", "slug": "laravel-performance-tuning-guide", "comments_count": 120, "likes_count": 180}
       ],
-      "views_30d": [],
+      "views_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 41}, {"day": "2026-03-21", "count": 88}],
       "high_value_metrics": {
         "published_posts": 120,
         "draft_posts": 24,
@@ -369,21 +375,21 @@ $viewsTrend = DB::table('blog_post_views as v')
         "avg_comments_per_published_post": 15.5,
         "avg_likes_per_published_post": 20.42,
         "active_authors_30d": 18,
-        "top_authors_by_published_posts_30d": [{"id": 1, "name": "...", "published_posts_count": 24}],
-        "follower_growth_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 15}],
-        "posts_published_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 6}],
-        "comments_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 45}],
-        "likes_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 52}],
+        "top_authors_by_published_posts_30d": [{"id": 1, "name": "Avery Chen", "published_posts_count": 24}],
+        "follower_growth_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 8}, {"day": "2026-03-21", "count": 15}],
+        "posts_published_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 3}, {"day": "2026-03-21", "count": 6}],
+        "comments_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 22}, {"day": "2026-03-21", "count": 45}],
+        "likes_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "2026-03-06", "count": 28}, {"day": "2026-03-21", "count": 52}],
         "two_factor_adoption_rate": 76.2,
         "invitation_funnel": {"pending": 4, "accepted": 56, "expired": 3}
       }
     }
   },
   "meta": {
-    "views_tracking_enabled": false,
+    "views_tracking_enabled": true,
     "available_scopes": ["personal", "global"],
     "default_scope": "personal",
-    "generated_at": "2026-03-19T00:00:00Z"
+    "generated_at": "2026-03-21T00:00:00Z"
   }
 }
 ```
@@ -409,16 +415,19 @@ Fields currently present but not rendered in the Dashboard UI:
 ## 6) Rollout Plan
 
 ### Phase 1 (No schema change)
+- Status: ✅ Completed
 - Implement all currently capturable metrics.
 - Update `Dashboard.vue` from placeholder to real cards/charts/tables.
 - Keep view metrics visible as "Not available yet".
 
 ### Phase 2 (View tracking)
+- Status: ✅ Completed
 - Add `blog_post_views` migration + model/service logic.
 - Track views on public blog post page hit.
 - Enable requested view KPIs and 30-day view trend.
 
 ### Phase 3 (Hardening)
+- Status: ⏳ Pending
 - Add caching for dashboard aggregates (5–15 min TTL).
 - Add background rollups if traffic grows.
 - Add tests for metric queries and trend shape consistency.
@@ -433,6 +442,7 @@ Fields currently present but not rendered in the Dashboard UI:
   - authenticated access
   - admin receives personal scope only
   - master admin receives personal + global scopes
+  - end-to-end `meta.generated_at` validity assertions for both roles
 
 ### Backend (Unit tests)
 - ✅ `tests/Unit/Services/DashboardMetricsServiceTest.php`
@@ -451,6 +461,7 @@ Fields currently present but not rendered in the Dashboard UI:
   - toggles personal/global and updates rendered values
   - renders comments table rows for active scope
   - renders trend activity messaging correctly with zero-filled 30-day arrays
+  - renders enabled view-tracking message and numeric requested view metrics when available
 
 ---
 

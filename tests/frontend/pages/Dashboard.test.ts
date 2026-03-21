@@ -116,6 +116,7 @@ describe('Dashboard Page', () => {
                     views_tracking_enabled: false,
                     available_scopes: ['personal'],
                     default_scope: 'personal',
+                    generated_at: new Date().toISOString(),
                 },
             },
         });
@@ -145,6 +146,7 @@ describe('Dashboard Page', () => {
                     views_tracking_enabled: false,
                     available_scopes: ['personal'],
                     default_scope: 'personal',
+                    generated_at: new Date().toISOString(),
                 },
             },
         });
@@ -163,6 +165,7 @@ describe('Dashboard Page', () => {
                     views_tracking_enabled: false,
                     available_scopes: ['personal', 'global'],
                     default_scope: 'personal',
+                    generated_at: new Date().toISOString(),
                 },
             },
         });
@@ -196,10 +199,39 @@ describe('Dashboard Page', () => {
                     views_tracking_enabled: false,
                     available_scopes: ['personal'],
                     default_scope: 'personal',
+                    generated_at: new Date().toISOString(),
                 },
             },
         });
 
         expect(wrapper.text()).toContain('No published posts available yet.');
+    });
+
+    it('renders enabled view tracking state and numeric view metrics when available', () => {
+        const wrapper = mount(Dashboard, {
+            props: {
+                metricsByScope: {
+                    personal: {
+                        ...createPersonalMetrics(),
+                        total_blog_post_views: 42,
+                        average_views_per_blog_post: 7,
+                        views_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 5 }),
+                    },
+                },
+                meta: {
+                    views_tracking_enabled: true,
+                    available_scopes: ['personal'],
+                    default_scope: 'personal',
+                    generated_at: new Date().toISOString(),
+                },
+            },
+        });
+
+        expect(wrapper.text()).toContain('Total Blog Post Views');
+        expect(wrapper.text()).toContain('Average Views per Blog Post');
+        expect(wrapper.text()).toContain('42');
+        expect(wrapper.text()).toContain('7');
+        expect(wrapper.text()).toContain('View trend data available.');
+        expect(wrapper.text()).not.toContain('View tracking is not enabled yet.');
     });
 });

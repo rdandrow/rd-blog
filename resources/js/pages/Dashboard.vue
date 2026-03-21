@@ -82,6 +82,7 @@ interface Props {
         views_tracking_enabled: boolean;
         available_scopes: string[];
         default_scope: 'personal' | 'global';
+        generated_at: string;
     };
 }
 

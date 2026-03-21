@@ -31,6 +31,7 @@ class DashboardController extends Controller
                 'views_tracking_enabled' => $scopePayload['viewsTrackingEnabled'],
                 'available_scopes' => $scopePayload['availableScopes'],
                 'default_scope' => $scopePayload['defaultScope'],
+                'generated_at' => now()->toISOString(),
             ],
         ]);
     }

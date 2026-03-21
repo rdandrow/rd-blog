@@ -9,6 +9,7 @@
 use App\Models\User;
 use App\Models\BlogPost;
 use App\Models\Comment;
+use Illuminate\Support\Carbon;
 
 describe('Dashboard Access', function () {
     it('redirects unauthenticated users to login page', function () {
@@ -74,7 +75,8 @@ describe('Dashboard Access', function () {
             ->has('metricsByScope.personal.high_value_metrics.follower_growth_30d', 30)
             ->where('meta.views_tracking_enabled', true)
             ->where('meta.available_scopes', ['personal'])
-            ->where('meta.default_scope', 'personal'));
+                ->where('meta.default_scope', 'personal')
+                ->where('meta.generated_at', fn ($value) => Carbon::parse($value)->isValid()));
     })->group('dashboard', 'authenticated');
 
     it('returns both personal and global scoped metrics for master admins', function () {
@@ -132,6 +134,7 @@ describe('Dashboard Access', function () {
             ->has('metricsByScope.global.high_value_metrics.likes_created_30d', 30)
             ->has('metricsByScope.global.high_value_metrics.follower_growth_30d', 30)
             ->where('meta.available_scopes', ['personal', 'global'])
-            ->where('meta.default_scope', 'personal'));
+            ->where('meta.default_scope', 'personal')
+            ->where('meta.generated_at', fn ($value) => Carbon::parse($value)->isValid()));
     })->group('dashboard', 'authenticated');
 });

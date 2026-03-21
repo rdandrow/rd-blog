@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Services\DashboardMetricsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
@@ -44,6 +45,8 @@ describe('DashboardController', function () {
         $payload = $httpResponse->getData(true);
 
         expect($payload['props']['meta']['views_tracking_enabled'])->toBeFalse();
+
+        expect(Carbon::parse($payload['props']['meta']['generated_at'])->isValid())->toBeTrue();
     })->group('dashboard', 'dashboard-contract', 'unit', 'controller');
 
     test('returns inertia payload from dashboard metrics service contract', function () {
@@ -85,6 +88,8 @@ describe('DashboardController', function () {
             ->and($payload['props']['meta']['available_scopes'])->toBe(['personal'])
             ->and($payload['props']['meta']['default_scope'])->toBe('personal')
             ->and($payload['props']['meta']['views_tracking_enabled'])->toBeTrue();
+
+        expect(Carbon::parse($payload['props']['meta']['generated_at'])->isValid())->toBeTrue();
     })->group('dashboard', 'dashboard-contract', 'unit', 'controller');
 
     test('returns inertia payload with personal and global scopes for master admin contract', function () {
@@ -133,5 +138,7 @@ describe('DashboardController', function () {
             ->and($payload['props']['meta']['available_scopes'])->toBe(['personal', 'global'])
             ->and($payload['props']['meta']['default_scope'])->toBe('personal')
             ->and($payload['props']['meta']['views_tracking_enabled'])->toBeTrue();
+
+        expect(Carbon::parse($payload['props']['meta']['generated_at'])->isValid())->toBeTrue();
     })->group('dashboard', 'dashboard-contract', 'unit', 'controller');
 });
