@@ -114,6 +114,16 @@ const contentActivity30d = computed(() => {
     }));
 });
 
+const formatDashboardDate = (day: string) => {
+    const [year, month, date] = day.slice(0, 10).split('-');
+
+    if (!year || !month || !date) {
+        return day;
+    }
+
+    return `${month}-${date}-${year}`;
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -230,22 +240,22 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <p class="mt-1 text-xs text-muted-foreground">
                             Posts / Comments / Likes
                         </p>
-                        <div class="mt-3 max-h-64 overflow-y-auto">
-                            <table class="min-w-full text-xs">
+                        <div class="mt-3 max-h-64 overflow-auto">
+                            <table class="min-w-full table-fixed text-xs">
                                 <thead>
                                     <tr
                                         class="border-b border-border text-left"
                                     >
-                                        <th class="px-2 py-1 font-medium">
+                                        <th class="sticky left-0 top-0 z-30 w-32 bg-card px-3 py-1 font-medium">
                                             Day
                                         </th>
-                                        <th class="px-2 py-1 font-medium">
+                                        <th class="sticky top-0 z-20 w-24 bg-card px-3 py-1 font-medium">
                                             Posts
                                         </th>
-                                        <th class="px-2 py-1 font-medium">
+                                        <th class="sticky top-0 z-20 w-28 bg-card px-3 py-1 font-medium">
                                             Comments
                                         </th>
-                                        <th class="px-2 py-1 font-medium">
+                                        <th class="sticky top-0 z-20 w-24 bg-card px-3 py-1 font-medium">
                                             Likes
                                         </th>
                                     </tr>
@@ -256,16 +266,16 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         :key="point.day"
                                         class="border-b border-border/60"
                                     >
-                                        <td class="px-2 py-1">
-                                            {{ point.day }}
+                                        <td class="sticky left-0 z-10 bg-card px-3 py-1">
+                                            {{ formatDashboardDate(point.day) }}
                                         </td>
-                                        <td class="px-2 py-1">
+                                        <td class="px-3 py-1">
                                             {{ point.posts }}
                                         </td>
-                                        <td class="px-2 py-1">
+                                        <td class="px-3 py-1">
                                             {{ point.comments }}
                                         </td>
-                                        <td class="px-2 py-1">
+                                        <td class="px-3 py-1">
                                             {{ point.likes }}
                                         </td>
                                     </tr>
@@ -287,16 +297,16 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     : 'No activity in last 30 days'
                             }}
                         </p>
-                        <div class="mt-3 max-h-64 overflow-y-auto">
+                        <div class="mt-3 max-h-64 overflow-auto">
                             <table class="min-w-full text-xs">
                                 <thead>
                                     <tr
                                         class="border-b border-border text-left"
                                     >
-                                        <th class="px-2 py-1 font-medium">
+                                        <th class="sticky left-0 top-0 z-30 bg-card px-2 py-1 font-medium">
                                             Day
                                         </th>
-                                        <th class="px-2 py-1 font-medium">
+                                        <th class="sticky top-0 z-20 bg-card px-2 py-1 font-medium">
                                             Followers
                                         </th>
                                     </tr>
@@ -309,8 +319,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         :key="point.day"
                                         class="border-b border-border/60"
                                     >
-                                        <td class="px-2 py-1">
-                                            {{ point.day }}
+                                        <td class="sticky left-0 z-10 bg-card px-2 py-1">
+                                            {{ formatDashboardDate(point.day) }}
                                         </td>
                                         <td class="px-2 py-1">
                                             {{ point.count }}
@@ -435,7 +445,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
             <div class="rounded-xl border border-border bg-card p-4">
                 <h2 class="text-base font-semibold text-foreground">
-                    Requested View Metrics (Pending Tracking)
+                    Requested View Metrics
                 </h2>
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
@@ -466,14 +476,14 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </div>
                 </div>
 
-                <h2 class="text-base font-semibold text-foreground">
+                <h2 class="mt-6 text-base font-semibold text-foreground">
                     30-Day View Graph for Posted Articles
                 </h2>
                 <p class="mt-2 text-sm text-muted-foreground">
                     {{
                         meta.views_tracking_enabled
                             ? 'View trend data available.'
-                            : 'View tracking is not enabled yet. This chart will populate once blog post view tracking is implemented.'
+                            : 'Not available yet'
                     }}
                 </p>
             </div>
