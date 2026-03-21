@@ -119,4 +119,90 @@ describe('DashboardMetricsService', function () {
         expect($personal['total_followers'])->toBe(2)
             ->and($global['total_followers'])->toBe(3);
     });
+
+    test('global high-value metrics include user-wide metrics and published post aggregates', function () {
+        $author = User::factory()->create();
+        $commenter = User::factory()->create();
+
+        User::factory()->create(['two_factor_confirmed_at' => now()]);
+        User::factory()->create(['two_factor_confirmed_at' => null]);
+
+        $published = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'is_featured' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => false,
+            'published_at' => null,
+        ]);
+
+        Comment::factory()->count(2)->create([
+            'blog_post_id' => $published->id,
+            'user_id' => $commenter->id,
+        ]);
+
+        DB::table('blog_post_likes')->insert([
+            ['blog_post_id' => $published->id, 'user_id' => $author->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $published->id, 'user_id' => $commenter->id, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $metrics = $this->service->getRequestedMetrics();
+        $high = $metrics['high_value_metrics'];
+
+        expect($high['published_posts'])->toBe(1)
+            ->and($high['draft_posts'])->toBe(1)
+            ->and($high['featured_posts'])->toBe(1)
+            ->and($high['total_comments_on_published_posts'])->toBe(2)
+            ->and($high['total_likes_on_published_posts'])->toBe(2)
+            ->and($high['avg_comments_per_published_post'])->toBe(2.0)
+            ->and($high['avg_likes_per_published_post'])->toBe(2.0)
+            ->and($high['two_factor_adoption_rate'])->not->toBeNull()
+            ->and($high['invitation_funnel']['pending'])->not->toBeNull();
+    });
+
+    test('personal high-value metrics are scoped to authored posts and hide global-only user metrics', function () {
+        $admin = User::factory()->admin()->create();
+        $otherAuthor = User::factory()->create();
+        $commenter = User::factory()->create();
+
+        $adminPost = BlogPost::factory()->create([
+            'user_id' => $admin->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $otherPost = BlogPost::factory()->create([
+            'user_id' => $otherAuthor->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        Comment::factory()->count(1)->create([
+            'blog_post_id' => $adminPost->id,
+            'user_id' => $commenter->id,
+        ]);
+
+        Comment::factory()->count(4)->create([
+            'blog_post_id' => $otherPost->id,
+            'user_id' => $commenter->id,
+        ]);
+
+        DB::table('blog_post_likes')->insert([
+            ['blog_post_id' => $adminPost->id, 'user_id' => $admin->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $otherPost->id, 'user_id' => $otherAuthor->id, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $metrics = $this->service->getRequestedMetrics($admin);
+        $high = $metrics['high_value_metrics'];
+
+        expect($high['published_posts'])->toBe(1)
+            ->and($high['total_comments_on_published_posts'])->toBe(1)
+            ->and($high['total_likes_on_published_posts'])->toBe(1)
+            ->and($high['two_factor_adoption_rate'])->toBeNull()
+            ->and($high['invitation_funnel']['pending'])->toBeNull();
+    });
 });

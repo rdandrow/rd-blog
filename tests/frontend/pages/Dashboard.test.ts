@@ -30,6 +30,26 @@ const createPersonalMetrics = () => ({
         { id: 1, title: 'My Post', slug: 'my-post', comments_count: 2 },
     ],
     views_30d: [],
+    high_value_metrics: {
+        published_posts: 2,
+        draft_posts: 1,
+        featured_posts: 1,
+        total_comments_on_published_posts: 5,
+        total_likes_on_published_posts: 7,
+        avg_comments_per_published_post: 2.5,
+        avg_likes_per_published_post: 3.5,
+        active_authors_30d: 1,
+        follower_growth_30d: [],
+        posts_published_30d: [],
+        comments_created_30d: [],
+        likes_created_30d: [],
+        two_factor_adoption_rate: null,
+        invitation_funnel: {
+            pending: null,
+            accepted: null,
+            expired: null,
+        },
+    },
 });
 
 const createGlobalMetrics = () => ({
@@ -40,6 +60,26 @@ const createGlobalMetrics = () => ({
         { id: 2, title: 'Global Post', slug: 'global-post', comments_count: 5 },
     ],
     views_30d: [],
+    high_value_metrics: {
+        published_posts: 10,
+        draft_posts: 4,
+        featured_posts: 2,
+        total_comments_on_published_posts: 28,
+        total_likes_on_published_posts: 40,
+        avg_comments_per_published_post: 2.8,
+        avg_likes_per_published_post: 4,
+        active_authors_30d: 6,
+        follower_growth_30d: [{ day: '2026-03-20', count: 2 }],
+        posts_published_30d: [{ day: '2026-03-20', count: 1 }],
+        comments_created_30d: [{ day: '2026-03-20', count: 3 }],
+        likes_created_30d: [{ day: '2026-03-20', count: 4 }],
+        two_factor_adoption_rate: 90,
+        invitation_funnel: {
+            pending: 1,
+            accepted: 4,
+            expired: 2,
+        },
+    },
 });
 
 describe('Dashboard Page', () => {
@@ -62,6 +102,9 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Total Number of Followers');
         expect(wrapper.text()).toContain('Not available yet');
         expect(wrapper.text()).toContain('3');
+        expect(wrapper.text()).toContain('High-Value Metrics');
+        expect(wrapper.text()).toContain('Published Posts');
+        expect(wrapper.text()).toContain('Draft Posts');
     });
 
     it('hides scope switch when only personal scope is available', () => {
@@ -107,6 +150,8 @@ describe('Dashboard Page', () => {
 
         expect(wrapper.text()).toContain('Global Post');
         expect(wrapper.text()).toContain('10');
+        expect(wrapper.text()).toContain('90%');
+        expect(wrapper.text()).toContain('Pending: 1 · Accepted: 4 · Expired: 2');
     });
 
     it('renders empty-state text when active scope has no comments rows', () => {

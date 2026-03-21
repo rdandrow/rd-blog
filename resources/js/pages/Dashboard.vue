@@ -20,6 +20,26 @@ interface Props {
             total_followers: number;
             comments_per_blog_post: CommentMetric[];
             views_30d: Array<{ day: string; count: number }>;
+            high_value_metrics: {
+                published_posts: number;
+                draft_posts: number;
+                featured_posts: number;
+                total_comments_on_published_posts: number;
+                total_likes_on_published_posts: number;
+                avg_comments_per_published_post: number;
+                avg_likes_per_published_post: number;
+                active_authors_30d: number;
+                follower_growth_30d: Array<{ day: string; count: number }>;
+                posts_published_30d: Array<{ day: string; count: number }>;
+                comments_created_30d: Array<{ day: string; count: number }>;
+                likes_created_30d: Array<{ day: string; count: number }>;
+                two_factor_adoption_rate: number | null;
+                invitation_funnel: {
+                    pending: number | null;
+                    accepted: number | null;
+                    expired: number | null;
+                };
+            };
         };
         global?: {
             total_blog_post_views: number | null;
@@ -27,6 +47,26 @@ interface Props {
             total_followers: number;
             comments_per_blog_post: CommentMetric[];
             views_30d: Array<{ day: string; count: number }>;
+            high_value_metrics: {
+                published_posts: number;
+                draft_posts: number;
+                featured_posts: number;
+                total_comments_on_published_posts: number;
+                total_likes_on_published_posts: number;
+                avg_comments_per_published_post: number;
+                avg_likes_per_published_post: number;
+                active_authors_30d: number;
+                follower_growth_30d: Array<{ day: string; count: number }>;
+                posts_published_30d: Array<{ day: string; count: number }>;
+                comments_created_30d: Array<{ day: string; count: number }>;
+                likes_created_30d: Array<{ day: string; count: number }>;
+                two_factor_adoption_rate: number | null;
+                invitation_funnel: {
+                    pending: number | null;
+                    accepted: number | null;
+                    expired: number | null;
+                };
+            };
         };
     };
     meta: {
@@ -159,6 +199,111 @@ const breadcrumbs: BreadcrumbItem[] = [
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-card p-4">
+                <h2 class="text-base font-semibold text-foreground">
+                    High-Value Metrics
+                </h2>
+
+                <div class="mt-4 grid gap-4 md:grid-cols-4">
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Published Posts</p>
+                        <p class="mt-1 text-xl font-semibold">{{ activeMetrics.high_value_metrics.published_posts }}</p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Draft Posts</p>
+                        <p class="mt-1 text-xl font-semibold">{{ activeMetrics.high_value_metrics.draft_posts }}</p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Featured Posts</p>
+                        <p class="mt-1 text-xl font-semibold">{{ activeMetrics.high_value_metrics.featured_posts }}</p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Active Authors (30d)</p>
+                        <p class="mt-1 text-xl font-semibold">{{ activeMetrics.high_value_metrics.active_authors_30d }}</p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Total Comments (Published)</p>
+                        <p class="mt-1 text-xl font-semibold">{{ activeMetrics.high_value_metrics.total_comments_on_published_posts }}</p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Total Likes (Published)</p>
+                        <p class="mt-1 text-xl font-semibold">{{ activeMetrics.high_value_metrics.total_likes_on_published_posts }}</p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Avg Comments / Published Post</p>
+                        <p class="mt-1 text-xl font-semibold">{{ activeMetrics.high_value_metrics.avg_comments_per_published_post }}</p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Avg Likes / Published Post</p>
+                        <p class="mt-1 text-xl font-semibold">{{ activeMetrics.high_value_metrics.avg_likes_per_published_post }}</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 grid gap-4 md:grid-cols-2">
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">2FA Adoption Rate</p>
+                        <p class="mt-1 text-lg font-semibold">
+                            {{
+                                activeMetrics.high_value_metrics.two_factor_adoption_rate === null
+                                    ? 'Not available in personal scope'
+                                    : `${activeMetrics.high_value_metrics.two_factor_adoption_rate}%`
+                            }}
+                        </p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-xs text-muted-foreground">Invitation Funnel</p>
+                        <p class="mt-1 text-sm font-medium">
+                            {{
+                                activeMetrics.high_value_metrics.invitation_funnel.pending === null
+                                    ? 'Not available in personal scope'
+                                    : `Pending: ${activeMetrics.high_value_metrics.invitation_funnel.pending} · Accepted: ${activeMetrics.high_value_metrics.invitation_funnel.accepted} · Expired: ${activeMetrics.high_value_metrics.invitation_funnel.expired}`
+                            }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-card p-4">
+                <h2 class="text-base font-semibold text-foreground">
+                    30-Day Trends (Captured Metrics)
+                </h2>
+
+                <div class="mt-4 grid gap-4 md:grid-cols-2">
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-sm font-medium">Posts Published</p>
+                        <p class="mt-2 text-xs text-muted-foreground">
+                            {{ activeMetrics.high_value_metrics.posts_published_30d.length > 0
+                                ? `${activeMetrics.high_value_metrics.posts_published_30d.length} day(s) with activity`
+                                : 'No activity in last 30 days' }}
+                        </p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-sm font-medium">Comments Created</p>
+                        <p class="mt-2 text-xs text-muted-foreground">
+                            {{ activeMetrics.high_value_metrics.comments_created_30d.length > 0
+                                ? `${activeMetrics.high_value_metrics.comments_created_30d.length} day(s) with activity`
+                                : 'No activity in last 30 days' }}
+                        </p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-sm font-medium">Likes Created</p>
+                        <p class="mt-2 text-xs text-muted-foreground">
+                            {{ activeMetrics.high_value_metrics.likes_created_30d.length > 0
+                                ? `${activeMetrics.high_value_metrics.likes_created_30d.length} day(s) with activity`
+                                : 'No activity in last 30 days' }}
+                        </p>
+                    </div>
+                    <div class="rounded-lg border border-border p-3">
+                        <p class="text-sm font-medium">Follower Growth</p>
+                        <p class="mt-2 text-xs text-muted-foreground">
+                            {{ activeMetrics.high_value_metrics.follower_growth_30d.length > 0
+                                ? `${activeMetrics.high_value_metrics.follower_growth_30d.length} day(s) with activity`
+                                : 'No activity in last 30 days' }}
+                        </p>
+                    </div>
                 </div>
             </div>
 
