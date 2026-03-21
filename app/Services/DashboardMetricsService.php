@@ -89,17 +89,21 @@ class DashboardMetricsService
         $draftPosts = $draftPostsQuery->count();
         $featuredPosts = $featuredPostsQuery->count();
 
-        $publishedPostIds = BlogPost::published()
-            ->when($user !== null, fn ($query) => $query->where('user_id', $user->id))
-            ->pluck('id');
+        $totalCommentsOnPublished = DB::table('comments as c')
+            ->join('blog_posts as p', 'p.id', '=', 'c.blog_post_id')
+            ->where('p.is_published', true)
+            ->whereNotNull('p.published_at')
+            ->where('p.published_at', '<=', now())
+            ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id))
+            ->count();
 
-        $totalCommentsOnPublished = $publishedPostIds->isEmpty()
-            ? 0
-            : DB::table('comments')->whereIn('blog_post_id', $publishedPostIds)->count();
-
-        $totalLikesOnPublished = $publishedPostIds->isEmpty()
-            ? 0
-            : DB::table('blog_post_likes')->whereIn('blog_post_id', $publishedPostIds)->count();
+        $totalLikesOnPublished = DB::table('blog_post_likes as l')
+            ->join('blog_posts as p', 'p.id', '=', 'l.blog_post_id')
+            ->where('p.is_published', true)
+            ->whereNotNull('p.published_at')
+            ->where('p.published_at', '<=', now())
+            ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id))
+            ->count();
 
         $avgCommentsPerPublished = $publishedPosts > 0
             ? round($totalCommentsOnPublished / $publishedPosts, 2)

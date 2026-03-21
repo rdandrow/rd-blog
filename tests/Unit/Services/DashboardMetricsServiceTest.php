@@ -236,4 +236,214 @@ describe('DashboardMetricsService', function () {
             ->and(collect($high['likes_created_30d'])->sum('count'))->toBe(0)
             ->and(collect($high['follower_growth_30d'])->sum('count'))->toBe(0);
     });
+
+    test('totals for comments and likes exclude unpublished and future-published posts', function () {
+        $author = User::factory()->create();
+        $commenter = User::factory()->create();
+
+        $publishedPost = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $unpublishedPost = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => false,
+            'published_at' => null,
+        ]);
+
+        $futurePublishedPost = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'published_at' => now()->addDay(),
+        ]);
+
+        Comment::factory()->count(2)->create([
+            'blog_post_id' => $publishedPost->id,
+            'user_id' => $commenter->id,
+        ]);
+        Comment::factory()->count(3)->create([
+            'blog_post_id' => $unpublishedPost->id,
+            'user_id' => $commenter->id,
+        ]);
+        Comment::factory()->count(4)->create([
+            'blog_post_id' => $futurePublishedPost->id,
+            'user_id' => $commenter->id,
+        ]);
+
+        DB::table('blog_post_likes')->insert([
+            ['blog_post_id' => $publishedPost->id, 'user_id' => $author->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $publishedPost->id, 'user_id' => $commenter->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $unpublishedPost->id, 'user_id' => $author->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $unpublishedPost->id, 'user_id' => $commenter->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $futurePublishedPost->id, 'user_id' => $author->id, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $high = $this->service->getRequestedMetrics()['high_value_metrics'];
+
+        expect($high['total_comments_on_published_posts'])->toBe(2)
+            ->and($high['total_likes_on_published_posts'])->toBe(2)
+            ->and($high['published_posts'])->toBe(1);
+    });
+
+    test('comments per post ordering uses comments then likes then published_at and is limited to 10', function () {
+        $author = User::factory()->create();
+        $commenter = User::factory()->create();
+
+        $oldest = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'published_at' => now()->subDays(3),
+            'title' => 'Oldest Tie',
+        ]);
+
+        $middle = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'published_at' => now()->subDays(2),
+            'title' => 'Middle Tie',
+        ]);
+
+        $newest = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+            'title' => 'Newest Tie',
+        ]);
+
+        foreach ([$oldest, $middle, $newest] as $post) {
+            Comment::factory()->count(5)->create([
+                'blog_post_id' => $post->id,
+                'user_id' => $commenter->id,
+            ]);
+        }
+
+        DB::table('blog_post_likes')->insert([
+            ['blog_post_id' => $middle->id, 'user_id' => $author->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $middle->id, 'user_id' => $commenter->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $newest->id, 'user_id' => $author->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $newest->id, 'user_id' => $commenter->id, 'created_at' => now(), 'updated_at' => now()],
+            ['blog_post_id' => $oldest->id, 'user_id' => $author->id, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        BlogPost::factory()->count(9)->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'published_at' => now()->subDays(4),
+        ]);
+
+        $topPosts = $this->service->getRequestedMetrics()['comments_per_blog_post'];
+
+        expect($topPosts)->toHaveCount(10)
+            ->and($topPosts[0]->id)->toBe($newest->id)
+            ->and($topPosts[1]->id)->toBe($middle->id)
+            ->and($topPosts[2]->id)->toBe($oldest->id);
+    });
+
+    test('top authors list is sorted by published count then name and limited to 10', function () {
+        $alpha = User::factory()->create(['name' => 'Alpha']);
+        $beta = User::factory()->create(['name' => 'Beta']);
+
+        BlogPost::factory()->count(2)->create([
+            'user_id' => $alpha->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        BlogPost::factory()->count(2)->create([
+            'user_id' => $beta->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        for ($index = 1; $index <= 10; $index++) {
+            $user = User::factory()->create(['name' => sprintf('Author %02d', $index)]);
+
+            BlogPost::factory()->create([
+                'user_id' => $user->id,
+                'is_published' => true,
+                'published_at' => now()->subDay(),
+            ]);
+        }
+
+        $topAuthors = $this->service->getRequestedMetrics()['high_value_metrics']['top_authors_by_published_posts_30d'];
+
+        expect($topAuthors)->toHaveCount(10)
+            ->and($topAuthors[0]->name)->toBe('Alpha')
+            ->and($topAuthors[0]->published_posts_count)->toBe(2)
+            ->and($topAuthors[1]->name)->toBe('Beta')
+            ->and($topAuthors[1]->published_posts_count)->toBe(2);
+    });
+
+    test('scope parity applies to totals and 30-day trends for personal vs global', function () {
+        $admin = User::factory()->admin()->create();
+        $otherAuthor = User::factory()->create();
+        $commenter = User::factory()->create();
+
+        $adminPost = BlogPost::factory()->create([
+            'user_id' => $admin->id,
+            'is_published' => true,
+            'published_at' => now()->subDays(2),
+        ]);
+
+        $otherPost = BlogPost::factory()->create([
+            'user_id' => $otherAuthor->id,
+            'is_published' => true,
+            'published_at' => now()->subDays(2),
+        ]);
+
+        Comment::factory()->count(2)->create([
+            'blog_post_id' => $adminPost->id,
+            'user_id' => $commenter->id,
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        Comment::factory()->count(1)->create([
+            'blog_post_id' => $otherPost->id,
+            'user_id' => $commenter->id,
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        DB::table('blog_post_likes')->insert([
+            ['blog_post_id' => $adminPost->id, 'user_id' => $admin->id, 'created_at' => now()->subDay(), 'updated_at' => now()->subDay()],
+            ['blog_post_id' => $adminPost->id, 'user_id' => $commenter->id, 'created_at' => now()->subDay(), 'updated_at' => now()->subDay()],
+            ['blog_post_id' => $otherPost->id, 'user_id' => $otherAuthor->id, 'created_at' => now()->subDay(), 'updated_at' => now()->subDay()],
+        ]);
+
+        $followerOne = User::factory()->create();
+        $followerTwo = User::factory()->create();
+        $followerThree = User::factory()->create();
+
+        $admin->followers()->attach($followerOne->id, [
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+        $admin->followers()->attach($followerTwo->id, [
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+        $otherAuthor->followers()->attach($followerThree->id, [
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $personalHigh = $this->service->getRequestedMetrics($admin)['high_value_metrics'];
+        $globalHigh = $this->service->getRequestedMetrics()['high_value_metrics'];
+
+        expect($personalHigh['total_comments_on_published_posts'])->toBe(2)
+            ->and($globalHigh['total_comments_on_published_posts'])->toBe(3)
+            ->and($personalHigh['total_likes_on_published_posts'])->toBe(2)
+            ->and($globalHigh['total_likes_on_published_posts'])->toBe(3)
+            ->and(collect($personalHigh['posts_published_30d'])->sum('count'))->toBe(1)
+            ->and(collect($globalHigh['posts_published_30d'])->sum('count'))->toBe(2)
+            ->and(collect($personalHigh['comments_created_30d'])->sum('count'))->toBe(2)
+            ->and(collect($globalHigh['comments_created_30d'])->sum('count'))->toBe(3)
+            ->and(collect($personalHigh['likes_created_30d'])->sum('count'))->toBe(2)
+            ->and(collect($globalHigh['likes_created_30d'])->sum('count'))->toBe(3)
+            ->and(collect($personalHigh['follower_growth_30d'])->sum('count'))->toBe(2)
+            ->and(collect($globalHigh['follower_growth_30d'])->sum('count'))->toBe(3);
+    });
 });

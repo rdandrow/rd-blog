@@ -134,19 +134,36 @@ $totalFollowers = DB::table('user_follows')->count();
 
 ### 3.4 Total Comments on Published Posts
 ```php
-$totalComments = Comment::whereHas('blogPost', fn ($q) => $q->published())->count();
+$totalComments = DB::table('comments as c')
+  ->join('blog_posts as p', 'p.id', '=', 'c.blog_post_id')
+  ->where('p.is_published', true)
+  ->whereNotNull('p.published_at')
+  ->where('p.published_at', '<=', now())
+  ->when($user ?? null, fn ($q) => $q->where('p.user_id', $user->id))
+  ->count();
 ```
 
 ### 3.5 Comments per Blog Post
 ```php
 $commentsPerPost = BlogPost::published()
-    ->withCount('comments')
+  ->when($user ?? null, fn ($q) => $q->where('user_id', $user->id))
+  ->withCount(['comments', 'likes'])
+  ->orderByDesc('comments_count')
+  ->orderByDesc('likes_count')
+  ->orderByDesc('published_at')
+  ->limit(10)
     ->get(['id', 'title', 'slug']);
 ```
 
 ### 3.6 Total Likes on Published Posts
 ```php
-$totalLikes = BlogPostLike::whereHas('blogPost', fn ($q) => $q->published())->count();
+$totalLikes = DB::table('blog_post_likes as l')
+  ->join('blog_posts as p', 'p.id', '=', 'l.blog_post_id')
+  ->where('p.is_published', true)
+  ->whereNotNull('p.published_at')
+  ->where('p.published_at', '<=', now())
+  ->when($user ?? null, fn ($q) => $q->where('p.user_id', $user->id))
+  ->count();
 ```
 
 ### 3.7 Average Comments per Published Post
@@ -231,6 +248,23 @@ $expiredInvites = User::whereNotNull('invitation_token')
     ->count();
 ```
 
+### 3.14 Top Authors by Published Posts (last 30d)
+```php
+$topAuthorsByPublishedPosts30d = DB::table('blog_posts as p')
+  ->join('users as u', 'u.id', '=', 'p.user_id')
+  ->where('p.is_published', true)
+  ->whereNotNull('p.published_at')
+  ->where('p.published_at', '<=', now())
+  ->where('p.published_at', '>=', now()->subDays(29)->startOfDay())
+  ->when($user ?? null, fn ($q) => $q->where('p.user_id', $user->id))
+  ->groupBy('p.user_id', 'u.name')
+  ->selectRaw('p.user_id as id, u.name, COUNT(*) as published_posts_count')
+  ->orderByDesc('published_posts_count')
+  ->orderBy('u.name')
+  ->limit(10)
+  ->get();
+```
+
 ---
 
 ## 4) View Tracking Addition (Required for Requested View Metrics)
@@ -296,7 +330,7 @@ $viewsTrend = DB::table('blog_post_views as v')
       "average_views_per_blog_post": null,
       "total_followers": 12,
       "comments_per_blog_post": [
-        {"id": 10, "title": "...", "slug": "...", "comments_count": 8}
+        {"id": 10, "title": "...", "slug": "...", "comments_count": 8, "likes_count": 3}
       ],
       "views_30d": [],
       "high_value_metrics": {
@@ -308,6 +342,7 @@ $viewsTrend = DB::table('blog_post_views as v')
         "avg_comments_per_published_post": 4,
         "avg_likes_per_published_post": 6.67,
         "active_authors_30d": 1,
+        "top_authors_by_published_posts_30d": [{"id": 10, "name": "...", "published_posts_count": 6}],
         "follower_growth_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 2}],
         "posts_published_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 1}],
         "comments_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 3}],
@@ -321,7 +356,7 @@ $viewsTrend = DB::table('blog_post_views as v')
       "average_views_per_blog_post": null,
       "total_followers": 982,
       "comments_per_blog_post": [
-        {"id": 1, "title": "...", "slug": "...", "comments_count": 120}
+        {"id": 1, "title": "...", "slug": "...", "comments_count": 120, "likes_count": 180}
       ],
       "views_30d": [],
       "high_value_metrics": {
@@ -333,6 +368,7 @@ $viewsTrend = DB::table('blog_post_views as v')
         "avg_comments_per_published_post": 15.5,
         "avg_likes_per_published_post": 20.42,
         "active_authors_30d": 18,
+        "top_authors_by_published_posts_30d": [{"id": 1, "name": "...", "published_posts_count": 24}],
         "follower_growth_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 15}],
         "posts_published_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 6}],
         "comments_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 45}],
@@ -350,6 +386,22 @@ $viewsTrend = DB::table('blog_post_views as v')
   }
 }
 ```
+
+Dashboard UI currently consumes these `high_value_metrics` fields:
+- `published_posts`
+- `draft_posts`
+- `total_comments_on_published_posts`
+- `total_likes_on_published_posts`
+- `two_factor_adoption_rate`
+- `posts_published_30d`
+- `comments_created_30d`
+- `likes_created_30d`
+- `follower_growth_30d`
+- `top_authors_by_published_posts_30d`
+
+Fields currently present but not rendered in the Dashboard UI:
+- Top-level: `total_blog_post_views`, `average_views_per_blog_post`, `views_30d`
+- `high_value_metrics`: `featured_posts`, `avg_comments_per_published_post`, `avg_likes_per_published_post`, `active_authors_30d`, `invitation_funnel`
 
 ---
 
