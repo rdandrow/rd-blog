@@ -86,6 +86,9 @@ const activeMetrics = computed(() =>
         : props.metricsByScope.personal,
 );
 
+const activeDayCount = (trend: Array<{ day: string; count: number }>) =>
+    trend.filter((point) => point.count > 0).length;
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -275,32 +278,32 @@ const breadcrumbs: BreadcrumbItem[] = [
                     <div class="rounded-lg border border-border p-3">
                         <p class="text-sm font-medium">Posts Published</p>
                         <p class="mt-2 text-xs text-muted-foreground">
-                            {{ activeMetrics.high_value_metrics.posts_published_30d.length > 0
-                                ? `${activeMetrics.high_value_metrics.posts_published_30d.length} day(s) with activity`
+                            {{ activeDayCount(activeMetrics.high_value_metrics.posts_published_30d) > 0
+                                ? `${activeDayCount(activeMetrics.high_value_metrics.posts_published_30d)} day(s) with activity`
                                 : 'No activity in last 30 days' }}
                         </p>
                     </div>
                     <div class="rounded-lg border border-border p-3">
                         <p class="text-sm font-medium">Comments Created</p>
                         <p class="mt-2 text-xs text-muted-foreground">
-                            {{ activeMetrics.high_value_metrics.comments_created_30d.length > 0
-                                ? `${activeMetrics.high_value_metrics.comments_created_30d.length} day(s) with activity`
+                            {{ activeDayCount(activeMetrics.high_value_metrics.comments_created_30d) > 0
+                                ? `${activeDayCount(activeMetrics.high_value_metrics.comments_created_30d)} day(s) with activity`
                                 : 'No activity in last 30 days' }}
                         </p>
                     </div>
                     <div class="rounded-lg border border-border p-3">
                         <p class="text-sm font-medium">Likes Created</p>
                         <p class="mt-2 text-xs text-muted-foreground">
-                            {{ activeMetrics.high_value_metrics.likes_created_30d.length > 0
-                                ? `${activeMetrics.high_value_metrics.likes_created_30d.length} day(s) with activity`
+                            {{ activeDayCount(activeMetrics.high_value_metrics.likes_created_30d) > 0
+                                ? `${activeDayCount(activeMetrics.high_value_metrics.likes_created_30d)} day(s) with activity`
                                 : 'No activity in last 30 days' }}
                         </p>
                     </div>
                     <div class="rounded-lg border border-border p-3">
                         <p class="text-sm font-medium">Follower Growth</p>
                         <p class="mt-2 text-xs text-muted-foreground">
-                            {{ activeMetrics.high_value_metrics.follower_growth_30d.length > 0
-                                ? `${activeMetrics.high_value_metrics.follower_growth_30d.length} day(s) with activity`
+                            {{ activeDayCount(activeMetrics.high_value_metrics.follower_growth_30d) > 0
+                                ? `${activeDayCount(activeMetrics.high_value_metrics.follower_growth_30d)} day(s) with activity`
                                 : 'No activity in last 30 days' }}
                         </p>
                     </div>

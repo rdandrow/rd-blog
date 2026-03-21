@@ -22,6 +22,23 @@ vi.mock('@/routes', () => ({
     dashboard: () => ({ url: '/admin/dashboard' }),
 }));
 
+const createBackfilledTrend = (activeDays: Record<string, number> = {}) => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - 29);
+
+    return Array.from({ length: 30 }, (_, index) => {
+        const day = new Date(start);
+        day.setDate(start.getDate() + index);
+        const key = day.toISOString().slice(0, 10);
+
+        return {
+            day: key,
+            count: activeDays[key] ?? 0,
+        };
+    });
+};
+
 const createPersonalMetrics = () => ({
     total_blog_post_views: null,
     average_views_per_blog_post: null,
@@ -39,10 +56,10 @@ const createPersonalMetrics = () => ({
         avg_comments_per_published_post: 2.5,
         avg_likes_per_published_post: 3.5,
         active_authors_30d: 1,
-        follower_growth_30d: [],
-        posts_published_30d: [],
-        comments_created_30d: [],
-        likes_created_30d: [],
+        follower_growth_30d: createBackfilledTrend(),
+        posts_published_30d: createBackfilledTrend(),
+        comments_created_30d: createBackfilledTrend(),
+        likes_created_30d: createBackfilledTrend(),
         two_factor_adoption_rate: null,
         invitation_funnel: {
             pending: null,
@@ -69,10 +86,10 @@ const createGlobalMetrics = () => ({
         avg_comments_per_published_post: 2.8,
         avg_likes_per_published_post: 4,
         active_authors_30d: 6,
-        follower_growth_30d: [{ day: '2026-03-20', count: 2 }],
-        posts_published_30d: [{ day: '2026-03-20', count: 1 }],
-        comments_created_30d: [{ day: '2026-03-20', count: 3 }],
-        likes_created_30d: [{ day: '2026-03-20', count: 4 }],
+        follower_growth_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 2 }),
+        posts_published_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 1 }),
+        comments_created_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 3 }),
+        likes_created_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 4 }),
         two_factor_adoption_rate: 90,
         invitation_funnel: {
             pending: 1,
@@ -105,6 +122,7 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('High-Value Metrics');
         expect(wrapper.text()).toContain('Published Posts');
         expect(wrapper.text()).toContain('Draft Posts');
+        expect(wrapper.text()).toContain('No activity in last 30 days');
     });
 
     it('hides scope switch when only personal scope is available', () => {
@@ -152,6 +170,7 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('10');
         expect(wrapper.text()).toContain('90%');
         expect(wrapper.text()).toContain('Pending: 1 · Accepted: 4 · Expired: 2');
+        expect(wrapper.text()).toContain('1 day(s) with activity');
     });
 
     it('renders empty-state text when active scope has no comments rows', () => {

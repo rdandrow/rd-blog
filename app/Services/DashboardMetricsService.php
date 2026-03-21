@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardMetricsService
 {
+    private const TREND_DAYS = 30;
+
     /**
      * Get role-aware dashboard scope payload.
      *
@@ -187,12 +189,43 @@ class DashboardMetricsService
             'avg_comments_per_published_post' => $avgCommentsPerPublished,
             'avg_likes_per_published_post' => $avgLikesPerPublished,
             'active_authors_30d' => $activeAuthors30d,
-            'follower_growth_30d' => $followerGrowth30d,
-            'posts_published_30d' => $postsPublished30d,
-            'comments_created_30d' => $commentsCreated30d,
-            'likes_created_30d' => $likesCreated30d,
+            'follower_growth_30d' => $this->backfill30DayTrend($followerGrowth30d),
+            'posts_published_30d' => $this->backfill30DayTrend($postsPublished30d),
+            'comments_created_30d' => $this->backfill30DayTrend($commentsCreated30d),
+            'likes_created_30d' => $this->backfill30DayTrend($likesCreated30d),
             'two_factor_adoption_rate' => $twoFactorAdoptionRate,
             'invitation_funnel' => $invitationFunnel,
         ];
+    }
+
+    private function backfill30DayTrend(iterable $rows): array
+    {
+        $countsByDay = [];
+
+        foreach ($rows as $row) {
+            $day = is_array($row) ? ($row['day'] ?? null) : ($row->day ?? null);
+            $count = is_array($row) ? ($row['count'] ?? null) : ($row->count ?? null);
+
+            if ($day === null || $count === null) {
+                continue;
+            }
+
+            $dayKey = substr((string) $day, 0, 10);
+            $countsByDay[$dayKey] = (int) $count;
+        }
+
+        $start = now()->subDays(self::TREND_DAYS - 1)->startOfDay();
+        $backfilled = [];
+
+        for ($offset = 0; $offset < self::TREND_DAYS; $offset++) {
+            $day = $start->copy()->addDays($offset)->toDateString();
+
+            $backfilled[] = [
+                'day' => $day,
+                'count' => $countsByDay[$day] ?? 0,
+            ];
+        }
+
+        return $backfilled;
     }
 }

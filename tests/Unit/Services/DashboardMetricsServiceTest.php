@@ -161,7 +161,14 @@ describe('DashboardMetricsService', function () {
             ->and($high['avg_comments_per_published_post'])->toBe(2.0)
             ->and($high['avg_likes_per_published_post'])->toBe(2.0)
             ->and($high['two_factor_adoption_rate'])->not->toBeNull()
-            ->and($high['invitation_funnel']['pending'])->not->toBeNull();
+            ->and($high['invitation_funnel']['pending'])->not->toBeNull()
+            ->and($high['posts_published_30d'])->toHaveCount(30)
+            ->and($high['comments_created_30d'])->toHaveCount(30)
+            ->and($high['likes_created_30d'])->toHaveCount(30)
+            ->and($high['follower_growth_30d'])->toHaveCount(30)
+            ->and(collect($high['posts_published_30d'])->where('count', '>', 0)->count())->toBe(1)
+            ->and(collect($high['comments_created_30d'])->where('count', '>', 0)->count())->toBe(1)
+            ->and(collect($high['likes_created_30d'])->where('count', '>', 0)->count())->toBe(1);
     });
 
     test('personal high-value metrics are scoped to authored posts and hide global-only user metrics', function () {
@@ -203,6 +210,24 @@ describe('DashboardMetricsService', function () {
             ->and($high['total_comments_on_published_posts'])->toBe(1)
             ->and($high['total_likes_on_published_posts'])->toBe(1)
             ->and($high['two_factor_adoption_rate'])->toBeNull()
-            ->and($high['invitation_funnel']['pending'])->toBeNull();
+            ->and($high['invitation_funnel']['pending'])->toBeNull()
+            ->and($high['posts_published_30d'])->toHaveCount(30)
+            ->and($high['comments_created_30d'])->toHaveCount(30)
+            ->and($high['likes_created_30d'])->toHaveCount(30)
+            ->and($high['follower_growth_30d'])->toHaveCount(30);
+    });
+
+    test('backfills missing trend dates with zero counts', function () {
+        $metrics = $this->service->getRequestedMetrics();
+        $high = $metrics['high_value_metrics'];
+
+        expect($high['posts_published_30d'])->toHaveCount(30)
+            ->and($high['comments_created_30d'])->toHaveCount(30)
+            ->and($high['likes_created_30d'])->toHaveCount(30)
+            ->and($high['follower_growth_30d'])->toHaveCount(30)
+            ->and(collect($high['posts_published_30d'])->sum('count'))->toBe(0)
+            ->and(collect($high['comments_created_30d'])->sum('count'))->toBe(0)
+            ->and(collect($high['likes_created_30d'])->sum('count'))->toBe(0)
+            ->and(collect($high['follower_growth_30d'])->sum('count'))->toBe(0);
     });
 });

@@ -7,6 +7,25 @@ This document defines a practical first version of admin dashboard metrics using
 
 It is structured to be implementation-ready for backend and frontend tasks.
 
+## Last Updated Implementation Status
+
+- Date: 2026-03-21
+- Section 1.B high-value metrics: Implemented in dashboard payload and UI.
+- 30-day capturable trends (`posts_published_30d`, `comments_created_30d`, `likes_created_30d`, `follower_growth_30d`): Implemented with fixed 30-point zero-filled backfilling.
+- Scope behavior: `admin` = personal only; `master_admin` = personal + global.
+- Global-only metrics in personal scope: `two_factor_adoption_rate` and `invitation_funnel` remain `null` by design.
+- Coverage status: feature, unit, and Vitest dashboard tests are in place and passing.
+
+### Update Checklist
+
+- [x] Section 1.A requested metrics payload is wired (view metrics intentionally `null`/empty until tracking exists).
+- [x] Section 1.B high-value metrics are implemented and rendered.
+- [x] Role scope behavior is implemented (`admin` personal-only, `master_admin` personal + global).
+- [x] Capturable 30-day trends are backfilled to fixed 30-day arrays.
+- [ ] View tracking schema + ingestion (`blog_post_views`) is implemented.
+- [ ] Requested view KPIs/trends are activated from tracked data.
+- [ ] Dashboard aggregate caching/rollups hardening is implemented.
+
 ---
 
 ## 1) Metric Inventory and Data Availability
@@ -23,22 +42,22 @@ It is structured to be implementation-ready for backend and frontend tasks.
 
 ### B. High-Value Metrics Already Capturable
 
-| Metric | Source |
-|---|---|
-| Published posts | `blog_posts` (`is_published`, `published_at`) |
-| Draft posts | `blog_posts` (`is_published = false`) |
-| Featured posts | `blog_posts` (`is_featured = true`) |
-| Total comments on published posts | `comments` + published `blog_posts` |
-| Total likes on published posts | `blog_post_likes` + published `blog_posts` |
-| Average comments per published post | derived from comments/posts |
-| Average likes per published post | derived from likes/posts |
-| Active authors (30d) | distinct `blog_posts.user_id` on published posts in last 30 days |
-| Follower growth (30d) | `user_follows.created_at` |
-| Posts published (30d trend) | `blog_posts.published_at` |
-| Comments created (30d trend) | `comments.created_at` |
-| Likes created (30d trend) | `blog_post_likes.created_at` |
-| 2FA adoption rate | `users.two_factor_confirmed_at` |
-| Invitation funnel (pending/accepted/expired) | `users.invitation_*` fields |
+| Metric | Status | Source |
+|---|---|---|
+| Published posts | Implemented | `blog_posts` (`is_published`, `published_at`) |
+| Draft posts | Implemented | `blog_posts` (`is_published = false`) |
+| Featured posts | Implemented | `blog_posts` (`is_featured = true`) |
+| Total comments on published posts | Implemented | `comments` + published `blog_posts` |
+| Total likes on published posts | Implemented | `blog_post_likes` + published `blog_posts` |
+| Average comments per published post | Implemented | derived from comments/posts |
+| Average likes per published post | Implemented | derived from likes/posts |
+| Active authors (30d) | Implemented | distinct `blog_posts.user_id` on published posts in last 30 days |
+| Follower growth (30d) | Implemented | `user_follows.created_at` |
+| Posts published (30d trend) | Implemented + backfilled to 30 days | `blog_posts.published_at` |
+| Comments created (30d trend) | Implemented + backfilled to 30 days | `comments.created_at` |
+| Likes created (30d trend) | Implemented + backfilled to 30 days | `blog_post_likes.created_at` |
+| 2FA adoption rate | Implemented (global scope only) | `users.two_factor_confirmed_at` |
+| Invitation funnel (pending/accepted/expired) | Implemented (global scope only) | `users.invitation_*` fields |
 
 ### C. Metric Scope by Role (Implemented)
 
@@ -50,6 +69,9 @@ It is structured to be implementation-ready for backend and frontend tasks.
 Current implementation details:
 - Scope selection metadata is returned as `meta.available_scopes` with `meta.default_scope = "personal"`.
 - Scoped metric payloads are returned in `metricsByScope.personal` and (for master admins) `metricsByScope.global`.
+- High-value metrics are returned under `metricsByScope.{scope}.high_value_metrics`.
+- Capturable 30-day trends (`posts_published_30d`, `comments_created_30d`, `likes_created_30d`, `follower_growth_30d`) are backfilled to exactly 30 day/count points with missing days set to `0`.
+- In `personal` scope, global user metrics (`two_factor_adoption_rate`, `invitation_funnel`) are intentionally `null` placeholders.
 
 ---
 
@@ -154,6 +176,9 @@ $likesTrend = BlogPostLike::where('created_at', '>=', $start)
     ->groupBy('day')
     ->orderBy('day')
     ->get();
+
+// Then backfill each trend to always include the full 30-day window
+// [{ day: 'YYYY-MM-DD', count: int }, ... 30 entries total]
 ```
 
 ### 3.10 Active Authors (30d)
@@ -172,6 +197,8 @@ $followerGrowthTrend = DB::table('user_follows')
     ->groupBy('day')
     ->orderBy('day')
     ->get();
+
+  // Then backfill to 30 days with zeroes for dates without activity
 ```
 
 ### 3.12 2FA Adoption Rate
@@ -263,7 +290,23 @@ $viewsTrend = DB::table('blog_post_views as v')
       "comments_per_blog_post": [
         {"id": 10, "title": "...", "slug": "...", "comments_count": 8}
       ],
-      "views_30d": []
+      "views_30d": [],
+      "high_value_metrics": {
+        "published_posts": 6,
+        "draft_posts": 2,
+        "featured_posts": 1,
+        "total_comments_on_published_posts": 24,
+        "total_likes_on_published_posts": 40,
+        "avg_comments_per_published_post": 4,
+        "avg_likes_per_published_post": 6.67,
+        "active_authors_30d": 1,
+        "follower_growth_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 2}],
+        "posts_published_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 1}],
+        "comments_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 3}],
+        "likes_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 4}],
+        "two_factor_adoption_rate": null,
+        "invitation_funnel": {"pending": null, "accepted": null, "expired": null}
+      }
     },
     "global": {
       "total_blog_post_views": null,
@@ -272,7 +315,23 @@ $viewsTrend = DB::table('blog_post_views as v')
       "comments_per_blog_post": [
         {"id": 1, "title": "...", "slug": "...", "comments_count": 120}
       ],
-      "views_30d": []
+      "views_30d": [],
+      "high_value_metrics": {
+        "published_posts": 120,
+        "draft_posts": 24,
+        "featured_posts": 12,
+        "total_comments_on_published_posts": 1860,
+        "total_likes_on_published_posts": 2450,
+        "avg_comments_per_published_post": 15.5,
+        "avg_likes_per_published_post": 20.42,
+        "active_authors_30d": 18,
+        "follower_growth_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 15}],
+        "posts_published_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 6}],
+        "comments_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 45}],
+        "likes_created_30d": [{"day": "2026-02-20", "count": 0}, {"day": "...", "count": 0}, {"day": "2026-03-21", "count": 52}],
+        "two_factor_adoption_rate": 76.2,
+        "invitation_funnel": {"pending": 4, "accepted": 56, "expired": 3}
+      }
     }
   },
   "meta": {
@@ -314,20 +373,23 @@ $viewsTrend = DB::table('blog_post_views as v')
   - admin receives personal scope only
   - master admin receives personal + global scopes
 
+### Backend (Unit tests)
+- ✅ `tests/Unit/Services/DashboardMetricsServiceTest.php`
+  - role/scope resolution
+  - scoped aggregation for comments/followers/high-value metrics
+  - 30-day trend backfilling to fixed 30-point arrays with zero-fill
+- ✅ `tests/Unit/Http/Controllers/Admin/DashboardControllerTest.php`
+  - Inertia payload contract for admin
+  - Inertia payload contract for master admin
+
 ### Frontend (Vitest)
-- `tests/frontend/pages/Dashboard.test.ts`
+- ✅ `tests/frontend/pages/Dashboard.test.ts`
   - renders requested metric cards
   - hides scope switch for personal-only payload
   - shows scope switch when both scopes are available
   - toggles personal/global and updates rendered values
   - renders comments table rows for active scope
-
-### Suggested next unit-test extraction
-- If dashboard query logic grows, extract scope aggregation into a dedicated service (e.g., `DashboardMetricsService`) and add unit tests for:
-  - role/scope resolution
-  - follower counting strategy by scope
-  - comments-per-post ordering/limit behavior
-  - null placeholder behavior for not-yet-captured view metrics
+  - renders trend activity messaging correctly with zero-filled 30-day arrays
 
 ---
 
