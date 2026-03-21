@@ -5,6 +5,7 @@ use App\Models\Comment;
 use App\Models\User;
 use App\Services\DashboardMetricsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
@@ -559,5 +560,86 @@ describe('DashboardMetricsService', function () {
             ->and($metrics['average_views_per_blog_post'])->toBe(2.0)
             ->and($metrics['views_30d'])->toHaveCount(30)
             ->and(collect($metrics['views_30d'])->sum('count'))->toBe(2);
+    });
+
+    test('requested view metrics are disabled when views table is missing', function () {
+        Schema::dropIfExists('blog_post_views');
+
+        $admin = User::factory()->admin()->create();
+        $scopePayload = $this->service->getScopedMetricsForUser($admin);
+        $metrics = $this->service->getRequestedMetrics($admin);
+
+        expect($scopePayload['viewsTrackingEnabled'])->toBeFalse()
+            ->and($metrics['total_blog_post_views'])->toBeNull()
+            ->and($metrics['average_views_per_blog_post'])->toBeNull()
+            ->and($metrics['views_30d'])->toBe([]);
+    });
+
+    test('views 30 day trend is ordered, fixed-length, and excludes unpublished or future posts', function () {
+        $author = User::factory()->create();
+
+        $published = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'published_at' => now()->subDays(2),
+        ]);
+
+        $draft = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => false,
+            'published_at' => null,
+        ]);
+
+        $future = BlogPost::factory()->create([
+            'user_id' => $author->id,
+            'is_published' => true,
+            'published_at' => now()->addDay(),
+        ]);
+
+        DB::table('blog_post_views')->insert([
+            [
+                'blog_post_id' => $published->id,
+                'user_id' => null,
+                'session_id' => 'v1',
+                'ip_hash' => 'hv1',
+                'user_agent_hash' => 'uv1',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'blog_post_id' => $draft->id,
+                'user_id' => null,
+                'session_id' => 'v2',
+                'ip_hash' => 'hv2',
+                'user_agent_hash' => 'uv2',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'blog_post_id' => $future->id,
+                'user_id' => null,
+                'session_id' => 'v3',
+                'ip_hash' => 'hv3',
+                'user_agent_hash' => 'uv3',
+                'viewed_at' => now()->subDay(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $viewsTrend = $this->service->getRequestedMetrics()['views_30d'];
+
+        expect($viewsTrend)->toHaveCount(30)
+            ->and($viewsTrend[0]['day'])->toBe(now()->subDays(29)->toDateString())
+            ->and($viewsTrend[29]['day'])->toBe(now()->toDateString())
+            ->and(collect($viewsTrend)->sum('count'))->toBe(1)
+            ->and(collect($viewsTrend)->pluck('day')->values()->all())->toBe(
+                collect(range(0, 29))
+                    ->map(fn (int $offset) => now()->subDays(29 - $offset)->toDateString())
+                    ->values()
+                    ->all()
+            );
     });
 });

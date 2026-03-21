@@ -9,6 +9,43 @@ use Illuminate\Http\Request;
 uses(Tests\TestCase::class, RefreshDatabase::class);
 
 describe('DashboardController', function () {
+    test('returns views_tracking_enabled false when service reports tracking unavailable', function () {
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin);
+
+        $scopePayload = [
+            'metricsByScope' => [
+                'personal' => [
+                    'total_blog_post_views' => null,
+                    'average_views_per_blog_post' => null,
+                    'total_followers' => 0,
+                    'comments_per_blog_post' => [],
+                    'views_30d' => [],
+                ],
+            ],
+            'availableScopes' => ['personal'],
+            'defaultScope' => 'personal',
+            'viewsTrackingEnabled' => false,
+        ];
+
+        $service = Mockery::mock(DashboardMetricsService::class);
+        $service->shouldReceive('getScopedMetricsForUser')
+            ->once()
+            ->withArgs(fn (User $user) => $user->is($admin))
+            ->andReturn($scopePayload);
+
+        $controller = new DashboardController($service);
+        $response = $controller->index();
+
+        $request = Request::create('/admin/dashboard', 'GET');
+        $request->headers->set('X-Inertia', 'true');
+
+        $httpResponse = $response->toResponse($request);
+        $payload = $httpResponse->getData(true);
+
+        expect($payload['props']['meta']['views_tracking_enabled'])->toBeFalse();
+    })->group('dashboard', 'dashboard-contract', 'unit', 'controller');
+
     test('returns inertia payload from dashboard metrics service contract', function () {
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin);
