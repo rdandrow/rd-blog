@@ -87,7 +87,8 @@ Current implementation details:
 ## 2) Dashboard V1 Layout (Implemented)
 
 Current implementation notes:
-- KPI row is implemented with: Published Posts, Draft Posts, Total Followers, Total Comments, Total Likes, 2FA Adoption Rate.
+- KPI row is implemented with: Published Posts, Draft Posts, Total Followers, Total Comments, Total Likes.
+- 2FA Adoption Rate is shown only in `global` scope for `master_admin` users.
 - Charts row is implemented with: 30-day content activity (posts/comments/likes) and 30-day follower growth.
 - Tables row is implemented with: Top 10 posts by comments (with likes) and Top 10 authors by published posts (last 30d).
 - Requested view metrics are now activated from tracked `blog_post_views` data.
@@ -98,7 +99,7 @@ Current implementation notes:
 3. Total Followers
 4. Total Comments
 5. Total Likes
-6. 2FA Adoption Rate
+6. 2FA Adoption Rate (global scope only for `master_admin`)
 
 ## Charts Row
 1. 30-Day Content Activity (multi-series line):

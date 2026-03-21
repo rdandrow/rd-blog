@@ -125,6 +125,7 @@ describe('Dashboard Access', function () {
             ->has('metricsByScope.personal.high_value_metrics.comments_created_30d', 30)
             ->has('metricsByScope.personal.high_value_metrics.likes_created_30d', 30)
             ->has('metricsByScope.personal.high_value_metrics.follower_growth_30d', 30)
+            ->where('metricsByScope.personal.high_value_metrics.two_factor_adoption_rate', null)
             ->has('metricsByScope.global.comments_per_blog_post', 2)
             ->where('metricsByScope.global.total_followers', 2)
             ->has('metricsByScope.global.views_30d', 30)
@@ -133,6 +134,7 @@ describe('Dashboard Access', function () {
             ->has('metricsByScope.global.high_value_metrics.comments_created_30d', 30)
             ->has('metricsByScope.global.high_value_metrics.likes_created_30d', 30)
             ->has('metricsByScope.global.high_value_metrics.follower_growth_30d', 30)
+            ->where('metricsByScope.global.high_value_metrics.two_factor_adoption_rate', fn ($value) => is_numeric($value))
             ->where('meta.available_scopes', ['personal', 'global'])
             ->where('meta.default_scope', 'personal')
             ->where('meta.generated_at', fn ($value) => Carbon::parse($value)->isValid()));

@@ -126,6 +126,7 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Total Number of Followers');
         expect(wrapper.text()).toContain('Total Comments');
         expect(wrapper.text()).toContain('Total Likes');
+        expect(wrapper.text()).not.toContain('2FA Adoption Rate');
         expect(wrapper.text()).toContain('Charts Row');
         expect(wrapper.text()).toContain('30-Day Content Activity');
         expect(wrapper.text()).toContain('Tables Row');
@@ -174,6 +175,7 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Global');
         expect(wrapper.text()).toContain('My Post');
         expect(wrapper.text()).toContain('3');
+        expect(wrapper.text()).not.toContain('2FA Adoption Rate');
 
         const globalButton = wrapper.findAll('button').find((b) => b.text() === 'Global');
         expect(globalButton).toBeTruthy();
@@ -181,6 +183,7 @@ describe('Dashboard Page', () => {
 
         expect(wrapper.text()).toContain('Global Post');
         expect(wrapper.text()).toContain('10');
+        expect(wrapper.text()).toContain('2FA Adoption Rate');
         expect(wrapper.text()).toContain('90%');
         expect(wrapper.text()).toContain('Global Author');
         expect(wrapper.text()).toContain('1 day(s) with activity');

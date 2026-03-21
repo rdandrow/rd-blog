@@ -96,6 +96,10 @@ const activeMetrics = computed(() =>
         : props.metricsByScope.personal,
 );
 
+const showTwoFactorMetric = computed(
+    () => selectedScope.value === 'global' && !!props.metricsByScope.global,
+);
+
 const activeDayCount = (trend: Array<{ day: string; count: number }>) =>
     trend.filter((point) => point.count > 0).length;
 
@@ -195,7 +199,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                         }}
                     </p>
                 </div>
-                <div class="rounded-xl border border-border bg-card p-4">
+                <div
+                    v-if="showTwoFactorMetric"
+                    class="rounded-xl border border-border bg-card p-4"
+                >
                     <p class="text-sm text-muted-foreground">
                         2FA Adoption Rate
                     </p>
