@@ -71,6 +71,75 @@ describe('DashboardMetricsService', function () {
         expect($third['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(2);
     });
 
+    test('scoped metrics caching is bypassed when ttl is zero', function () {
+        config([
+            'dashboard.cache.enabled' => true,
+            'dashboard.cache.ttl_seconds' => 0,
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        BlogPost::factory()->create([
+            'user_id' => $admin->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $first = $this->service->getScopedMetricsForUser($admin);
+
+        BlogPost::factory()->create([
+            'user_id' => $admin->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        $second = $this->service->getScopedMetricsForUser($admin);
+
+        expect($first['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(1)
+            ->and($second['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(2);
+    });
+
+    test('cache keys separate payloads when views tracking availability changes', function () {
+        config([
+            'dashboard.cache.enabled' => true,
+            'dashboard.cache.ttl_seconds' => 600,
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        $post = BlogPost::factory()->create([
+            'user_id' => $admin->id,
+            'is_published' => true,
+            'published_at' => now()->subDay(),
+        ]);
+
+        DB::table('blog_post_views')->insert([
+            'blog_post_id' => $post->id,
+            'user_id' => null,
+            'session_id' => 'cache-views-1',
+            'ip_hash' => 'hash-a',
+            'user_agent_hash' => 'ua-a',
+            'viewed_at' => now()->subHour(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $withTracking = $this->service->getScopedMetricsForUser($admin);
+
+        expect($withTracking['viewsTrackingEnabled'])->toBeTrue()
+            ->and($withTracking['metricsByScope']['personal']['total_blog_post_views'])->toBe(1)
+            ->and(collect($withTracking['metricsByScope']['personal']['views_30d'])->sum('count'))->toBe(1);
+
+        Schema::dropIfExists('blog_post_views');
+
+        $withoutTracking = $this->service->getScopedMetricsForUser($admin);
+
+        expect($withoutTracking['viewsTrackingEnabled'])->toBeFalse()
+            ->and($withoutTracking['metricsByScope']['personal']['total_blog_post_views'])->toBeNull()
+            ->and($withoutTracking['metricsByScope']['personal']['average_views_per_blog_post'])->toBeNull()
+            ->and($withoutTracking['metricsByScope']['personal']['views_30d'])->toBe([]);
+    });
+
     test('personal metrics include only authored published posts in comments table', function () {
         $admin = User::factory()->admin()->create();
         $otherAuthor = User::factory()->create();

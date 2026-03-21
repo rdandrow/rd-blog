@@ -33,4 +33,25 @@ describe('dashboard:warm-metrics-cache command', function () {
             ->expectsOutput('Warmed dashboard metrics cache for 1 admin user(s) across 1 scope payload(s).')
             ->assertSuccessful();
     });
+
+    test('reports when no admin users are available to warm', function () {
+        config(['dashboard.cache.enabled' => true]);
+
+        User::factory()->create(['role' => 'member']);
+
+        $this->artisan('dashboard:warm-metrics-cache')
+            ->expectsOutput('No admin users found to warm dashboard metrics cache.')
+            ->assertSuccessful();
+    });
+
+    test('supports warming cache for a specific master admin user id', function () {
+        config(['dashboard.cache.enabled' => true]);
+
+        $targetMasterAdmin = User::factory()->masterAdmin()->create();
+        User::factory()->admin()->create();
+
+        $this->artisan('dashboard:warm-metrics-cache', ['--user-id' => [$targetMasterAdmin->id]])
+            ->expectsOutput('Warmed dashboard metrics cache for 1 admin user(s) across 2 scope payload(s).')
+            ->assertSuccessful();
+    });
 });

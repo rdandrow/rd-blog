@@ -431,6 +431,7 @@ Fields currently present but not rendered in the Dashboard UI:
 - Add caching for dashboard aggregates (5–15 min TTL).
 - Add background cache warming for admin scope payloads (scheduled command).
 - Add tests for metric queries and trend shape consistency.
+- Edge-case coverage is in place for TTL bypass, cache-key separation on tracking availability changes, no-admin warm runs, and targeted master-admin warming.
 
 ---
 
@@ -447,6 +448,10 @@ Fields currently present but not rendered in the Dashboard UI:
   - reports disabled-cache mode
   - warms admin + master admin scope payloads
   - supports targeted warming via `--user-id`
+  - reports no-admin-users mode
+  - supports targeted warming for master admin (both scopes)
+- ✅ `tests/Feature/DashboardScheduleTest.php`
+  - verifies scheduler registration for `dashboard:warm-metrics-cache`
 
 ### Backend (Unit tests)
 - ✅ `tests/Unit/Services/DashboardMetricsServiceTest.php`
@@ -454,6 +459,8 @@ Fields currently present but not rendered in the Dashboard UI:
   - scoped aggregation for comments/followers/high-value metrics
   - 30-day trend backfilling to fixed 30-point arrays with zero-fill
   - scoped metrics cache behavior (stable until cache clear/expiry)
+  - cache bypass when `dashboard.cache.ttl_seconds = 0`
+  - cache-key separation when views tracking availability changes
 - ✅ `tests/Unit/Http/Controllers/Admin/DashboardControllerTest.php`
   - Inertia payload contract for admin
   - Inertia payload contract for master admin
