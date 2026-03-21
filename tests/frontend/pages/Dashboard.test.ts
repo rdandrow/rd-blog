@@ -44,7 +44,7 @@ const createPersonalMetrics = () => ({
     average_views_per_blog_post: null,
     total_followers: 3,
     comments_per_blog_post: [
-        { id: 1, title: 'My Post', slug: 'my-post', comments_count: 2 },
+        { id: 1, title: 'My Post', slug: 'my-post', comments_count: 2, likes_count: 1 },
     ],
     views_30d: [],
     high_value_metrics: {
@@ -56,6 +56,9 @@ const createPersonalMetrics = () => ({
         avg_comments_per_published_post: 2.5,
         avg_likes_per_published_post: 3.5,
         active_authors_30d: 1,
+        top_authors_by_published_posts_30d: [
+            { id: 1, name: 'Admin Author', published_posts_count: 2 },
+        ],
         follower_growth_30d: createBackfilledTrend(),
         posts_published_30d: createBackfilledTrend(),
         comments_created_30d: createBackfilledTrend(),
@@ -74,7 +77,7 @@ const createGlobalMetrics = () => ({
     average_views_per_blog_post: null,
     total_followers: 10,
     comments_per_blog_post: [
-        { id: 2, title: 'Global Post', slug: 'global-post', comments_count: 5 },
+        { id: 2, title: 'Global Post', slug: 'global-post', comments_count: 5, likes_count: 8 },
     ],
     views_30d: [],
     high_value_metrics: {
@@ -86,6 +89,9 @@ const createGlobalMetrics = () => ({
         avg_comments_per_published_post: 2.8,
         avg_likes_per_published_post: 4,
         active_authors_30d: 6,
+        top_authors_by_published_posts_30d: [
+            { id: 2, name: 'Global Author', published_posts_count: 10 },
+        ],
         follower_growth_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 2 }),
         posts_published_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 1 }),
         comments_created_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 3 }),
@@ -114,15 +120,19 @@ describe('Dashboard Page', () => {
             },
         });
 
-        expect(wrapper.text()).toContain('Total Blog Post Views');
-        expect(wrapper.text()).toContain('Average Views per Blog Post');
-        expect(wrapper.text()).toContain('Total Number of Followers');
-        expect(wrapper.text()).toContain('Not available yet');
-        expect(wrapper.text()).toContain('3');
-        expect(wrapper.text()).toContain('High-Value Metrics');
         expect(wrapper.text()).toContain('Published Posts');
         expect(wrapper.text()).toContain('Draft Posts');
-        expect(wrapper.text()).toContain('No activity in last 30 days');
+        expect(wrapper.text()).toContain('Total Number of Followers');
+        expect(wrapper.text()).toContain('Total Comments');
+        expect(wrapper.text()).toContain('Total Likes');
+        expect(wrapper.text()).toContain('Charts Row');
+        expect(wrapper.text()).toContain('30-Day Content Activity');
+        expect(wrapper.text()).toContain('Tables Row');
+        expect(wrapper.text()).toContain('Top 10 Posts by Comments (with likes)');
+        expect(wrapper.text()).toContain('Top 10 Authors by Published Posts (last 30d)');
+        expect(wrapper.text()).toContain('Not available yet');
+        expect(wrapper.text()).toContain('3');
+        expect(wrapper.text()).toContain('Admin Author');
     });
 
     it('hides scope switch when only personal scope is available', () => {
@@ -169,7 +179,7 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Global Post');
         expect(wrapper.text()).toContain('10');
         expect(wrapper.text()).toContain('90%');
-        expect(wrapper.text()).toContain('Pending: 1 · Accepted: 4 · Expired: 2');
+        expect(wrapper.text()).toContain('Global Author');
         expect(wrapper.text()).toContain('1 day(s) with activity');
     });
 

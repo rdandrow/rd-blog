@@ -11,6 +11,7 @@ It is structured to be implementation-ready for backend and frontend tasks.
 
 - Date: 2026-03-21
 - Section 1.B high-value metrics: Implemented in dashboard payload and UI.
+- Section 2 Dashboard V1 layout: Implemented (KPI row, charts row, and tables row).
 - 30-day capturable trends (`posts_published_30d`, `comments_created_30d`, `likes_created_30d`, `follower_growth_30d`): Implemented with fixed 30-point zero-filled backfilling.
 - Scope behavior: `admin` = personal only; `master_admin` = personal + global.
 - Global-only metrics in personal scope: `two_factor_adoption_rate` and `invitation_funnel` remain `null` by design.
@@ -20,6 +21,7 @@ It is structured to be implementation-ready for backend and frontend tasks.
 
 - [x] Section 1.A requested metrics payload is wired (view metrics intentionally `null`/empty until tracking exists).
 - [x] Section 1.B high-value metrics are implemented and rendered.
+- [x] Section 2 Dashboard V1 layout is implemented (KPI/Charts/Tables rows).
 - [x] Role scope behavior is implemented (`admin` personal-only, `master_admin` personal + global).
 - [x] Capturable 30-day trends are backfilled to fixed 30-day arrays.
 - [ ] View tracking schema + ingestion (`blog_post_views`) is implemented.
@@ -75,7 +77,13 @@ Current implementation details:
 
 ---
 
-## 2) Dashboard V1 Layout (Recommended)
+## 2) Dashboard V1 Layout (Implemented)
+
+Current implementation notes:
+- KPI row is implemented with: Published Posts, Draft Posts, Total Followers, Total Comments, Total Likes, 2FA Adoption Rate.
+- Charts row is implemented with: 30-day content activity (posts/comments/likes) and 30-day follower growth.
+- Tables row is implemented with: Top 10 posts by comments (with likes) and Top 10 authors by published posts (last 30d).
+- Requested view metrics remain displayed as pending until `blog_post_views` tracking is implemented.
 
 ## KPI Row (Top)
 1. Published Posts

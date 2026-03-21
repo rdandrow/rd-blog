@@ -64,7 +64,8 @@ describe('DashboardMetricsService', function () {
 
         expect($metrics['comments_per_blog_post'])->toHaveCount(1)
             ->and($metrics['comments_per_blog_post']->first()->id)->toBe($adminsPost->id)
-            ->and($metrics['comments_per_blog_post']->first()->comments_count)->toBe(2);
+            ->and($metrics['comments_per_blog_post']->first()->comments_count)->toBe(2)
+            ->and($metrics['comments_per_blog_post']->first()->likes_count)->toBe(0);
     });
 
     test('global metrics include all published posts in comments table', function () {
@@ -98,7 +99,8 @@ describe('DashboardMetricsService', function () {
 
         expect($metrics['comments_per_blog_post'])->toHaveCount(2)
             ->and($metrics['comments_per_blog_post']->first()->id)->toBe($postTwo->id)
-            ->and($metrics['comments_per_blog_post']->first()->comments_count)->toBe(4);
+            ->and($metrics['comments_per_blog_post']->first()->comments_count)->toBe(4)
+            ->and($metrics['comments_per_blog_post']->first()->likes_count)->toBe(0);
     });
 
     test('follower count is scoped correctly for personal and global', function () {
@@ -166,6 +168,8 @@ describe('DashboardMetricsService', function () {
             ->and($high['comments_created_30d'])->toHaveCount(30)
             ->and($high['likes_created_30d'])->toHaveCount(30)
             ->and($high['follower_growth_30d'])->toHaveCount(30)
+            ->and($high['top_authors_by_published_posts_30d'])->toHaveCount(1)
+            ->and($high['top_authors_by_published_posts_30d'][0]->id)->toBe($author->id)
             ->and(collect($high['posts_published_30d'])->where('count', '>', 0)->count())->toBe(1)
             ->and(collect($high['comments_created_30d'])->where('count', '>', 0)->count())->toBe(1)
             ->and(collect($high['likes_created_30d'])->where('count', '>', 0)->count())->toBe(1);
@@ -214,7 +218,9 @@ describe('DashboardMetricsService', function () {
             ->and($high['posts_published_30d'])->toHaveCount(30)
             ->and($high['comments_created_30d'])->toHaveCount(30)
             ->and($high['likes_created_30d'])->toHaveCount(30)
-            ->and($high['follower_growth_30d'])->toHaveCount(30);
+            ->and($high['follower_growth_30d'])->toHaveCount(30)
+            ->and($high['top_authors_by_published_posts_30d'])->toHaveCount(1)
+            ->and($high['top_authors_by_published_posts_30d'][0]->id)->toBe($admin->id);
     });
 
     test('backfills missing trend dates with zero counts', function () {
