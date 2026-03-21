@@ -266,6 +266,7 @@ class DashboardMetricsService
             'accepted' => null,
             'expired' => null,
         ];
+        $userTrends = null;
 
         if ($user === null) {
             $totalUsers = User::count();
@@ -286,6 +287,17 @@ class DashboardMetricsService
                     ->where('invitation_sent_at', '<', now()->subHours(48))
                     ->count(),
             ];
+
+            $userTrends = [
+                'total_users' => $totalUsers,
+                'daily_active_users' => User::where('last_active_at', '>=', now()->subDay())->count(),
+                'weekly_active_users' => User::where('last_active_at', '>=', now()->subWeek())->count(),
+                'monthly_active_users' => User::where('last_active_at', '>=', now()->subDays(30))->count(),
+                'total_inactive_users' => User::where(function ($q): void {
+                    $q->whereNull('last_active_at')
+                        ->orWhere('last_active_at', '<', now()->subDays(30));
+                })->count(),
+            ];
         }
 
         return [
@@ -304,6 +316,7 @@ class DashboardMetricsService
             'likes_created_30d' => $this->backfill30DayTrend($likesCreated30d),
             'two_factor_adoption_rate' => $twoFactorAdoptionRate,
             'invitation_funnel' => $invitationFunnel,
+            'user_trends' => $userTrends,
         ];
     }
 

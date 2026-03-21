@@ -69,6 +69,7 @@ const createPersonalMetrics = () => ({
             accepted: null,
             expired: null,
         },
+        user_trends: null,
     },
 });
 
@@ -102,6 +103,13 @@ const createGlobalMetrics = () => ({
             accepted: 4,
             expired: 2,
         },
+        user_trends: {
+            total_users: 25,
+            daily_active_users: 5,
+            weekly_active_users: 12,
+            monthly_active_users: 18,
+            total_inactive_users: 7,
+        },
     },
 });
 
@@ -123,15 +131,22 @@ describe('Dashboard Page', () => {
 
         expect(wrapper.text()).toContain('Published Posts');
         expect(wrapper.text()).toContain('Draft Posts');
-        expect(wrapper.text()).toContain('Total Number of Followers');
+        expect(wrapper.text()).toContain('Featured Posts');
+        expect(wrapper.text()).toContain('Total Followers');
         expect(wrapper.text()).toContain('Total Comments');
         expect(wrapper.text()).toContain('Total Likes');
+        expect(wrapper.text()).toContain('Avg Comments / Post');
+        expect(wrapper.text()).toContain('Avg Likes / Post');
+        expect(wrapper.text()).toContain('Active Authors (30d)');
         expect(wrapper.text()).not.toContain('2FA Adoption Rate');
-        expect(wrapper.text()).toContain('Charts Row');
+        expect(wrapper.text()).not.toContain('User Trends');
+        expect(wrapper.text()).not.toContain('Invitation Funnel');
+        expect(wrapper.text()).toContain('30-Day Trends');
         expect(wrapper.text()).toContain('30-Day Content Activity');
-        expect(wrapper.text()).toContain('Tables Row');
-        expect(wrapper.text()).toContain('Top 10 Posts by Comments (with likes)');
-        expect(wrapper.text()).toContain('Top 10 Authors by Published Posts (last 30d)');
+        expect(wrapper.text()).toContain('Top Performers');
+        expect(wrapper.text()).toContain('Top Posts by Engagement');
+        expect(wrapper.text()).toContain('Top Authors (Last 30 Days)');
+        expect(wrapper.text()).toContain('View Metrics');
         expect(wrapper.text()).toContain('Not available yet');
         expect(wrapper.text()).toContain('3');
         expect(wrapper.text()).toContain('Admin Author');
@@ -176,6 +191,8 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('My Post');
         expect(wrapper.text()).toContain('3');
         expect(wrapper.text()).not.toContain('2FA Adoption Rate');
+        expect(wrapper.text()).not.toContain('User Trends');
+        expect(wrapper.text()).not.toContain('Invitation Funnel');
 
         const globalButton = wrapper.findAll('button').find((b) => b.text() === 'Global');
         expect(globalButton).toBeTruthy();
@@ -183,10 +200,20 @@ describe('Dashboard Page', () => {
 
         expect(wrapper.text()).toContain('Global Post');
         expect(wrapper.text()).toContain('10');
+        expect(wrapper.text()).toContain('User Trends');
+        expect(wrapper.text()).toContain('Total Users');
+        expect(wrapper.text()).toContain('Daily Active Users');
+        expect(wrapper.text()).toContain('Weekly Active Users');
+        expect(wrapper.text()).toContain('Monthly Active Users');
         expect(wrapper.text()).toContain('2FA Adoption Rate');
         expect(wrapper.text()).toContain('90%');
+        expect(wrapper.text()).toContain('25');
         expect(wrapper.text()).toContain('Global Author');
         expect(wrapper.text()).toContain('1 day(s) with activity');
+        expect(wrapper.text()).toContain('Invitation Funnel');
+        expect(wrapper.text()).toContain('Pending');
+        expect(wrapper.text()).toContain('Accepted');
+        expect(wrapper.text()).toContain('Expired');
     });
 
     it('renders empty-state text when active scope has no comments rows', () => {
