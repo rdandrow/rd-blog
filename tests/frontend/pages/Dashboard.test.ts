@@ -10,6 +10,14 @@ vi.mock('@inertiajs/vue3', () => ({
     },
 }));
 
+vi.mock('vue-chartjs', () => ({
+    Line: {
+        name: 'LineChart',
+        template: '<div data-testid="line-chart"></div>',
+        props: ['data', 'options'],
+    },
+}));
+
 vi.mock('@/layouts/AppLayout.vue', () => ({
     default: {
         name: 'AppLayout',
@@ -189,6 +197,8 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Global');
         expect(wrapper.text()).toContain('My Post');
         expect(wrapper.text()).toContain('3');
+        expect(wrapper.text()).toContain('Comments/Post vs Global');
+        expect(wrapper.text()).toContain('Likes/Post vs Global');
         expect(wrapper.text()).not.toContain('2FA Adoption Rate');
         expect(wrapper.text()).not.toContain('User Trends');
         expect(wrapper.text()).not.toContain('Invitation Funnel');
@@ -260,7 +270,9 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Average Views per Blog Post');
         expect(wrapper.text()).toContain('42');
         expect(wrapper.text()).toContain('7');
-        expect(wrapper.text()).toContain('View trend data available.');
+        expect(wrapper.text()).toContain('30-Day View Trend');
+        expect(wrapper.text()).toContain('1 day(s) with activity');
+        expect(wrapper.text()).toContain('Total 30d views:');
         expect(wrapper.text()).not.toContain('View tracking is not enabled yet.');
     });
 });

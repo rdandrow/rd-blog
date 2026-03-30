@@ -3,7 +3,20 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import {
+    CategoryScale,
+    Chart as ChartJS,
+    Filler,
+    Legend,
+    LineElement,
+    LinearScale,
+    PointElement,
+    Tooltip,
+} from 'chart.js';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { Line } from 'vue-chartjs';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
 interface CommentMetric {
     id: number;
@@ -103,6 +116,28 @@ interface Props {
 const props = defineProps<Props>();
 
 const selectedScope = ref<'personal' | 'global'>(props.meta.default_scope);
+const chartThemeVersion = ref(0);
+let themeObserver: MutationObserver | null = null;
+
+onMounted(() => {
+    if (typeof MutationObserver === 'undefined') {
+        return;
+    }
+
+    themeObserver = new MutationObserver(() => {
+        chartThemeVersion.value += 1;
+    });
+
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme'],
+    });
+});
+
+onBeforeUnmount(() => {
+    themeObserver?.disconnect();
+    themeObserver = null;
+});
 
 const activeMetrics = computed(() =>
     selectedScope.value === 'global' && props.metricsByScope.global
@@ -134,6 +169,248 @@ const contentActivity30d = computed(() => {
         comments: high.comments_created_30d[index]?.count ?? 0,
         likes: high.likes_created_30d[index]?.count ?? 0,
     }));
+});
+
+const resolveChartColor = (token: string, alpha?: number) => {
+    if (typeof window === 'undefined') {
+        return alpha === undefined ? '#94a3b8' : `rgba(148, 163, 184, ${alpha})`;
+    }
+
+    const tokenValue = getComputedStyle(document.documentElement)
+        .getPropertyValue(token)
+        .trim();
+
+    if (!tokenValue) {
+        return alpha === undefined ? '#94a3b8' : `rgba(148, 163, 184, ${alpha})`;
+    }
+
+    return alpha === undefined ? `hsl(${tokenValue})` : `hsl(${tokenValue} / ${alpha})`;
+};
+
+const contentActivityChartData = computed(() => ({
+    _themeVersion: chartThemeVersion.value,
+    labels: contentActivity30d.value.map((point) => formatDashboardDate(point.day)),
+    datasets: [
+        {
+            label: 'Posts',
+            data: contentActivity30d.value.map((point) => point.posts),
+            borderColor: resolveChartColor('--primary'),
+            backgroundColor: resolveChartColor('--primary', 0.15),
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            borderWidth: 2,
+            tension: 0.3,
+        },
+        {
+            label: 'Comments',
+            data: contentActivity30d.value.map((point) => point.comments),
+            borderColor: resolveChartColor('--muted-foreground'),
+            backgroundColor: resolveChartColor('--muted-foreground', 0.15),
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            borderWidth: 2,
+            tension: 0.3,
+        },
+        {
+            label: 'Likes',
+            data: contentActivity30d.value.map((point) => point.likes),
+            borderColor: resolveChartColor('--ring'),
+            backgroundColor: resolveChartColor('--ring', 0.15),
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            borderWidth: 2,
+            tension: 0.3,
+        },
+    ],
+}));
+
+const followerGrowthChartData = computed(() => ({
+    _themeVersion: chartThemeVersion.value,
+    labels: activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) =>
+        formatDashboardDate(point.day),
+    ),
+    datasets: [
+        {
+            label: 'Followers',
+            data: activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) => point.count),
+            borderColor: resolveChartColor('--primary'),
+            backgroundColor: resolveChartColor('--primary', 0.15),
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+        },
+    ],
+}));
+
+const trendChartOptions = computed(() => ({
+    _themeVersion: chartThemeVersion.value,
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+        mode: 'index' as const,
+        intersect: false,
+    },
+    plugins: {
+        legend: {
+            position: 'bottom' as const,
+            labels: {
+                color: resolveChartColor('--muted-foreground'),
+                boxWidth: 10,
+                boxHeight: 10,
+                usePointStyle: true,
+                pointStyle: 'line' as const,
+            },
+        },
+    },
+    scales: {
+        x: {
+            ticks: {
+                color: resolveChartColor('--muted-foreground'),
+                maxTicksLimit: 6,
+            },
+            grid: {
+                display: false,
+            },
+        },
+        y: {
+            beginAtZero: true,
+            ticks: {
+                color: resolveChartColor('--muted-foreground'),
+                precision: 0,
+            },
+            grid: {
+                color: resolveChartColor('--border', 0.5),
+            },
+        },
+    },
+}));
+
+const viewTrendChartData = computed(() => ({
+    _themeVersion: chartThemeVersion.value,
+    labels: activeMetrics.value.views_30d.map((point) => formatDashboardDate(point.day)),
+    datasets: [
+        {
+            label: 'Views',
+            data: activeMetrics.value.views_30d.map((point) => point.count),
+            borderColor: resolveChartColor('--primary'),
+            backgroundColor: resolveChartColor('--primary', 0.15),
+            pointRadius: 0,
+            pointHoverRadius: 3,
+            borderWidth: 2,
+            tension: 0.3,
+            fill: true,
+        },
+    ],
+}));
+
+const viewTrendChartOptions = computed(() => ({
+    _themeVersion: chartThemeVersion.value,
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+        mode: 'index' as const,
+        intersect: false,
+    },
+    plugins: {
+        legend: {
+            display: false,
+        },
+    },
+    scales: {
+        x: {
+            ticks: {
+                color: resolveChartColor('--muted-foreground'),
+                maxTicksLimit: 6,
+            },
+            grid: {
+                display: false,
+            },
+        },
+        y: {
+            beginAtZero: true,
+            ticks: {
+                color: resolveChartColor('--muted-foreground'),
+                precision: 0,
+            },
+            grid: {
+                color: resolveChartColor('--border', 0.5),
+            },
+        },
+    },
+}));
+
+const viewsTrendSummary = computed(() => {
+    const points = activeMetrics.value.views_30d;
+
+    if (points.length === 0) {
+        return {
+            total: 0,
+            peakCount: 0,
+            peakDay: '',
+        };
+    }
+
+    const total = points.reduce((sum, point) => sum + point.count, 0);
+    const peakPoint = points.reduce((peak, point) =>
+        point.count > peak.count ? point : peak,
+    );
+
+    return {
+        total,
+        peakCount: peakPoint.count,
+        peakDay: peakPoint.day,
+    };
+});
+
+const personalGlobalBenchmarks = computed(() => {
+    if (selectedScope.value !== 'personal' || !props.metricsByScope.global) {
+        return [] as Array<{ label: string; delta: string }>;
+    }
+
+    const personal = props.metricsByScope.personal;
+    const global = props.metricsByScope.global;
+    const chips: Array<{ label: string; delta: string }> = [];
+
+    const formatDelta = (personalValue: number, globalValue: number) => {
+        if (globalValue === 0) {
+            return 'n/a';
+        }
+
+        const delta = ((personalValue - globalValue) / globalValue) * 100;
+        const sign = delta > 0 ? '+' : '';
+
+        return `${sign}${delta.toFixed(1)}%`;
+    };
+
+    chips.push({
+        label: 'Comments/Post vs Global',
+        delta: formatDelta(
+            personal.high_value_metrics.avg_comments_per_published_post,
+            global.high_value_metrics.avg_comments_per_published_post,
+        ),
+    });
+
+    chips.push({
+        label: 'Likes/Post vs Global',
+        delta: formatDelta(
+            personal.high_value_metrics.avg_likes_per_published_post,
+            global.high_value_metrics.avg_likes_per_published_post,
+        ),
+    });
+
+    if (
+        personal.average_views_per_blog_post !== null &&
+        global.average_views_per_blog_post !== null
+    ) {
+        chips.push({
+            label: 'Views/Post vs Global',
+            delta: formatDelta(personal.average_views_per_blog_post, global.average_views_per_blog_post),
+        });
+    }
+
+    return chips;
 });
 
 // Formats YYYY-MM-DD dates as MM-DD-YYYY for display
@@ -275,6 +552,19 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </div>
             </div>
 
+            <div
+                v-if="personalGlobalBenchmarks.length > 0"
+                class="flex flex-wrap gap-2"
+            >
+                <div
+                    v-for="chip in personalGlobalBenchmarks"
+                    :key="chip.label"
+                    class="w-full rounded-md border border-border bg-card px-3 py-1 text-xs text-muted-foreground sm:w-auto sm:rounded-full"
+                >
+                    {{ chip.label }}: <span class="font-medium text-foreground">{{ chip.delta }}</span>
+                </div>
+            </div>
+
             <!-- User Trends (Master Admin / global scope only) -->
             <div v-if="showUserTrends">
                 <h2 class="text-base font-semibold text-foreground">
@@ -376,39 +666,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <p class="mt-1 text-xs text-muted-foreground">
                             Posts / Comments / Likes
                         </p>
-                        <div class="mt-3 max-h-64 overflow-auto">
-                            <table class="min-w-full table-fixed text-xs">
-                                <thead>
-                                    <tr class="border-b border-border text-left">
-                                        <th class="sticky left-0 top-0 z-30 w-32 bg-card px-3 py-1 font-medium">
-                                            Day
-                                        </th>
-                                        <th class="sticky top-0 z-20 w-24 bg-card px-3 py-1 font-medium">
-                                            Posts
-                                        </th>
-                                        <th class="sticky top-0 z-20 w-28 bg-card px-3 py-1 font-medium">
-                                            Comments
-                                        </th>
-                                        <th class="sticky top-0 z-20 w-24 bg-card px-3 py-1 font-medium">
-                                            Likes
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="point in contentActivity30d"
-                                        :key="point.day"
-                                        class="border-b border-border/60"
-                                    >
-                                        <td class="sticky left-0 z-10 bg-card px-3 py-1">
-                                            {{ formatDashboardDate(point.day) }}
-                                        </td>
-                                        <td class="px-3 py-1">{{ point.posts }}</td>
-                                        <td class="px-3 py-1">{{ point.comments }}</td>
-                                        <td class="px-3 py-1">{{ point.likes }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="mt-3 h-64">
+                            <Line
+                                :data="contentActivityChartData"
+                                :options="trendChartOptions"
+                            />
                         </div>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
@@ -422,31 +684,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     : 'No activity in last 30 days'
                             }}
                         </p>
-                        <div class="mt-3 max-h-64 overflow-auto">
-                            <table class="min-w-full table-fixed text-xs">
-                                <thead>
-                                    <tr class="border-b border-border text-left">
-                                        <th class="sticky left-0 top-0 z-30 w-40 bg-card px-3 py-1 font-medium">
-                                            Day
-                                        </th>
-                                        <th class="sticky top-0 z-20 w-28 bg-card px-3 py-1 font-medium">
-                                            Followers
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="point in activeMetrics.high_value_metrics.follower_growth_30d"
-                                        :key="point.day"
-                                        class="border-b border-border/60"
-                                    >
-                                        <td class="sticky left-0 z-10 bg-card px-3 py-1">
-                                            {{ formatDashboardDate(point.day) }}
-                                        </td>
-                                        <td class="px-3 py-1">{{ point.count }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <div class="mt-3 h-64">
+                            <Line
+                                :data="followerGrowthChartData"
+                                :options="viewTrendChartOptions"
+                            />
                         </div>
                     </div>
                 </div>
@@ -472,9 +714,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                             <table class="min-w-full table-fixed text-xs">
                                 <thead>
                                     <tr class="border-b border-border text-left">
-                                        <th class="px-3 py-1 font-medium">Post</th>
-                                        <th class="w-24 px-3 py-1 font-medium">Comments</th>
-                                        <th class="w-20 px-3 py-1 font-medium">Likes</th>
+                                        <th class="w-32 px-3 py-1 font-medium">Post</th>
+                                        <th class="w-28 px-3 py-1 font-medium">Comments</th>
+                                        <th class="w-24 px-3 py-1 font-medium">Likes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -505,8 +747,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                             <table class="min-w-full table-fixed text-xs">
                                 <thead>
                                     <tr class="border-b border-border text-left">
-                                        <th class="px-3 py-1 font-medium">Author</th>
-                                        <th class="w-32 px-3 py-1 font-medium">Published Posts</th>
+                                        <th class="w-40 px-3 py-1 font-medium">Author</th>
+                                        <th class="w-28 px-3 py-1 font-medium">Published Posts</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -560,9 +802,36 @@ const breadcrumbs: BreadcrumbItem[] = [
                     <h3 class="text-sm font-medium text-foreground">
                         30-Day View Trend
                     </h3>
-                    <p class="mt-2 text-sm text-muted-foreground">
-                        View trend data available.
+                    <p class="mt-1 text-xs text-muted-foreground">
+                        {{
+                            activeDayCount(activeMetrics.views_30d) > 0
+                                ? `${activeDayCount(activeMetrics.views_30d)} day(s) with activity`
+                                : 'No activity in last 30 days'
+                        }}
                     </p>
+                    <div class="mt-3 rounded-xl border border-border bg-card p-3">
+                        <div class="h-40">
+                            <Line
+                                :data="viewTrendChartData"
+                                :options="viewTrendChartOptions"
+                            />
+                        </div>
+                        <div class="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                            <p>
+                                Total 30d views:
+                                <span class="font-medium text-foreground">{{ formatNumber(viewsTrendSummary.total) }}</span>
+                            </p>
+                            <p>
+                                Peak day:
+                                <span class="font-medium text-foreground">
+                                    {{ viewsTrendSummary.peakDay ? `${formatDashboardDate(viewsTrendSummary.peakDay)} (${viewsTrendSummary.peakCount})` : '—' }}
+                                </span>
+                            </p>
+                        </div>
+                        <p v-if="viewsTrendSummary.total === 0" class="mt-2 text-xs text-muted-foreground">
+                            No view counts recorded yet in this 30-day window.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
