@@ -18,6 +18,14 @@ vi.mock('vue-chartjs', () => ({
     },
 }));
 
+vi.mock('@/components/charts/DashboardLineChart.vue', () => ({
+    default: {
+        name: 'DashboardLineChart',
+        template: '<div data-testid="line-chart"></div>',
+        props: ['data', 'options', 'heightClass'],
+    },
+}));
+
 vi.mock('@/layouts/AppLayout.vue', () => ({
     default: {
         name: 'AppLayout',

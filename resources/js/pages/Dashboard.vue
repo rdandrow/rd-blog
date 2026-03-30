@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import DashboardLineChart from '@/components/charts/DashboardLineChart.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
@@ -13,8 +14,8 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
+import { buildChartData, buildLineDataset, buildTrendOptions } from '@/lib/chart';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { Line } from 'vue-chartjs';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
@@ -171,175 +172,65 @@ const contentActivity30d = computed(() => {
     }));
 });
 
-const resolveChartColor = (token: string, alpha?: number) => {
-    if (typeof window === 'undefined') {
-        return alpha === undefined ? '#94a3b8' : `rgba(148, 163, 184, ${alpha})`;
-    }
-
-    const tokenValue = getComputedStyle(document.documentElement)
-        .getPropertyValue(token)
-        .trim();
-
-    if (!tokenValue) {
-        return alpha === undefined ? '#94a3b8' : `rgba(148, 163, 184, ${alpha})`;
-    }
-
-    return alpha === undefined ? `hsl(${tokenValue})` : `hsl(${tokenValue} / ${alpha})`;
-};
-
-const contentActivityChartData = computed(() => ({
-    _themeVersion: chartThemeVersion.value,
-    labels: contentActivity30d.value.map((point) => formatDashboardDate(point.day)),
-    datasets: [
-        {
-            label: 'Posts',
-            data: contentActivity30d.value.map((point) => point.posts),
-            borderColor: resolveChartColor('--primary'),
-            backgroundColor: resolveChartColor('--primary', 0.15),
-            pointRadius: 0,
-            pointHoverRadius: 3,
-            borderWidth: 2,
-            tension: 0.3,
-        },
-        {
-            label: 'Comments',
-            data: contentActivity30d.value.map((point) => point.comments),
-            borderColor: resolveChartColor('--muted-foreground'),
-            backgroundColor: resolveChartColor('--muted-foreground', 0.15),
-            pointRadius: 0,
-            pointHoverRadius: 3,
-            borderWidth: 2,
-            tension: 0.3,
-        },
-        {
-            label: 'Likes',
-            data: contentActivity30d.value.map((point) => point.likes),
-            borderColor: resolveChartColor('--ring'),
-            backgroundColor: resolveChartColor('--ring', 0.15),
-            pointRadius: 0,
-            pointHoverRadius: 3,
-            borderWidth: 2,
-            tension: 0.3,
-        },
-    ],
-}));
-
-const followerGrowthChartData = computed(() => ({
-    _themeVersion: chartThemeVersion.value,
-    labels: activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) =>
-        formatDashboardDate(point.day),
+const contentActivityChartData = computed(() =>
+    buildChartData(
+        contentActivity30d.value.map((point) => formatDashboardDate(point.day)),
+        [
+            buildLineDataset(
+                'Posts',
+                contentActivity30d.value.map((point) => point.posts),
+                '--primary',
+            ),
+            buildLineDataset(
+                'Comments',
+                contentActivity30d.value.map((point) => point.comments),
+                '--muted-foreground',
+            ),
+            buildLineDataset(
+                'Likes',
+                contentActivity30d.value.map((point) => point.likes),
+                '--ring',
+            ),
+        ],
+        chartThemeVersion.value,
     ),
-    datasets: [
-        {
-            label: 'Followers',
-            data: activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) => point.count),
-            borderColor: resolveChartColor('--primary'),
-            backgroundColor: resolveChartColor('--primary', 0.15),
-            pointRadius: 0,
-            pointHoverRadius: 3,
-            borderWidth: 2,
-            tension: 0.3,
-            fill: true,
-        },
-    ],
-}));
+);
 
-const trendChartOptions = computed(() => ({
-    _themeVersion: chartThemeVersion.value,
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-        mode: 'index' as const,
-        intersect: false,
-    },
-    plugins: {
-        legend: {
-            position: 'bottom' as const,
-            labels: {
-                color: resolveChartColor('--muted-foreground'),
-                boxWidth: 10,
-                boxHeight: 10,
-                usePointStyle: true,
-                pointStyle: 'line' as const,
-            },
-        },
-    },
-    scales: {
-        x: {
-            ticks: {
-                color: resolveChartColor('--muted-foreground'),
-                maxTicksLimit: 6,
-            },
-            grid: {
-                display: false,
-            },
-        },
-        y: {
-            beginAtZero: true,
-            ticks: {
-                color: resolveChartColor('--muted-foreground'),
-                precision: 0,
-            },
-            grid: {
-                color: resolveChartColor('--border', 0.5),
-            },
-        },
-    },
-}));
+const followerGrowthChartData = computed(() =>
+    buildChartData(
+        activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) =>
+            formatDashboardDate(point.day),
+        ),
+        [
+            buildLineDataset(
+                'Followers',
+                activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) => point.count),
+                '--primary',
+                true,
+            ),
+        ],
+        chartThemeVersion.value,
+    ),
+);
 
-const viewTrendChartData = computed(() => ({
-    _themeVersion: chartThemeVersion.value,
-    labels: activeMetrics.value.views_30d.map((point) => formatDashboardDate(point.day)),
-    datasets: [
-        {
-            label: 'Views',
-            data: activeMetrics.value.views_30d.map((point) => point.count),
-            borderColor: resolveChartColor('--primary'),
-            backgroundColor: resolveChartColor('--primary', 0.15),
-            pointRadius: 0,
-            pointHoverRadius: 3,
-            borderWidth: 2,
-            tension: 0.3,
-            fill: true,
-        },
-    ],
-}));
+const trendChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
 
-const viewTrendChartOptions = computed(() => ({
-    _themeVersion: chartThemeVersion.value,
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-        mode: 'index' as const,
-        intersect: false,
-    },
-    plugins: {
-        legend: {
-            display: false,
-        },
-    },
-    scales: {
-        x: {
-            ticks: {
-                color: resolveChartColor('--muted-foreground'),
-                maxTicksLimit: 6,
-            },
-            grid: {
-                display: false,
-            },
-        },
-        y: {
-            beginAtZero: true,
-            ticks: {
-                color: resolveChartColor('--muted-foreground'),
-                precision: 0,
-            },
-            grid: {
-                color: resolveChartColor('--border', 0.5),
-            },
-        },
-    },
-}));
+const viewTrendChartData = computed(() =>
+    buildChartData(
+        activeMetrics.value.views_30d.map((point) => formatDashboardDate(point.day)),
+        [
+            buildLineDataset(
+                'Views',
+                activeMetrics.value.views_30d.map((point) => point.count),
+                '--primary',
+                true,
+            ),
+        ],
+        chartThemeVersion.value,
+    ),
+);
+
+const viewTrendChartOptions = computed(() => buildTrendOptions(false, chartThemeVersion.value));
 
 const viewsTrendSummary = computed(() => {
     const points = activeMetrics.value.views_30d;
@@ -666,12 +557,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <p class="mt-1 text-xs text-muted-foreground">
                             Posts / Comments / Likes
                         </p>
-                        <div class="mt-3 h-64">
-                            <Line
-                                :data="contentActivityChartData"
-                                :options="trendChartOptions"
-                            />
-                        </div>
+                        <DashboardLineChart
+                            class="mt-3"
+                            :data="contentActivityChartData"
+                            :options="trendChartOptions"
+                        />
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
                         <h3 class="text-sm font-medium text-foreground">
@@ -684,12 +574,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     : 'No activity in last 30 days'
                             }}
                         </p>
-                        <div class="mt-3 h-64">
-                            <Line
-                                :data="followerGrowthChartData"
-                                :options="viewTrendChartOptions"
-                            />
-                        </div>
+                        <DashboardLineChart
+                            class="mt-3"
+                            :data="followerGrowthChartData"
+                            :options="viewTrendChartOptions"
+                        />
                     </div>
                 </div>
             </div>
@@ -810,12 +699,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                         }}
                     </p>
                     <div class="mt-3 rounded-xl border border-border bg-card p-3">
-                        <div class="h-40">
-                            <Line
-                                :data="viewTrendChartData"
-                                :options="viewTrendChartOptions"
-                            />
-                        </div>
+                        <DashboardLineChart
+                            :data="viewTrendChartData"
+                            :options="viewTrendChartOptions"
+                            height-class="h-40"
+                        />
                         <div class="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                             <p>
                                 Total 30d views:
