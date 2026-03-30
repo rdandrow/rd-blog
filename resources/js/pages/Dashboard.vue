@@ -216,17 +216,11 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
 
             <!-- Row 1: Content overview -->
-            <div class="grid gap-4 sm:grid-cols-3">
+            <div class="grid gap-4 sm:grid-cols-2">
                 <div class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Published Posts</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
                         {{ formatNumber(activeMetrics.high_value_metrics.published_posts) }}
-                    </p>
-                </div>
-                <div class="rounded-xl border border-border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">Draft Posts</p>
-                    <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ formatNumber(activeMetrics.high_value_metrics.draft_posts) }}
                     </p>
                 </div>
                 <div class="rounded-xl border border-border bg-card p-4">

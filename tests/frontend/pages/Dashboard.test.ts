@@ -130,7 +130,6 @@ describe('Dashboard Page', () => {
         });
 
         expect(wrapper.text()).toContain('Published Posts');
-        expect(wrapper.text()).toContain('Draft Posts');
         expect(wrapper.text()).toContain('Featured Posts');
         expect(wrapper.text()).toContain('Total Followers');
         expect(wrapper.text()).toContain('Total Comments');
