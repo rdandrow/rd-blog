@@ -2,20 +2,46 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use App\Models\BlogPost;
-use App\Models\Comment;
 use App\Models\BlogPostLike;
+use App\Models\Comment;
+use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
+    private const DETERMINISTIC_SEED = 20260330;
+
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
+        // Keep seeded data stable across runs for dashboard QA snapshots.
+        // Configure in .env with DB_SEED:
+        //   DB_SEED=20260330  (deterministic)
+        //   DB_SEED=random    (non-deterministic)
+        $seedSetting = env('DB_SEED', (string) self::DETERMINISTIC_SEED);
+
+        if (is_string($seedSetting) && strtolower($seedSetting) !== 'random') {
+            $seed = (int) $seedSetting;
+
+            fake()->seed($seed);
+            mt_srand($seed);
+
+            $this->command->info("Using deterministic seed: {$seed}");
+        } elseif (is_numeric($seedSetting)) {
+            $seed = (int) $seedSetting;
+
+            fake()->seed($seed);
+            mt_srand($seed);
+
+            $this->command->info("Using deterministic seed: {$seed}");
+        } else {
+            $this->command->info('Using random seed mode');
+        }
+
         $this->command->info('🌱 Starting database seeding...');
 
         // Create Master Admin
@@ -82,7 +108,7 @@ class DatabaseSeeder extends Seeder
         // Add websites and bios to some members
         foreach ($members->take(5) as $index => $member) {
             $member->update([
-                'website' => fake()->boolean(60) ? 'https://' . fake()->domainName() : null,
+                'website' => fake()->boolean(60) ? 'https://'.fake()->domainName() : null,
                 'bio' => fake()->boolean(70) ? fake()->paragraph(2) : null,
             ]);
         }
@@ -96,10 +122,10 @@ class DatabaseSeeder extends Seeder
             // Featured authors get more followers
             $isPopular = in_array($user->id, [$author1->id, $author2->id, $author3->id, $masterAdmin->id]);
             $followerCount = $isPopular ? fake()->numberBetween(8, 15) : fake()->numberBetween(1, 6);
-            
+
             $followers = $allUsers->where('id', '!=', $user->id)
                 ->random(min($followerCount, $allUsers->count() - 1));
-            
+
             foreach ($followers as $follower) {
                 $follower->following()->attach($user->id);
             }
@@ -107,7 +133,7 @@ class DatabaseSeeder extends Seeder
 
         // Create Blog Posts with Unique Markdown Content
         $this->command->info('Creating blog posts with unique markdown content...');
-        
+
         $blogPosts = [
             // Master Admin Posts
             [
@@ -565,7 +591,7 @@ Inertia::version(fn () => Vite::useBuildDirectory('build')->manifestHash());
 **Conclusion**: Inertia.js gives you the SPA feel with Laravel's simplicity. Perfect combo! ⚡
 MARKDOWN
             ],
-            
+
             // Author Posts
             [
                 'author' => $author1,
@@ -1382,7 +1408,7 @@ MARKDOWN
                 'tags' => $postData['tags'],
                 'is_featured' => $postData['is_featured'],
                 'is_published' => true,
-                'published_at' => now()->subDays(fake()->numberBetween(1, 90)),
+                'published_at' => now()->subDays(fake()->numberBetween(1, 29)),
             ]);
         }
 
@@ -1404,37 +1430,46 @@ MARKDOWN
         ];
 
         foreach ($members->take(6) as $index => $member) {
+            $shouldPublish = fake()->boolean(60);
+
             BlogPost::factory()->count(fake()->numberBetween(1, 3))->create([
                 'user_id' => $member->id,
                 'tags' => $memberTags[$index % count($memberTags)],
-                'is_published' => fake()->boolean(60),
-                'published_at' => fake()->boolean(60) ? fake()->dateTimeBetween('-4 months', 'now') : null,
+                'is_published' => $shouldPublish,
+                'published_at' => $shouldPublish ? fake()->dateTimeBetween('-4 months', 'now') : null,
             ]);
         }
 
         $allPosts = BlogPost::all();
         $publishedPosts = $allPosts->where('is_published', true);
+        $trendWindowStart = now()->subDays(29)->startOfDay();
 
         // Create Comments with Threading
         $this->command->info('Creating comments with replies...');
-        
+
         $commentTexts = [
-            "Great article! This really helped me understand the concept better. Thanks for sharing! 👍",
+            'Great article! This really helped me understand the concept better. Thanks for sharing! 👍',
             "I've been looking for this exact solution. Your explanation is clear and concise.",
-            "Interesting perspective. Have you considered the performance implications?",
-            "This is exactly what I needed for my current project. Bookmarking this!",
-            "Could you elaborate more on the section about error handling?",
+            'Interesting perspective. Have you considered the performance implications?',
+            'This is exactly what I needed for my current project. Bookmarking this!',
+            'Could you elaborate more on the section about error handling?',
             "Fantastic write-up! I'll definitely be implementing this in my next project.",
-            "I had a different approach, but yours seems much cleaner. Thanks!",
+            'I had a different approach, but yours seems much cleaner. Thanks!',
             "One of the best tutorials I've read on this topic. Well done!",
-            "Quick question: does this work with the latest version?",
-            "Love the code examples. Very practical and easy to follow.",
+            'Quick question: does this work with the latest version?',
+            'Love the code examples. Very practical and easy to follow.',
         ];
 
         foreach ($publishedPosts as $post) {
             // Popular posts get more comments
             $isPopular = in_array($post->user_id, [$author1->id, $author2->id, $masterAdmin->id]);
             $commentCount = $isPopular ? fake()->numberBetween(8, 20) : fake()->numberBetween(2, 10);
+            $postPublishedAt = $post->published_at instanceof \Carbon\CarbonInterface
+                ? $post->published_at->copy()
+                : \Carbon\Carbon::parse($post->published_at);
+            $interactionStart = $postPublishedAt->greaterThan($trendWindowStart)
+                ? $postPublishedAt
+                : $trendWindowStart;
 
             // Create top-level comments
             $topLevelComments = collect();
@@ -1445,6 +1480,7 @@ MARKDOWN
                     'user_id' => $commenter->id,
                     'content' => $commentTexts[array_rand($commentTexts)],
                     'parent_id' => null,
+                    'created_at' => fake()->dateTimeBetween($interactionStart, now()),
                 ]);
                 $topLevelComments->push($comment);
             }
@@ -1453,6 +1489,10 @@ MARKDOWN
             $commentsWithReplies = $topLevelComments->random(min(fake()->numberBetween(2, 5), $topLevelComments->count()));
             foreach ($commentsWithReplies as $parentComment) {
                 $replyCount = fake()->numberBetween(1, 3);
+                $replyStart = $parentComment->created_at instanceof \Carbon\CarbonInterface
+                    ? $parentComment->created_at
+                    : \Carbon\Carbon::parse($parentComment->created_at);
+
                 foreach (range(1, $replyCount) as $i) {
                     $replier = $allUsers->where('id', '!=', $parentComment->user_id)->random();
                     Comment::factory()->create([
@@ -1460,6 +1500,7 @@ MARKDOWN
                         'user_id' => $replier->id,
                         'content' => $commentTexts[array_rand($commentTexts)],
                         'parent_id' => $parentComment->id,
+                        'created_at' => fake()->dateTimeBetween($replyStart, now()),
                     ]);
                 }
 
@@ -1468,8 +1509,9 @@ MARKDOWN
                     Comment::factory()->create([
                         'blog_post_id' => $post->id,
                         'user_id' => $post->user_id,
-                        'content' => "Thanks for the feedback! Glad you found it helpful. 😊",
+                        'content' => 'Thanks for the feedback! Glad you found it helpful. 😊',
                         'parent_id' => $parentComment->id,
+                        'created_at' => fake()->dateTimeBetween($replyStart, now()),
                     ]);
                 }
             }
@@ -1480,8 +1522,8 @@ MARKDOWN
         foreach ($publishedPosts as $post) {
             // Popular posts get more likes
             $isPopular = in_array($post->user_id, [$author1->id, $author2->id, $masterAdmin->id]);
-            $likeCount = $isPopular 
-                ? fake()->numberBetween(15, 40) 
+            $likeCount = $isPopular
+                ? fake()->numberBetween(15, 40)
                 : fake()->numberBetween(3, 15);
 
             $likers = $allUsers->where('id', '!=', $post->user_id)
@@ -1491,17 +1533,21 @@ MARKDOWN
                 BlogPostLike::factory()->create([
                     'blog_post_id' => $post->id,
                     'user_id' => $liker->id,
+                    'created_at' => fake()->dateTimeBetween($interactionStart, now()),
                 ]);
             }
         }
 
+        $this->call(DashboardSeeder::class);
+
         $this->command->info('✅ Database seeding completed successfully!');
         $this->command->newLine();
         $this->command->info('📊 Summary:');
-        $this->command->info('  Users: ' . User::count() . ' (1 master admin, 6 admins, ' . (User::count() - 7) . ' members)');
-        $this->command->info('  Blog Posts: ' . BlogPost::count() . ' (' . $publishedPosts->count() . ' published)');
-        $this->command->info('  Comments: ' . Comment::count());
-        $this->command->info('  Likes: ' . BlogPostLike::count());
+        $this->command->info('  Users: '.User::count().' (1 master admin, 6 admins, '.(User::count() - 7).' members)');
+        $this->command->info('  Blog Posts: '.BlogPost::count().' ('.$publishedPosts->count().' published)');
+        $this->command->info('  Comments: '.Comment::count());
+        $this->command->info('  Likes: '.BlogPostLike::count());
+        $this->command->info('  Post Views: '.\Illuminate\Support\Facades\DB::table('blog_post_views')->count());
         $this->command->newLine();
         $this->command->info('🔑 Login credentials (all admins):');
         $this->command->info('  Master Admin: ryan@example.com / password');
