@@ -217,6 +217,8 @@ const followerGrowthChartData = computed(() =>
 
 const trendChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
 
+const followerChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
+
 const viewTrendChartData = computed(() =>
     buildChartData(
         activeMetrics.value.views_30d.map((point) => formatDashboardDate(point.day)),
@@ -579,7 +581,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <DashboardLineChart
                             class="mt-3"
                             :data="followerGrowthChartData"
-                            :options="viewTrendChartOptions"
+                            :options="followerChartOptions"
                         />
                     </div>
                 </div>
