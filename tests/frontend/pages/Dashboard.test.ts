@@ -71,7 +71,7 @@ const createPersonalMetrics = () => ({
         total_likes_on_published_posts: 7,
         avg_comments_per_published_post: 2.5,
         avg_likes_per_published_post: 3.5,
-        active_authors_30d: 1,
+        active_authors_30d: null,
         top_authors_by_published_posts_30d: [
             { id: 1, name: 'Admin Author', published_posts_count: 2 },
         ],
@@ -152,7 +152,7 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Total Likes');
         expect(wrapper.text()).toContain('Avg Comments / Post');
         expect(wrapper.text()).toContain('Avg Likes / Post');
-        expect(wrapper.text()).toContain('Active Authors (30d)');
+        expect(wrapper.text()).not.toContain('Active Authors (30d)');
         expect(wrapper.text()).not.toContain('2FA Adoption Rate');
         expect(wrapper.text()).not.toContain('User Trends');
         expect(wrapper.text()).not.toContain('Invitation Funnel');
@@ -226,6 +226,8 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('90%');
         expect(wrapper.text()).toContain('25');
         expect(wrapper.text()).toContain('Global Author');
+        expect(wrapper.text()).toContain('Active Authors (30d)');
+        expect(wrapper.text()).toContain('6');
         expect(wrapper.text()).toContain('1 day(s) with activity');
         expect(wrapper.text()).toContain('Invitation Funnel');
         expect(wrapper.text()).toContain('Pending');

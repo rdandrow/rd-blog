@@ -49,7 +49,7 @@ interface Props {
                 total_likes_on_published_posts: number;
                 avg_comments_per_published_post: number;
                 avg_likes_per_published_post: number;
-                active_authors_30d: number;
+                active_authors_30d: number | null;
                 top_authors_by_published_posts_30d: AuthorMetric[];
                 follower_growth_30d: Array<{ day: string; count: number }>;
                 posts_published_30d: Array<{ day: string; count: number }>;
@@ -84,7 +84,7 @@ interface Props {
                 total_likes_on_published_posts: number;
                 avg_comments_per_published_post: number;
                 avg_likes_per_published_post: number;
-                active_authors_30d: number;
+                active_authors_30d: number | null;
                 top_authors_by_published_posts_30d: AuthorMetric[];
                 follower_growth_30d: Array<{ day: string; count: number }>;
                 posts_published_30d: Array<{ day: string; count: number }>;
@@ -152,6 +152,8 @@ const showUserTrends = computed(
         !!props.metricsByScope.global?.high_value_metrics.user_trends,
 );
 
+    const showActiveAuthorsMetric = computed(() => selectedScope.value === 'global');
+
 const showInvitationFunnel = computed(() => {
     const funnel = activeMetrics.value.high_value_metrics.invitation_funnel;
 
@@ -179,17 +181,17 @@ const contentActivityChartData = computed(() =>
             buildLineDataset(
                 'Posts',
                 contentActivity30d.value.map((point) => point.posts),
-                '--primary',
+                '--chart-1',
             ),
             buildLineDataset(
                 'Comments',
                 contentActivity30d.value.map((point) => point.comments),
-                '--muted-foreground',
+                '--chart-2',
             ),
             buildLineDataset(
                 'Likes',
                 contentActivity30d.value.map((point) => point.likes),
-                '--ring',
+                '--chart-3',
             ),
         ],
         chartThemeVersion.value,
@@ -205,7 +207,7 @@ const followerGrowthChartData = computed(() =>
             buildLineDataset(
                 'Followers',
                 activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) => point.count),
-                '--primary',
+                '--chart-4',
                 true,
             ),
         ],
@@ -222,7 +224,7 @@ const viewTrendChartData = computed(() =>
             buildLineDataset(
                 'Views',
                 activeMetrics.value.views_30d.map((point) => point.count),
-                '--primary',
+                '--chart-5',
                 true,
             ),
         ],
@@ -422,7 +424,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
 
             <!-- Row 3: Averages + activity (always 3 cols) -->
-            <div class="grid gap-4 sm:grid-cols-3">
+            <div class="grid gap-4" :class="showActiveAuthorsMetric ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
                 <div class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Avg Comments / Post</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
@@ -435,10 +437,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                         {{ activeMetrics.high_value_metrics.avg_likes_per_published_post }}
                     </p>
                 </div>
-                <div class="rounded-xl border border-border bg-card p-4">
+                <div v-if="showActiveAuthorsMetric" class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Active Authors (30d)</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ formatNumber(activeMetrics.high_value_metrics.active_authors_30d) }}
+                        {{ formatNumber(activeMetrics.high_value_metrics.active_authors_30d ?? 0) }}
                     </p>
                 </div>
             </div>
