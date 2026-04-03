@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
+import DashboardBarChart from '@/components/charts/DashboardBarChart.vue';
 import DashboardLineChart from '@/components/charts/DashboardLineChart.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import {
+    BarElement,
     CategoryScale,
     Chart as ChartJS,
     Filler,
@@ -14,10 +16,10 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
-import { buildChartData, buildLineDataset, buildTrendOptions } from '@/lib/chart';
+import { buildBarChartData, buildBarDataset, buildBarOptions, buildChartData, buildLineDataset, buildTrendOptions } from '@/lib/chart';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler);
 
 interface CommentMetric {
     id: number;
@@ -218,6 +220,49 @@ const followerGrowthChartData = computed(() =>
 const trendChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
 
 const followerChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
+
+const topPostsChartData = computed(() =>
+    buildBarChartData(
+        activeMetrics.value.comments_per_blog_post.map((p) =>
+            p.title.length > 22 ? `${p.title.slice(0, 21)}\u2026` : p.title,
+        ),
+        [
+            buildBarDataset(
+                'Comments',
+                activeMetrics.value.comments_per_blog_post.map((p) => p.comments_count),
+                '--chart-1',
+            ),
+            buildBarDataset(
+                'Likes',
+                activeMetrics.value.comments_per_blog_post.map((p) => p.likes_count),
+                '--chart-2',
+            ),
+        ],
+        chartThemeVersion.value,
+    ),
+);
+
+const topPostsChartOptions = computed(() => buildBarOptions(true, chartThemeVersion.value));
+
+const topAuthorsChartData = computed(() =>
+    buildBarChartData(
+        activeMetrics.value.high_value_metrics.top_authors_by_published_posts_30d.map(
+            (a) => a.name,
+        ),
+        [
+            buildBarDataset(
+                'Published Posts',
+                activeMetrics.value.high_value_metrics.top_authors_by_published_posts_30d.map(
+                    (a) => a.published_posts_count,
+                ),
+                '--chart-4',
+            ),
+        ],
+        chartThemeVersion.value,
+    ),
+);
+
+const topAuthorsChartOptions = computed(() => buildBarOptions(false, chartThemeVersion.value));
 
 const viewTrendChartData = computed(() =>
     buildChartData(
@@ -603,28 +648,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                         >
                             No published posts available yet.
                         </div>
-                        <div v-else class="mt-3 overflow-auto">
-                            <table class="min-w-full table-fixed text-xs">
-                                <thead>
-                                    <tr class="border-b border-border text-left">
-                                        <th class="w-32 px-3 py-1 font-medium">Post</th>
-                                        <th class="w-28 px-3 py-1 font-medium">Comments</th>
-                                        <th class="w-24 px-3 py-1 font-medium">Likes</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="post in activeMetrics.comments_per_blog_post"
-                                        :key="post.id"
-                                        class="border-b border-border/60"
-                                    >
-                                        <td class="px-3 py-1">{{ post.title }}</td>
-                                        <td class="px-3 py-1">{{ post.comments_count }}</td>
-                                        <td class="px-3 py-1">{{ post.likes_count }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <DashboardBarChart
+                            v-else
+                            class="mt-3"
+                            :data="topPostsChartData"
+                            :options="topPostsChartOptions"
+                            height-class="h-80"
+                        />
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
                         <h3 class="text-sm font-medium text-foreground">
@@ -636,26 +666,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                         >
                             No authors with published posts in the last 30 days.
                         </div>
-                        <div v-else class="mt-3 overflow-auto">
-                            <table class="min-w-full table-fixed text-xs">
-                                <thead>
-                                    <tr class="border-b border-border text-left">
-                                        <th class="w-40 px-3 py-1 font-medium">Author</th>
-                                        <th class="w-28 px-3 py-1 font-medium">Published Posts</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="author in activeMetrics.high_value_metrics.top_authors_by_published_posts_30d"
-                                        :key="author.id"
-                                        class="border-b border-border/60"
-                                    >
-                                        <td class="px-3 py-1">{{ author.name }}</td>
-                                        <td class="px-3 py-1">{{ author.published_posts_count }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                        <DashboardBarChart
+                            v-else
+                            class="mt-3"
+                            :data="topAuthorsChartData"
+                            :options="topAuthorsChartOptions"
+                            height-class="h-72"
+                        />
                     </div>
                 </div>
             </div>

@@ -120,3 +120,82 @@ export const buildTrendOptions = (showLegend: boolean, themeVersion: number) => 
         },
     },
 });
+
+type BarDataset = {
+    label: string;
+    data: number[];
+    backgroundColor: string;
+    borderColor: string;
+    borderWidth: number;
+    borderRadius: number;
+};
+
+export const buildBarDataset = (
+    label: string,
+    values: number[],
+    colorToken: string,
+): BarDataset => ({
+    label,
+    data: values,
+    backgroundColor: resolveChartColor(colorToken, 0.8),
+    borderColor: resolveChartColor(colorToken),
+    borderWidth: 0,
+    borderRadius: 3,
+});
+
+export const buildBarChartData = (
+    labels: string[],
+    datasets: BarDataset[],
+    themeVersion: number,
+) => ({
+    _themeVersion: themeVersion,
+    labels,
+    datasets,
+});
+
+export const buildBarOptions = (showLegend: boolean, themeVersion: number) => ({
+    _themeVersion: themeVersion,
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y' as const,
+    interaction: {
+        mode: 'index' as const,
+        intersect: false,
+    },
+    plugins: {
+        legend: showLegend
+            ? {
+                  position: 'bottom' as const,
+                  labels: {
+                      color: resolveChartColor('--foreground'),
+                      boxWidth: 10,
+                      boxHeight: 10,
+                      usePointStyle: true,
+                      pointStyle: 'rect' as const,
+                  },
+              }
+            : {
+                  display: false,
+              },
+    },
+    scales: {
+        x: {
+            beginAtZero: true,
+            ticks: {
+                color: resolveChartColor('--muted-foreground'),
+                precision: 0,
+            },
+            grid: {
+                color: resolveChartColor('--border', 0.45),
+            },
+        },
+        y: {
+            ticks: {
+                color: resolveChartColor('--muted-foreground'),
+            },
+            grid: {
+                display: false,
+            },
+        },
+    },
+});

@@ -26,6 +26,14 @@ vi.mock('@/components/charts/DashboardLineChart.vue', () => ({
     },
 }));
 
+vi.mock('@/components/charts/DashboardBarChart.vue', () => ({
+    default: {
+        name: 'DashboardBarChart',
+        template: '<div data-testid="bar-chart"></div>',
+        props: ['data', 'options', 'heightClass'],
+    },
+}));
+
 vi.mock('@/layouts/AppLayout.vue', () => ({
     default: {
         name: 'AppLayout',
@@ -164,7 +172,6 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('View Metrics');
         expect(wrapper.text()).toContain('Not available yet');
         expect(wrapper.text()).toContain('3');
-        expect(wrapper.text()).toContain('Admin Author');
     });
 
     it('hides scope switch when only personal scope is available', () => {
@@ -203,7 +210,6 @@ describe('Dashboard Page', () => {
 
         expect(wrapper.text()).toContain('Personal');
         expect(wrapper.text()).toContain('Global');
-        expect(wrapper.text()).toContain('My Post');
         expect(wrapper.text()).toContain('3');
         expect(wrapper.text()).toContain('Comments/Post vs Global');
         expect(wrapper.text()).toContain('Likes/Post vs Global');
@@ -215,7 +221,6 @@ describe('Dashboard Page', () => {
         expect(globalButton).toBeTruthy();
         await globalButton!.trigger('click');
 
-        expect(wrapper.text()).toContain('Global Post');
         expect(wrapper.text()).toContain('10');
         expect(wrapper.text()).toContain('User Trends');
         expect(wrapper.text()).toContain('Total Users');
@@ -225,7 +230,6 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('2FA Adoption Rate');
         expect(wrapper.text()).toContain('90%');
         expect(wrapper.text()).toContain('25');
-        expect(wrapper.text()).toContain('Global Author');
         expect(wrapper.text()).toContain('Active Authors (30d)');
         expect(wrapper.text()).toContain('6');
         expect(wrapper.text()).toContain('1 day(s) with activity');
