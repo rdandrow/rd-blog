@@ -202,11 +202,7 @@ class DashboardMetricsService
             ? round($totalLikesOnPublished / $publishedPosts, 2)
             : 0;
 
-        $activeAuthors30d = BlogPost::published()
-            ->where('published_at', '>=', now()->subDays(30))
-            ->when($user !== null, fn ($query) => $query->where('user_id', $user->id))
-            ->distinct('user_id')
-            ->count('user_id');
+        $activeAuthors30d = null;
 
         $topAuthorsByPublishedPosts30d = DB::table('blog_posts as p')
             ->join('users as u', 'u.id', '=', 'p.user_id')
@@ -214,7 +210,6 @@ class DashboardMetricsService
             ->whereNotNull('p.published_at')
             ->where('p.published_at', '<=', now())
             ->where('p.published_at', '>=', now()->subDays(29)->startOfDay())
-            ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id))
             ->groupBy('p.user_id', 'u.name')
             ->selectRaw('p.user_id as id, u.name, COUNT(*) as published_posts_count')
             ->orderByDesc('published_posts_count')
@@ -269,6 +264,11 @@ class DashboardMetricsService
         $userTrends = null;
 
         if ($user === null) {
+            $activeAuthors30d = BlogPost::published()
+                ->where('published_at', '>=', now()->subDays(29)->startOfDay())
+                ->distinct('user_id')
+                ->count('user_id');
+
             $totalUsers = User::count();
             $twoFactorUsers = User::whereNotNull('two_factor_confirmed_at')->count();
 

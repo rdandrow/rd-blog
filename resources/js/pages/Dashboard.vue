@@ -156,6 +156,10 @@ const showUserTrends = computed(
 
     const showActiveAuthorsMetric = computed(() => selectedScope.value === 'global');
 
+const totalFollowersLabel = computed(() =>
+    selectedScope.value === 'global' ? 'Total Follow Relationships' : 'Total Followers',
+);
+
 const showInvitationFunnel = computed(() => {
     const funnel = activeMetrics.value.high_value_metrics.invitation_funnel;
 
@@ -451,7 +455,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             <!-- Row 2: Audience & engagement totals -->
             <div class="grid gap-4 sm:grid-cols-3">
                 <div class="rounded-xl border border-border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">Total Followers</p>
+                    <p class="text-sm text-muted-foreground">{{ totalFollowersLabel }}</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
                         {{ formatNumber(activeMetrics.total_followers) }}
                     </p>

@@ -326,8 +326,10 @@ describe('DashboardMetricsService', function () {
             ->and($high['comments_created_30d'])->toHaveCount(30)
             ->and($high['likes_created_30d'])->toHaveCount(30)
             ->and($high['follower_growth_30d'])->toHaveCount(30)
-            ->and($high['top_authors_by_published_posts_30d'])->toHaveCount(1)
-            ->and($high['top_authors_by_published_posts_30d'][0]->id)->toBe($admin->id);
+            ->and($high['top_authors_by_published_posts_30d'])->toHaveCount(2)
+            ->and(collect($high['top_authors_by_published_posts_30d'])->pluck('id')->toArray())
+                ->toContain($admin->id)
+                ->toContain($otherAuthor->id);
     });
 
     test('backfills missing trend dates with zero counts', function () {
