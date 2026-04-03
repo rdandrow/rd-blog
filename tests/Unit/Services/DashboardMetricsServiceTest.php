@@ -132,7 +132,9 @@ describe('DashboardMetricsService', function () {
 
         Schema::dropIfExists('blog_post_views');
 
-        $withoutTracking = $this->service->getScopedMetricsForUser($admin);
+        // Fresh instance required: the memoized table-check is correct for a single request
+        // lifetime, but this test simulates the table being dropped between requests.
+        $withoutTracking = app(DashboardMetricsService::class)->getScopedMetricsForUser($admin);
 
         expect($withoutTracking['viewsTrackingEnabled'])->toBeFalse()
             ->and($withoutTracking['metricsByScope']['personal']['total_blog_post_views'])->toBeNull()

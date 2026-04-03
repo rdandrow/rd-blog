@@ -14,6 +14,8 @@ class DashboardMetricsService
     private const CACHE_KEY_VERSION = 1;
     private const DEFAULT_CACHE_TTL_SECONDS = 600;
 
+    private ?bool $viewsTrackingEnabled = null;
+
     /**
      * Get role-aware dashboard scope payload.
      *
@@ -71,6 +73,10 @@ class DashboardMetricsService
         $averageViewsPerBlogPost = null;
         $views30d = [];
 
+        $publishedPostsForScope = BlogPost::published()
+            ->when($user !== null, fn ($query) => $query->where('user_id', $user->id))
+            ->count();
+
         if ($viewsTrackingEnabled) {
             $viewsBaseQuery = DB::table('blog_post_views as v')
                 ->join('blog_posts as p', 'p.id', '=', 'v.blog_post_id')
@@ -80,10 +86,6 @@ class DashboardMetricsService
                 ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id));
 
             $totalBlogPostViews = (clone $viewsBaseQuery)->count();
-
-            $publishedPostsForScope = BlogPost::published()
-                ->when($user !== null, fn ($query) => $query->where('user_id', $user->id))
-                ->count();
 
             $averageViewsPerBlogPost = $publishedPostsForScope > 0
                 ? round($totalBlogPostViews / $publishedPostsForScope, 2)
@@ -99,7 +101,7 @@ class DashboardMetricsService
             $views30d = $this->backfill30DayTrend($rawViews30d);
         }
 
-        $highValueMetrics = $this->getHighValueMetrics($user);
+        $highValueMetrics = $this->getHighValueMetrics($user, $publishedPostsForScope);
 
         return [
             'total_blog_post_views' => $totalBlogPostViews,
@@ -156,13 +158,13 @@ class DashboardMetricsService
 
     public function isViewsTrackingEnabled(): bool
     {
-        return Schema::hasTable('blog_post_views');
+        return $this->viewsTrackingEnabled ??= Schema::hasTable('blog_post_views');
     }
 
     /**
      * Build Section 1B high-value metric set.
      */
-    public function getHighValueMetrics(?User $user = null): array
+    public function getHighValueMetrics(?User $user = null, ?int $publishedPosts = null): array
     {
         $publishedPostsQuery = BlogPost::published();
         $draftPostsQuery = BlogPost::query()->where('is_published', false);
@@ -174,7 +176,7 @@ class DashboardMetricsService
             $featuredPostsQuery->where('user_id', $user->id);
         }
 
-        $publishedPosts = $publishedPostsQuery->count();
+        $publishedPosts ??= $publishedPostsQuery->count();
         $draftPosts = $draftPostsQuery->count();
         $featuredPosts = $featuredPostsQuery->count();
 

@@ -223,8 +223,6 @@ const followerGrowthChartData = computed(() =>
 
 const trendChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
 
-const followerChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
-
 const topPostsChartData = computed(() =>
     buildBarChartData(
         activeMetrics.value.comments_per_blog_post.map((p) =>
@@ -630,7 +628,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <DashboardLineChart
                             class="mt-3"
                             :data="followerGrowthChartData"
-                            :options="followerChartOptions"
+                            :options="trendChartOptions"
                         />
                     </div>
                 </div>
