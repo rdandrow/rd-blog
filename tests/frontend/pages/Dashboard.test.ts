@@ -47,14 +47,12 @@ vi.mock('@/routes', () => ({
 }));
 
 const createBackfilledTrend = (activeDays: Record<string, number> = {}) => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - 29);
+    const todayUTC = new Date().toISOString().slice(0, 10);
 
     return Array.from({ length: 30 }, (_, index) => {
-        const day = new Date(start);
-        day.setDate(start.getDate() + index);
-        const key = day.toISOString().slice(0, 10);
+        const d = new Date(`${todayUTC}T00:00:00Z`);
+        d.setUTCDate(d.getUTCDate() - (29 - index));
+        const key = d.toISOString().slice(0, 10);
 
         return {
             day: key,

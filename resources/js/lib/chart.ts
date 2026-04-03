@@ -27,10 +27,24 @@ const normalizeTokenColor = (tokenValue: string): string => {
 };
 
 const withAlpha = (color: string, alpha: number): string => {
-    const clampedAlpha = Math.max(0, Math.min(1, alpha));
-    const percent = Math.round(clampedAlpha * 100);
+    const a = Math.max(0, Math.min(1, alpha));
 
-    return `color-mix(in srgb, ${color} ${percent}%, transparent)`;
+    // hsl(...) — handles both space-separated (modern) and comma-separated syntax
+    const hslMatch = color.match(/^hsl\(\s*([\d.]+)[,\s]+([\d.]+%?)[,\s]+([\d.]+%?)/);
+    if (hslMatch) {
+        return `hsla(${hslMatch[1]}, ${hslMatch[2]}, ${hslMatch[3]}, ${a})`;
+    }
+
+    // #rrggbb or #rgb
+    if (color.startsWith('#')) {
+        const hex = color.length === 4
+            ? [color[1] + color[1], color[2] + color[2], color[3] + color[3]]
+            : [color.slice(1, 3), color.slice(3, 5), color.slice(5, 7)];
+        const [r, g, b] = hex.map((h) => parseInt(h, 16));
+        return `rgba(${r}, ${g}, ${b}, ${a})`;
+    }
+
+    return color;
 };
 
 export const resolveChartColor = (token: string, alpha?: number): string => {
