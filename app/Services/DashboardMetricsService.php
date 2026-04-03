@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 class DashboardMetricsService
 {
     private const TREND_DAYS = 30;
-    private const CACHE_KEY_VERSION = 1;
+    private const CACHE_KEY_VERSION = 2;
     private const DEFAULT_CACHE_TTL_SECONDS = 600;
 
     private ?bool $viewsTrackingEnabled = null;
@@ -138,15 +138,13 @@ class DashboardMetricsService
     {
         $scope = $user !== null ? 'personal' : 'global';
         $userId = $user?->id ?? 0;
-        $role = $user?->role ?? 'none';
         $viewsFlag = $viewsTrackingEnabled ? 1 : 0;
 
         return sprintf(
-            'dashboard:metrics:v%d:scope:%s:user:%d:role:%s:views:%d',
+            'dashboard:metrics:v%d:scope:%s:user:%d:views:%d',
             self::CACHE_KEY_VERSION,
             $scope,
             $userId,
-            $role,
             $viewsFlag,
         );
     }

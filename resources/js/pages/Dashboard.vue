@@ -21,6 +21,11 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler);
 
+interface TrendPoint {
+    day: string;
+    count: number;
+}
+
 interface CommentMetric {
     id: number;
     title: string;
@@ -35,78 +40,48 @@ interface AuthorMetric {
     published_posts_count: number;
 }
 
+interface HighValueMetrics {
+    published_posts: number;
+    draft_posts: number;
+    featured_posts: number;
+    total_comments_on_published_posts: number;
+    total_likes_on_published_posts: number;
+    avg_comments_per_published_post: number;
+    avg_likes_per_published_post: number;
+    active_authors_30d: number | null;
+    top_authors_by_published_posts_30d: AuthorMetric[];
+    follower_growth_30d: TrendPoint[];
+    posts_published_30d: TrendPoint[];
+    comments_created_30d: TrendPoint[];
+    likes_created_30d: TrendPoint[];
+    two_factor_adoption_rate: number | null;
+    invitation_funnel: {
+        pending: number | null;
+        accepted: number | null;
+        expired: number | null;
+    };
+    user_trends: {
+        total_users: number;
+        daily_active_users: number;
+        weekly_active_users: number;
+        monthly_active_users: number;
+        total_inactive_users: number;
+    } | null;
+}
+
+interface ScopeMetrics {
+    total_blog_post_views: number | null;
+    average_views_per_blog_post: number | null;
+    total_followers: number;
+    comments_per_blog_post: CommentMetric[];
+    views_30d: TrendPoint[];
+    high_value_metrics: HighValueMetrics;
+}
+
 interface Props {
     metricsByScope: {
-        personal: {
-            total_blog_post_views: number | null;
-            average_views_per_blog_post: number | null;
-            total_followers: number;
-            comments_per_blog_post: CommentMetric[];
-            views_30d: Array<{ day: string; count: number }>;
-            high_value_metrics: {
-                published_posts: number;
-                draft_posts: number;
-                featured_posts: number;
-                total_comments_on_published_posts: number;
-                total_likes_on_published_posts: number;
-                avg_comments_per_published_post: number;
-                avg_likes_per_published_post: number;
-                active_authors_30d: number | null;
-                top_authors_by_published_posts_30d: AuthorMetric[];
-                follower_growth_30d: Array<{ day: string; count: number }>;
-                posts_published_30d: Array<{ day: string; count: number }>;
-                comments_created_30d: Array<{ day: string; count: number }>;
-                likes_created_30d: Array<{ day: string; count: number }>;
-                two_factor_adoption_rate: number | null;
-                invitation_funnel: {
-                    pending: number | null;
-                    accepted: number | null;
-                    expired: number | null;
-                };
-                user_trends: {
-                    total_users: number;
-                    daily_active_users: number;
-                    weekly_active_users: number;
-                    monthly_active_users: number;
-                    total_inactive_users: number;
-                } | null;
-            };
-        };
-        global?: {
-            total_blog_post_views: number | null;
-            average_views_per_blog_post: number | null;
-            total_followers: number;
-            comments_per_blog_post: CommentMetric[];
-            views_30d: Array<{ day: string; count: number }>;
-            high_value_metrics: {
-                published_posts: number;
-                draft_posts: number;
-                featured_posts: number;
-                total_comments_on_published_posts: number;
-                total_likes_on_published_posts: number;
-                avg_comments_per_published_post: number;
-                avg_likes_per_published_post: number;
-                active_authors_30d: number | null;
-                top_authors_by_published_posts_30d: AuthorMetric[];
-                follower_growth_30d: Array<{ day: string; count: number }>;
-                posts_published_30d: Array<{ day: string; count: number }>;
-                comments_created_30d: Array<{ day: string; count: number }>;
-                likes_created_30d: Array<{ day: string; count: number }>;
-                two_factor_adoption_rate: number | null;
-                invitation_funnel: {
-                    pending: number | null;
-                    accepted: number | null;
-                    expired: number | null;
-                };
-                user_trends: {
-                    total_users: number;
-                    daily_active_users: number;
-                    weekly_active_users: number;
-                    monthly_active_users: number;
-                    total_inactive_users: number;
-                } | null;
-            };
-        };
+        personal: ScopeMetrics;
+        global?: ScopeMetrics;
     };
     meta: {
         views_tracking_enabled: boolean;
@@ -117,6 +92,8 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const CHART_LABEL_MAX_LENGTH = 22;
 
 const selectedScope = ref<'personal' | 'global'>(props.meta.default_scope);
 const chartThemeVersion = ref(0);
@@ -154,7 +131,7 @@ const showUserTrends = computed(
         !!props.metricsByScope.global?.high_value_metrics.user_trends,
 );
 
-    const showActiveAuthorsMetric = computed(() => selectedScope.value === 'global');
+const showActiveAuthorsMetric = computed(() => selectedScope.value === 'global');
 
 const totalFollowersLabel = computed(() =>
     selectedScope.value === 'global' ? 'Total Follow Relationships' : 'Total Followers',
@@ -226,7 +203,9 @@ const trendChartOptions = computed(() => buildTrendOptions(true, chartThemeVersi
 const topPostsChartData = computed(() =>
     buildBarChartData(
         activeMetrics.value.comments_per_blog_post.map((p) =>
-            p.title.length > 22 ? `${p.title.slice(0, 21)}\u2026` : p.title,
+            p.title.length > CHART_LABEL_MAX_LENGTH
+                ? `${p.title.slice(0, CHART_LABEL_MAX_LENGTH - 1)}\u2026`
+                : p.title,
         ),
         [
             buildBarDataset(
@@ -282,6 +261,8 @@ const viewTrendChartData = computed(() =>
 );
 
 const viewTrendChartOptions = computed(() => buildTrendOptions(false, chartThemeVersion.value));
+
+const showViewMetrics = computed(() => props.meta.views_tracking_enabled);
 
 const viewsTrendSummary = computed(() => {
     const points = activeMetrics.value.views_30d;
@@ -369,6 +350,8 @@ const formatDashboardDate = (day: string) => {
 const formatNumber = (n: number) => n.toLocaleString();
 
 const formattedGeneratedAt = computed(() => {
+    // PHP sends ISO 8601 with UTC offset (now()->toISOString()), so new Date() parses correctly.
+    // toLocaleDateString/toLocaleTimeString display in the browser's local timezone — intentional.
     const d = new Date(props.meta.generated_at);
     const date = d.toLocaleDateString(undefined, {
         month: 'short',
@@ -680,7 +663,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
 
             <!-- View Metrics -->
-            <div>
+            <div v-if="showViewMetrics">
                 <h2 class="text-base font-semibold text-foreground">
                     View Metrics
                 </h2>
@@ -690,11 +673,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             Total Blog Post Views
                         </p>
                         <p class="mt-1 text-xl font-semibold text-foreground">
-                            {{
-                                activeMetrics.total_blog_post_views === null
-                                    ? 'Not available yet'
-                                    : formatNumber(activeMetrics.total_blog_post_views)
-                            }}
+                            {{ formatNumber(activeMetrics.total_blog_post_views ?? 0) }}
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
@@ -702,15 +681,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                             Average Views per Blog Post
                         </p>
                         <p class="mt-1 text-xl font-semibold text-foreground">
-                            {{
-                                activeMetrics.average_views_per_blog_post === null
-                                    ? 'Not available yet'
-                                    : activeMetrics.average_views_per_blog_post
-                            }}
+                            {{ activeMetrics.average_views_per_blog_post ?? 0 }}
                         </p>
                     </div>
                 </div>
-                <div v-if="meta.views_tracking_enabled" class="mt-6">
+                <div class="mt-6">
                     <h3 class="text-sm font-medium text-foreground">
                         30-Day View Trend
                     </h3>

@@ -167,8 +167,8 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Top Performers');
         expect(wrapper.text()).toContain('Top Posts by Engagement');
         expect(wrapper.text()).toContain('Top Authors (Last 30 Days)');
-        expect(wrapper.text()).toContain('View Metrics');
-        expect(wrapper.text()).toContain('Not available yet');
+        expect(wrapper.text()).not.toContain('View Metrics');
+        expect(wrapper.text()).not.toContain('Not available yet');
         expect(wrapper.text()).toContain('3');
     });
 
