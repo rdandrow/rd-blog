@@ -71,10 +71,13 @@ interface HighValueMetrics {
 
 interface ScopeMetrics {
     total_blog_post_views: number | null;
+    total_anonymous_blog_post_views: number | null;
     average_views_per_blog_post: number | null;
+    anonymous_view_share_percentage: number | null;
     total_followers: number;
     comments_per_blog_post: CommentMetric[];
     views_30d: TrendPoint[];
+    anonymous_views_30d: TrendPoint[];
     high_value_metrics: HighValueMetrics;
 }
 
@@ -262,17 +265,23 @@ const viewTrendChartData = computed(() =>
         activeMetrics.value.views_30d.map((point) => formatDashboardDate(point.day)),
         [
             buildLineDataset(
-                'Views',
+                'Total Views',
                 activeMetrics.value.views_30d.map((point) => point.count),
                 '--chart-5',
                 true,
+            ),
+            buildLineDataset(
+                'Anonymous Views',
+                activeMetrics.value.anonymous_views_30d.map((point) => point.count),
+                '--chart-2',
+                false,
             ),
         ],
         chartThemeVersion.value,
     ),
 );
 
-const viewTrendChartOptions = computed(() => buildTrendOptions(false, chartThemeVersion.value));
+const viewTrendChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
 
 const showViewMetrics = computed(() => props.meta.views_tracking_enabled);
 
@@ -297,6 +306,12 @@ const viewsTrendSummary = computed(() => {
         peakCount: peakPoint.count,
         peakDay: peakPoint.day,
     };
+});
+
+const anonymousViewsTrendSummary = computed(() => {
+    const points = activeMetrics.value.anonymous_views_30d;
+
+    return points.reduce((sum, point) => sum + point.count, 0);
 });
 
 const personalGlobalBenchmarks = computed(() => {
@@ -680,13 +695,29 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <h2 class="text-base font-semibold text-foreground">
                     View Metrics
                 </h2>
-                <div class="mt-3 grid gap-4 md:grid-cols-2">
+                <div class="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div class="rounded-xl border border-border bg-card p-3">
                         <p class="text-sm text-muted-foreground">
                             Total Blog Post Views
                         </p>
                         <p class="mt-1 text-xl font-semibold text-foreground">
                             {{ formatNumber(activeMetrics.total_blog_post_views ?? 0) }}
+                        </p>
+                    </div>
+                    <div class="rounded-xl border border-border bg-card p-3">
+                        <p class="text-sm text-muted-foreground">
+                            Anonymous Blog Post Views
+                        </p>
+                        <p class="mt-1 text-xl font-semibold text-foreground">
+                            {{ formatNumber(activeMetrics.total_anonymous_blog_post_views ?? 0) }}
+                        </p>
+                    </div>
+                    <div class="rounded-xl border border-border bg-card p-3">
+                        <p class="text-sm text-muted-foreground">
+                            Anonymous View Share
+                        </p>
+                        <p class="mt-1 text-xl font-semibold text-foreground">
+                            {{ activeMetrics.anonymous_view_share_percentage ?? 0 }}%
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
@@ -715,10 +746,14 @@ const breadcrumbs: BreadcrumbItem[] = [
                             :options="viewTrendChartOptions"
                             height-class="h-40"
                         />
-                        <div class="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                        <div class="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
                             <p>
                                 Total 30d views:
                                 <span class="font-medium text-foreground">{{ formatNumber(viewsTrendSummary.total) }}</span>
+                            </p>
+                            <p>
+                                Anonymous 30d views:
+                                <span class="font-medium text-foreground">{{ formatNumber(anonymousViewsTrendSummary) }}</span>
                             </p>
                             <p>
                                 Peak day:

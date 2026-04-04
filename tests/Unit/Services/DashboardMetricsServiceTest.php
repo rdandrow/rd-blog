@@ -122,6 +122,8 @@ describe('DashboardMetricsService', function () {
 
         expect($withTracking['viewsTrackingEnabled'])->toBeTrue()
             ->and($withTracking['metricsByScope']['personal']['total_blog_post_views'])->toBe(1)
+            ->and($withTracking['metricsByScope']['personal']['total_anonymous_blog_post_views'])->toBe(1)
+            ->and($withTracking['metricsByScope']['personal']['anonymous_view_share_percentage'])->toBe(100.0)
             ->and(collect($withTracking['metricsByScope']['personal']['views_30d'])->sum('count'))->toBe(1);
 
         Schema::dropIfExists('blog_post_views');
@@ -132,7 +134,9 @@ describe('DashboardMetricsService', function () {
 
         expect($withoutTracking['viewsTrackingEnabled'])->toBeFalse()
             ->and($withoutTracking['metricsByScope']['personal']['total_blog_post_views'])->toBeNull()
+            ->and($withoutTracking['metricsByScope']['personal']['total_anonymous_blog_post_views'])->toBeNull()
             ->and($withoutTracking['metricsByScope']['personal']['average_views_per_blog_post'])->toBeNull()
+            ->and($withoutTracking['metricsByScope']['personal']['anonymous_view_share_percentage'])->toBeNull()
             ->and($withoutTracking['metricsByScope']['personal']['views_30d'])->toBe([]);
     });
 
@@ -604,9 +608,13 @@ describe('DashboardMetricsService', function () {
         $metrics = $this->service->getRequestedMetrics();
 
         expect($metrics['total_blog_post_views'])->toBe(3)
+            ->and($metrics['total_anonymous_blog_post_views'])->toBe(3)
             ->and($metrics['average_views_per_blog_post'])->toBe(1.5)
+            ->and($metrics['anonymous_view_share_percentage'])->toBe(100.0)
             ->and($metrics['views_30d'])->toHaveCount(30)
-            ->and(collect($metrics['views_30d'])->sum('count'))->toBe(3);
+            ->and($metrics['anonymous_views_30d'])->toHaveCount(30)
+            ->and(collect($metrics['views_30d'])->sum('count'))->toBe(3)
+            ->and(collect($metrics['anonymous_views_30d'])->sum('count'))->toBe(3);
     });
 
     test('requested view metrics are scoped by authored posts for personal scope', function () {
@@ -661,9 +669,13 @@ describe('DashboardMetricsService', function () {
         $metrics = $this->service->getRequestedMetrics($admin);
 
         expect($metrics['total_blog_post_views'])->toBe(2)
+            ->and($metrics['total_anonymous_blog_post_views'])->toBe(2)
             ->and($metrics['average_views_per_blog_post'])->toBe(2.0)
+            ->and($metrics['anonymous_view_share_percentage'])->toBe(100.0)
             ->and($metrics['views_30d'])->toHaveCount(30)
-            ->and(collect($metrics['views_30d'])->sum('count'))->toBe(2);
+            ->and($metrics['anonymous_views_30d'])->toHaveCount(30)
+            ->and(collect($metrics['views_30d'])->sum('count'))->toBe(2)
+            ->and(collect($metrics['anonymous_views_30d'])->sum('count'))->toBe(2);
     });
 
     test('requested view metrics are disabled when views table is missing', function () {
@@ -675,8 +687,11 @@ describe('DashboardMetricsService', function () {
 
         expect($scopePayload['viewsTrackingEnabled'])->toBeFalse()
             ->and($metrics['total_blog_post_views'])->toBeNull()
+            ->and($metrics['total_anonymous_blog_post_views'])->toBeNull()
             ->and($metrics['average_views_per_blog_post'])->toBeNull()
-            ->and($metrics['views_30d'])->toBe([]);
+            ->and($metrics['anonymous_view_share_percentage'])->toBeNull()
+            ->and($metrics['views_30d'])->toBe([])
+            ->and($metrics['anonymous_views_30d'])->toBe([]);
     });
 
     test('views 30 day trend is ordered, fixed-length, and excludes unpublished or future posts', function () {

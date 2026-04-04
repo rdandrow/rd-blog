@@ -63,12 +63,15 @@ const createBackfilledTrend = (activeDays: Record<string, number> = {}) => {
 
 const createPersonalMetrics = () => ({
     total_blog_post_views: null,
+    total_anonymous_blog_post_views: null,
     average_views_per_blog_post: null,
+    anonymous_view_share_percentage: null,
     total_followers: 3,
     comments_per_blog_post: [
         { id: 1, title: 'My Post', slug: 'my-post', comments_count: 2, likes_count: 1 },
     ],
     views_30d: [],
+    anonymous_views_30d: [],
     high_value_metrics: {
         published_posts: 2,
         draft_posts: 1,
@@ -97,12 +100,15 @@ const createPersonalMetrics = () => ({
 
 const createGlobalMetrics = () => ({
     total_blog_post_views: null,
+    total_anonymous_blog_post_views: null,
     average_views_per_blog_post: null,
+    anonymous_view_share_percentage: null,
     total_followers: 10,
     comments_per_blog_post: [
         { id: 2, title: 'Global Post', slug: 'global-post', comments_count: 5, likes_count: 8 },
     ],
     views_30d: [],
+    anonymous_views_30d: [],
     high_value_metrics: {
         published_posts: 10,
         draft_posts: 4,
@@ -267,8 +273,11 @@ describe('Dashboard Page', () => {
                     personal: {
                         ...createPersonalMetrics(),
                         total_blog_post_views: 42,
+                        total_anonymous_blog_post_views: 28,
                         average_views_per_blog_post: 7,
+                        anonymous_view_share_percentage: 66.7,
                         views_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 5 }),
+                        anonymous_views_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 3 }),
                     },
                 },
                 meta: {
@@ -281,12 +290,17 @@ describe('Dashboard Page', () => {
         });
 
         expect(wrapper.text()).toContain('Total Blog Post Views');
+        expect(wrapper.text()).toContain('Anonymous Blog Post Views');
+        expect(wrapper.text()).toContain('Anonymous View Share');
         expect(wrapper.text()).toContain('Average Views per Blog Post');
         expect(wrapper.text()).toContain('42');
+        expect(wrapper.text()).toContain('28');
+        expect(wrapper.text()).toContain('66.7%');
         expect(wrapper.text()).toContain('7');
         expect(wrapper.text()).toContain('30-Day View Trend');
         expect(wrapper.text()).toContain('1 day(s) with activity');
         expect(wrapper.text()).toContain('Total 30d views:');
+        expect(wrapper.text()).toContain('Anonymous 30d views:');
         expect(wrapper.text()).not.toContain('View tracking is not enabled yet.');
     });
 });

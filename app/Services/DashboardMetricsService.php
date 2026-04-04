@@ -71,8 +71,11 @@ class DashboardMetricsService
             : DB::table('user_follows')->count();
 
         $totalBlogPostViews = null;
+        $totalAnonymousBlogPostViews = null;
         $averageViewsPerBlogPost = null;
+        $anonymousViewSharePercentage = null;
         $views30d = [];
+        $anonymousViews30d = [];
 
         $publishedPostsForScope = BlogPost::published()
             ->when($user !== null, fn ($query) => $query->where('user_id', $user->id))
@@ -88,6 +91,15 @@ class DashboardMetricsService
 
             $totalBlogPostViews = (clone $viewsBaseQuery)->count();
 
+            $anonymousViewsBaseQuery = (clone $viewsBaseQuery)
+                ->whereNull('v.user_id');
+
+            $totalAnonymousBlogPostViews = (clone $anonymousViewsBaseQuery)->count();
+
+            $anonymousViewSharePercentage = $totalBlogPostViews > 0
+                ? round(($totalAnonymousBlogPostViews / $totalBlogPostViews) * 100, 1)
+                : 0;
+
             $averageViewsPerBlogPost = $publishedPostsForScope > 0
                 ? round($totalBlogPostViews / $publishedPostsForScope, 2)
                 : 0;
@@ -100,16 +112,28 @@ class DashboardMetricsService
                 ->get();
 
             $views30d = $this->backfill30DayTrend($rawViews30d);
+
+            $rawAnonymousViews30d = (clone $anonymousViewsBaseQuery)
+                ->where('v.viewed_at', '>=', now()->subDays(29)->startOfDay())
+                ->selectRaw('DATE(v.viewed_at) as day, COUNT(*) as count')
+                ->groupBy('day')
+                ->orderBy('day')
+                ->get();
+
+            $anonymousViews30d = $this->backfill30DayTrend($rawAnonymousViews30d);
         }
 
         $highValueMetrics = $this->getHighValueMetrics($user, $publishedPostsForScope);
 
         return [
             'total_blog_post_views' => $totalBlogPostViews,
+            'total_anonymous_blog_post_views' => $totalAnonymousBlogPostViews,
             'average_views_per_blog_post' => $averageViewsPerBlogPost,
+            'anonymous_view_share_percentage' => $anonymousViewSharePercentage,
             'total_followers' => $totalFollowers,
             'comments_per_blog_post' => $commentsPerPost,
             'views_30d' => $views30d,
+            'anonymous_views_30d' => $anonymousViews30d,
             'high_value_metrics' => $highValueMetrics,
         ];
     }
