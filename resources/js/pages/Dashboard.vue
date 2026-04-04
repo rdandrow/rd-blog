@@ -137,6 +137,18 @@ const totalFollowersLabel = computed(() =>
     selectedScope.value === 'global' ? 'Total Follow Relationships' : 'Total Followers',
 );
 
+const followerGrowthHeading = computed(() =>
+    selectedScope.value === 'global'
+        ? '30-Day Follower Growth (Platform)'
+        : '30-Day Follower Growth (You)',
+);
+
+const topAuthorsHeading = computed(() =>
+    selectedScope.value === 'global'
+        ? 'Top Authors (Last 30 Days)'
+        : 'Top Authors (Platform, Last 30 Days)',
+);
+
 const showInvitationFunnel = computed(() => {
     const funnel = activeMetrics.value.high_value_metrics.invitation_funnel;
 
@@ -509,7 +521,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-4">
-                        <p class="text-sm text-muted-foreground">Monthly Active Users</p>
+                        <p class="text-sm text-muted-foreground">Active Users (Last 30d)</p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
                             {{ formatNumber(activeMetrics.high_value_metrics.user_trends!.monthly_active_users) }}
                         </p>
@@ -598,9 +610,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         />
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
-                        <h3 class="text-sm font-medium text-foreground">
-                            30-Day Follower Growth
-                        </h3>
+                        <h3 class="text-sm font-medium text-foreground">{{ followerGrowthHeading }}</h3>
                         <p class="mt-1 text-xs text-muted-foreground">
                             {{
                                 activeDayCount(activeMetrics.high_value_metrics.follower_growth_30d) > 0
@@ -642,9 +652,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         />
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
-                        <h3 class="text-sm font-medium text-foreground">
-                            Top Authors (Last 30 Days)
-                        </h3>
+                        <h3 class="text-sm font-medium text-foreground">{{ topAuthorsHeading }}</h3>
                         <div
                             v-if="activeMetrics.high_value_metrics.top_authors_by_published_posts_30d.length === 0"
                             class="mt-3 text-xs text-muted-foreground"

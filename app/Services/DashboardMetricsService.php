@@ -13,6 +13,7 @@ class DashboardMetricsService
     private const TREND_DAYS = 30;
     private const CACHE_KEY_VERSION = 2;
     private const DEFAULT_CACHE_TTL_SECONDS = 600;
+    private const CACHE_RUNTIME_VERSION_KEY = 'dashboard:metrics:cache_version';
 
     private ?bool $viewsTrackingEnabled = null;
 
@@ -126,8 +127,11 @@ class DashboardMetricsService
         }
 
         $cacheKey = $this->dashboardCacheKey($user, $viewsTrackingEnabled);
+        $cacheStore = Cache::supportsTags()
+            ? Cache::tags(['dashboard_metrics'])
+            : Cache::store();
 
-        return Cache::remember(
+        return $cacheStore->remember(
             $cacheKey,
             now()->addSeconds($ttlSeconds),
             fn () => $this->getRequestedMetrics($user, $viewsTrackingEnabled)
@@ -136,17 +140,50 @@ class DashboardMetricsService
 
     private function dashboardCacheKey(?User $user, bool $viewsTrackingEnabled): string
     {
+        $runtimeVersion = $this->getDashboardRuntimeCacheVersion();
         $scope = $user !== null ? 'personal' : 'global';
         $userId = $user?->id ?? 0;
         $viewsFlag = $viewsTrackingEnabled ? 1 : 0;
 
         return sprintf(
-            'dashboard:metrics:v%d:scope:%s:user:%d:views:%d',
+            'dashboard:metrics:v%d:rv:%d:scope:%s:user:%d:views:%d',
             self::CACHE_KEY_VERSION,
+            $runtimeVersion,
             $scope,
             $userId,
             $viewsFlag,
         );
+    }
+
+    private function getDashboardRuntimeCacheVersion(): int
+    {
+        $version = Cache::get(self::CACHE_RUNTIME_VERSION_KEY);
+
+        if ($version === null) {
+            $version = 1;
+            Cache::forever(self::CACHE_RUNTIME_VERSION_KEY, $version);
+        }
+
+        return (int) $version;
+    }
+
+    private function bumpDashboardRuntimeCacheVersion(): void
+    {
+        Cache::forever(self::CACHE_RUNTIME_VERSION_KEY, $this->getDashboardRuntimeCacheVersion() + 1);
+    }
+
+    public function invalidateDashboardCache(): void
+    {
+        if (!config('dashboard.cache.enabled', true)) {
+            return;
+        }
+
+        if (Cache::supportsTags()) {
+            Cache::tags(['dashboard_metrics'])->flush();
+            return;
+        }
+
+        $this->bumpDashboardRuntimeCacheVersion();
     }
 
     private function dashboardCacheTtlSeconds(): int
@@ -178,21 +215,18 @@ class DashboardMetricsService
         $draftPosts = $draftPostsQuery->count();
         $featuredPosts = $featuredPostsQuery->count();
 
-        $totalCommentsOnPublished = DB::table('comments as c')
-            ->join('blog_posts as p', 'p.id', '=', 'c.blog_post_id')
+        $engagementTotals = DB::table('blog_posts as p')
+            ->leftJoin('comments as c', 'c.blog_post_id', '=', 'p.id')
+            ->leftJoin('blog_post_likes as l', 'l.blog_post_id', '=', 'p.id')
             ->where('p.is_published', true)
             ->whereNotNull('p.published_at')
             ->where('p.published_at', '<=', now())
             ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id))
-            ->count();
+            ->selectRaw('COUNT(DISTINCT c.id) as total_comments, COUNT(DISTINCT l.id) as total_likes')
+            ->first();
 
-        $totalLikesOnPublished = DB::table('blog_post_likes as l')
-            ->join('blog_posts as p', 'p.id', '=', 'l.blog_post_id')
-            ->where('p.is_published', true)
-            ->whereNotNull('p.published_at')
-            ->where('p.published_at', '<=', now())
-            ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id))
-            ->count();
+        $totalCommentsOnPublished = (int) ($engagementTotals?->total_comments ?? 0);
+        $totalLikesOnPublished = (int) ($engagementTotals?->total_likes ?? 0);
 
         $avgCommentsPerPublished = $publishedPosts > 0
             ? round($totalCommentsOnPublished / $publishedPosts, 2)

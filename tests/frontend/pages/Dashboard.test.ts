@@ -164,9 +164,10 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).not.toContain('Invitation Funnel');
         expect(wrapper.text()).toContain('30-Day Trends');
         expect(wrapper.text()).toContain('30-Day Content Activity');
+        expect(wrapper.text()).toContain('30-Day Follower Growth (You)');
         expect(wrapper.text()).toContain('Top Performers');
         expect(wrapper.text()).toContain('Top Posts by Engagement');
-        expect(wrapper.text()).toContain('Top Authors (Last 30 Days)');
+        expect(wrapper.text()).toContain('Top Authors (Platform, Last 30 Days)');
         expect(wrapper.text()).not.toContain('View Metrics');
         expect(wrapper.text()).not.toContain('Not available yet');
         expect(wrapper.text()).toContain('3');
@@ -224,7 +225,8 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Total Users');
         expect(wrapper.text()).toContain('Daily Active Users');
         expect(wrapper.text()).toContain('Weekly Active Users');
-        expect(wrapper.text()).toContain('Monthly Active Users');
+        expect(wrapper.text()).toContain('Active Users (Last 30d)');
+        expect(wrapper.text()).toContain('30-Day Follower Growth (Platform)');
         expect(wrapper.text()).toContain('2FA Adoption Rate');
         expect(wrapper.text()).toContain('90%');
         expect(wrapper.text()).toContain('25');
