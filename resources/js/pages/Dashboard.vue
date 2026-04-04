@@ -348,15 +348,20 @@ const personalGlobalBenchmarks = computed(() => {
     return chips;
 });
 
-// Formats YYYY-MM-DD dates as MM-DD-YYYY for display
 const formatDashboardDate = (day: string) => {
-    const [year, month, date] = day.slice(0, 10).split('-');
+    const dayToken = day.slice(0, 10);
+    const parsedDate = new Date(`${dayToken}T00:00:00Z`);
 
-    if (!year || !month || !date) {
+    if (Number.isNaN(parsedDate.getTime())) {
         return day;
     }
 
-    return `${month}-${date}-${year}`;
+    return parsedDate.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC',
+    });
 };
 
 const formatNumber = (n: number) => n.toLocaleString();

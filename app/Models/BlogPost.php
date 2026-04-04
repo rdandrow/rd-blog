@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Database\Concerns\HasBatchOperations;
+use App\Services\DashboardMetricsService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -73,12 +74,14 @@ class BlogPost extends Model
         static::saved(function () {
             if (static::$cacheInvalidationEnabled) {
                 static::invalidateBlogCache();
+                static::invalidateDashboardCache();
             }
         });
 
         static::deleted(function () {
             if (static::$cacheInvalidationEnabled) {
                 static::invalidateBlogCache();
+                static::invalidateDashboardCache();
             }
         });
     }
@@ -168,6 +171,18 @@ class BlogPost extends Model
             static::bumpCacheVersion();
         } catch (\Throwable $exception) {
             Log::warning('Failed to invalidate blog cache; continuing without cache invalidation.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private static function invalidateDashboardCache(): void
+    {
+        try {
+            app(DashboardMetricsService::class)->invalidateDashboardCache();
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to invalidate dashboard metrics cache; continuing without dashboard cache invalidation.', [
                 'exception' => $exception::class,
                 'message' => $exception->getMessage(),
             ]);

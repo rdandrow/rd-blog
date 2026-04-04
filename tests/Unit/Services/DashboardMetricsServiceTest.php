@@ -37,7 +37,7 @@ describe('DashboardMetricsService', function () {
             ->and($result['defaultScope'])->toBe('personal');
     });
 
-    test('scoped metrics caching keeps payload stable until cache is cleared', function () {
+    test('scoped metrics cache is invalidated when blog post data changes', function () {
         config([
             'dashboard.cache.enabled' => true,
             'dashboard.cache.ttl_seconds' => 600,
@@ -62,13 +62,7 @@ describe('DashboardMetricsService', function () {
         $second = $this->service->getScopedMetricsForUser($admin);
 
         expect($first['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(1)
-            ->and($second['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(1);
-
-        Cache::flush();
-
-        $third = $this->service->getScopedMetricsForUser($admin);
-
-        expect($third['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(2);
+            ->and($second['metricsByScope']['personal']['high_value_metrics']['published_posts'])->toBe(2);
     });
 
     test('scoped metrics caching is bypassed when ttl is zero', function () {
