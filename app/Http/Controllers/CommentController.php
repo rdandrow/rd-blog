@@ -4,11 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
 use App\Models\Comment;
+use App\Services\DashboardMetricsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
+    public function __construct(
+        private DashboardMetricsService $dashboardMetricsService,
+    ) {
+    }
+
     /**
      * Store a newly created comment.
      */
@@ -36,6 +42,8 @@ class CommentController extends Controller
             'content' => $validated['content'],
         ]);
 
+        $this->dashboardMetricsService->invalidateDashboardCache();
+
         return back()->with('success', isset($validated['parent_id']) ? 'Reply added successfully!' : 'Comment added successfully!');
     }
 
@@ -50,6 +58,8 @@ class CommentController extends Controller
         }
 
         $comment->delete();
+
+        $this->dashboardMetricsService->invalidateDashboardCache();
 
         return back()->with('success', 'Comment deleted successfully!');
     }

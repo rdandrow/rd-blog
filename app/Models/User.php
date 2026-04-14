@@ -58,6 +58,7 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
             'invitation_sent_at' => 'datetime',
             'invitation_accepted_at' => 'datetime',
+            'last_active_at' => 'datetime',
         ];
     }
 
