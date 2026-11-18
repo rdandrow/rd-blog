@@ -6,6 +6,7 @@ use App\Models\BlogPost;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 class DashboardMetricsService
@@ -193,21 +194,37 @@ class DashboardMetricsService
 
     private function bumpDashboardRuntimeCacheVersion(): void
     {
-        Cache::forever(self::CACHE_RUNTIME_VERSION_KEY, $this->getDashboardRuntimeCacheVersion() + 1);
+        // Make sure the key exists, then increment atomically so concurrent
+        // invalidations cannot overwrite each other's bump.
+        $this->getDashboardRuntimeCacheVersion();
+
+        Cache::increment(self::CACHE_RUNTIME_VERSION_KEY);
     }
 
+    /**
+     * Invalidation must never fail the request that triggered it (a like, comment,
+     * follow, ...): the write has already happened and cached metrics expire via TTL anyway.
+     */
     public function invalidateDashboardCache(): void
     {
         if (!config('dashboard.cache.enabled', true)) {
             return;
         }
 
-        if (Cache::supportsTags()) {
-            Cache::tags(['dashboard_metrics'])->flush();
-            return;
-        }
+        try {
+            if (Cache::supportsTags()) {
+                Cache::tags(['dashboard_metrics'])->flush();
 
-        $this->bumpDashboardRuntimeCacheVersion();
+                return;
+            }
+
+            $this->bumpDashboardRuntimeCacheVersion();
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to invalidate dashboard metrics cache; relying on TTL expiry.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
     }
 
     private function dashboardCacheTtlSeconds(): int
@@ -239,18 +256,21 @@ class DashboardMetricsService
         $draftPosts = $draftPostsQuery->count();
         $featuredPosts = $featuredPostsQuery->count();
 
-        $engagementTotals = DB::table('blog_posts as p')
-            ->leftJoin('comments as c', 'c.blog_post_id', '=', 'p.id')
-            ->leftJoin('blog_post_likes as l', 'l.blog_post_id', '=', 'p.id')
+        // Count comments and likes with separate queries: joining both onto posts at once
+        // yields comments x likes rows per post before aggregation.
+        $publishedPostJoinScope = fn ($query) => $query
             ->where('p.is_published', true)
             ->whereNotNull('p.published_at')
             ->where('p.published_at', '<=', now())
-            ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id))
-            ->selectRaw('COUNT(DISTINCT c.id) as total_comments, COUNT(DISTINCT l.id) as total_likes')
-            ->first();
+            ->when($user !== null, fn ($query) => $query->where('p.user_id', $user->id));
 
-        $totalCommentsOnPublished = (int) ($engagementTotals?->total_comments ?? 0);
-        $totalLikesOnPublished = (int) ($engagementTotals?->total_likes ?? 0);
+        $totalCommentsOnPublished = $publishedPostJoinScope(
+            DB::table('comments as c')->join('blog_posts as p', 'p.id', '=', 'c.blog_post_id')
+        )->count();
+
+        $totalLikesOnPublished = $publishedPostJoinScope(
+            DB::table('blog_post_likes as l')->join('blog_posts as p', 'p.id', '=', 'l.blog_post_id')
+        )->count();
 
         $avgCommentsPerPublished = $publishedPosts > 0
             ? round($totalCommentsOnPublished / $publishedPosts, 2)
@@ -337,12 +357,12 @@ class DashboardMetricsService
             $invitationFunnel = [
                 'pending' => User::whereNotNull('invitation_token')
                     ->whereNull('invitation_accepted_at')
-                    ->where('invitation_sent_at', '>=', now()->subHours(48))
+                    ->where('invitation_sent_at', '>=', now()->subHours(User::INVITATION_EXPIRY_HOURS))
                     ->count(),
                 'accepted' => User::whereNotNull('invitation_accepted_at')->count(),
                 'expired' => User::whereNotNull('invitation_token')
                     ->whereNull('invitation_accepted_at')
-                    ->where('invitation_sent_at', '<', now()->subHours(48))
+                    ->where('invitation_sent_at', '<', now()->subHours(User::INVITATION_EXPIRY_HOURS))
                     ->count(),
             ];
 

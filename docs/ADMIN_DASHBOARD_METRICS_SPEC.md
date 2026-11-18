@@ -301,6 +301,8 @@ Count one view per (`blog_post_id`, `session_id`) per rolling 30 minutes to redu
 
 `session_id` stores an HMAC-SHA256 of the session id (keyed with `APP_KEY`, like `ip_hash` and `user_agent_hash`), never the raw value, so a leaked table cannot be used to hijack sessions. When a request carries no session id and no IP/user-agent fingerprint, there is nothing to dedupe on, so the view is recorded without a dedupe check.
 
+Crawler/scripted User-Agents, non-`GET` requests and browser prefetches are not recorded. Tracking is best-effort and never fails the page render. Old rows can be pruned with `dashboard:prune-views` (opt-in via `DASHBOARD_VIEWS_RETENTION_DAYS`).
+
 ## Requested metric queries after this table exists
 
 ### Total blog post views

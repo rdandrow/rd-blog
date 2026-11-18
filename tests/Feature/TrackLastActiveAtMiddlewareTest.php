@@ -31,17 +31,31 @@ describe('TrackLastActiveAt Middleware', function () {
         expect($user->fresh()->last_active_at->equalTo($recent))->toBeTrue();
     });
 
+    test('refreshes last_active_at once the throttle window has passed', function () {
+        $stale = now()->subMinutes(10)->startOfSecond();
+        $user = User::factory()->create(['last_active_at' => $stale]);
+        Auth::setUser($user);
+
+        runTrackLastActiveAt();
+
+        expect($user->fresh()->last_active_at->greaterThan($stale))->toBeTrue();
+    });
+
     test('does not touch updated_at when refreshing last_active_at', function () {
         $user = User::factory()->create([
             'last_active_at' => now()->subHour(),
             'updated_at' => now()->subDay()->startOfSecond(),
         ]);
         $originalUpdatedAt = $user->updated_at->copy();
+        $originalLastActive = $user->last_active_at->copy();
         Auth::setUser($user);
 
         runTrackLastActiveAt();
 
-        expect($user->fresh()->updated_at->equalTo($originalUpdatedAt))->toBeTrue();
+        $fresh = $user->fresh();
+
+        expect($fresh->last_active_at->greaterThan($originalLastActive))->toBeTrue()
+            ->and($fresh->updated_at->equalTo($originalUpdatedAt))->toBeTrue();
     });
 
     test('restores model timestamps even when saving fails', function () {

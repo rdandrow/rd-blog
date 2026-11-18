@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\BlogPost;
+use App\Models\BlogPostView;
 use App\Models\User;
 use App\Services\BlogPostViewTrackingService;
 use Illuminate\Contracts\Session\Session;
@@ -195,5 +196,59 @@ describe('Public Blog View Tracking', function () {
         app(BlogPostViewTrackingService::class)->trackView($post, $request);
 
         expect(DB::table('blog_post_views')->where('blog_post_id', $post->id)->count())->toBe(2);
+    });
+
+    test('does not record views from crawlers or scripted clients', function (string $userAgent) {
+        $post = BlogPost::factory()->published()->create();
+
+        $this->withHeader('User-Agent', $userAgent)
+            ->get(route('blog.show', ['slug' => $post->slug]))
+            ->assertOk();
+
+        expect(DB::table('blog_post_views')->count())->toBe(0);
+    })->with([
+        'Googlebot' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'facebook unfurler' => 'facebookexternalhit/1.1',
+        'curl' => 'curl/8.4.0',
+        'headless chrome' => 'Mozilla/5.0 HeadlessChrome/120.0',
+    ]);
+
+    test('does not record HEAD requests or browser prefetches', function () {
+        $post = BlogPost::factory()->published()->create();
+        $url = route('blog.show', ['slug' => $post->slug]);
+
+        $this->withHeader('User-Agent', 'pest-test-agent')->call('HEAD', $url);
+        $this->withHeader('User-Agent', 'pest-test-agent')
+            ->withHeader('Sec-Purpose', 'prefetch')
+            ->get($url)
+            ->assertOk();
+
+        expect(DB::table('blog_post_views')->count())->toBe(0);
+    });
+
+    test('still records views from regular browsers', function () {
+        $post = BlogPost::factory()->published()->create();
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15')
+            ->get(route('blog.show', ['slug' => $post->slug]))
+            ->assertOk();
+
+        expect(DB::table('blog_post_views')->count())->toBe(1);
+    });
+
+    test('keeps rendering the post when recording the view fails', function () {
+        $post = BlogPost::factory()->published()->create();
+
+        BlogPostView::creating(fn () => throw new RuntimeException('insert failed'));
+
+        try {
+            $this->withHeader('User-Agent', 'pest-test-agent')
+                ->get(route('blog.show', ['slug' => $post->slug]))
+                ->assertOk();
+        } finally {
+            BlogPostView::flushEventListeners();
+        }
+
+        expect(DB::table('blog_post_views')->count())->toBe(0);
     });
 });

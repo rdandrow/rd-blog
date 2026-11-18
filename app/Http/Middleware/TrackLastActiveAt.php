@@ -20,7 +20,9 @@ class TrackLastActiveAt
             $user = Auth::user();
             $lastActive = $user->last_active_at;
 
-            if ($lastActive === null || now()->diffInSeconds($lastActive) >= self::THROTTLE_SECONDS) {
+            // Carbon 3's diffInSeconds() is signed (negative when $lastActive is in the past),
+            // so compare timestamps directly instead.
+            if ($lastActive === null || $lastActive->lte(now()->subSeconds(self::THROTTLE_SECONDS))) {
                 $user->timestamps = false;
 
                 try {

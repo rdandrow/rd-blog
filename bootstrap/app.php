@@ -42,6 +42,12 @@ return Application::configure(basePath: dirname(__DIR__))
             ->everyFiveMinutes()
             ->withoutOverlapping()
             ->when(fn (): bool => config('dashboard.warm.enabled', true));
+
+        // Prune old blog post views daily, only when a retention window is configured.
+        $schedule->command('dashboard:prune-views')
+            ->dailyAt('03:00')
+            ->withoutOverlapping()
+            ->when(fn (): bool => (int) config('dashboard.views.retention_days') > 0);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -231,6 +231,12 @@ php artisan dashboard:warm-metrics-cache --user-id=1 --user-id=5
 * * * * * php /path/to/project/artisan schedule:run >> /dev/null 2>&1
 ```
 
+### View tracking notes
+
+- Public post views are recorded in `blog_post_views` (best-effort: a tracking failure is logged and never breaks the page). Crawlers/scripted clients (by User-Agent), `HEAD` requests and browser prefetches are not counted.
+- `blog_post_views` grows with traffic. Set `DASHBOARD_VIEWS_RETENTION_DAYS` (for example `365`) to have the scheduler delete older rows daily via `dashboard:prune-views`, or run it manually with `--days=N`. Pruning lowers the lifetime view totals shown on the dashboard, so it is off by default.
+- The master-admin active-user metrics (daily/weekly/monthly active, inactive users) are based on `users.last_active_at`, which is only recorded from the moment this feature is deployed. Expect them to under-report until a full 30 days of activity has accumulated.
+
 ## Testing
 
 **Backend Test Suite:** 912 tests • 3,397 assertions • ~10.50s parallel (`composer test`)  
