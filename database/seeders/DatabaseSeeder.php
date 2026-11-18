@@ -31,13 +31,6 @@ class DatabaseSeeder extends Seeder
             mt_srand($seed);
 
             $this->command->info("Using deterministic seed: {$seed}");
-        } elseif (is_numeric($seedSetting)) {
-            $seed = (int) $seedSetting;
-
-            fake()->seed($seed);
-            mt_srand($seed);
-
-            $this->command->info("Using deterministic seed: {$seed}");
         } else {
             $this->command->info('Using random seed mode');
         }

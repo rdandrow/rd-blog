@@ -22,9 +22,13 @@ class TrackLastActiveAt
 
             if ($lastActive === null || now()->diffInSeconds($lastActive) >= self::THROTTLE_SECONDS) {
                 $user->timestamps = false;
-                $user->last_active_at = now();
-                $user->save();
-                $user->timestamps = true;
+
+                try {
+                    $user->last_active_at = now();
+                    $user->save();
+                } finally {
+                    $user->timestamps = true;
+                }
             }
         }
 

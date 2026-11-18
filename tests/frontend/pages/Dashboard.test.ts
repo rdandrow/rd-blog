@@ -1,6 +1,6 @@
 import Dashboard from '@/pages/Dashboard.vue';
 import { mount } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@inertiajs/vue3', () => ({
     Head: {
@@ -46,11 +46,14 @@ vi.mock('@/routes', () => ({
     dashboard: () => ({ url: '/admin/dashboard' }),
 }));
 
-const createBackfilledTrend = (activeDays: Record<string, number> = {}) => {
-    const todayUTC = new Date().toISOString().slice(0, 10);
+// The clock is frozen to this instant in the suite below so date-keyed fixtures
+// cannot drift across UTC midnight mid-test.
+const FROZEN_NOW = new Date('2026-04-14T12:00:00Z');
+const TODAY_UTC = FROZEN_NOW.toISOString().slice(0, 10);
 
+const createBackfilledTrend = (activeDays: Record<string, number> = {}) => {
     return Array.from({ length: 30 }, (_, index) => {
-        const d = new Date(`${todayUTC}T00:00:00Z`);
+        const d = new Date(`${TODAY_UTC}T00:00:00Z`);
         d.setUTCDate(d.getUTCDate() - (29 - index));
         const key = d.toISOString().slice(0, 10);
 
@@ -121,10 +124,10 @@ const createGlobalMetrics = () => ({
         top_authors_by_published_posts_30d: [
             { id: 2, name: 'Global Author', published_posts_count: 10 },
         ],
-        follower_growth_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 2 }),
-        posts_published_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 1 }),
-        comments_created_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 3 }),
-        likes_created_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 4 }),
+        follower_growth_30d: createBackfilledTrend({ [TODAY_UTC]: 2 }),
+        posts_published_30d: createBackfilledTrend({ [TODAY_UTC]: 1 }),
+        comments_created_30d: createBackfilledTrend({ [TODAY_UTC]: 3 }),
+        likes_created_30d: createBackfilledTrend({ [TODAY_UTC]: 4 }),
         two_factor_adoption_rate: 90,
         invitation_funnel: {
             pending: 1,
@@ -142,6 +145,15 @@ const createGlobalMetrics = () => ({
 });
 
 describe('Dashboard Page', () => {
+    beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(FROZEN_NOW);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
     it('renders requested metric cards with placeholders for unavailable views data', () => {
         const wrapper = mount(Dashboard, {
             props: {
@@ -276,8 +288,8 @@ describe('Dashboard Page', () => {
                         total_anonymous_blog_post_views: 28,
                         average_views_per_blog_post: 7,
                         anonymous_view_share_percentage: 66.7,
-                        views_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 5 }),
-                        anonymous_views_30d: createBackfilledTrend({ [new Date().toISOString().slice(0, 10)]: 3 }),
+                        views_30d: createBackfilledTrend({ [TODAY_UTC]: 5 }),
+                        anonymous_views_30d: createBackfilledTrend({ [TODAY_UTC]: 3 }),
                     },
                 },
                 meta: {
@@ -302,5 +314,64 @@ describe('Dashboard Page', () => {
         expect(wrapper.text()).toContain('Total 30d views:');
         expect(wrapper.text()).toContain('Anonymous 30d views:');
         expect(wrapper.text()).not.toContain('View tracking is not enabled yet.');
+    });
+
+    it('shows a dash instead of a peak day when every view count in the window is zero', () => {
+        const wrapper = mount(Dashboard, {
+            props: {
+                metricsByScope: {
+                    personal: {
+                        ...createPersonalMetrics(),
+                        total_blog_post_views: 0,
+                        total_anonymous_blog_post_views: 0,
+                        average_views_per_blog_post: 0,
+                        anonymous_view_share_percentage: 0,
+                        views_30d: createBackfilledTrend(),
+                        anonymous_views_30d: createBackfilledTrend(),
+                    },
+                },
+                meta: {
+                    views_tracking_enabled: true,
+                    available_scopes: ['personal'],
+                    default_scope: 'personal',
+                    generated_at: new Date().toISOString(),
+                },
+            },
+        });
+
+        const text = wrapper.text().replace(/\s+/g, ' ');
+
+        expect(text).toContain('Peak day: —');
+        expect(text).not.toMatch(/Peak day: [^—]*\(0\)/);
+        expect(text).toContain('No view counts recorded yet in this 30-day window.');
+    });
+
+    it('reports the busiest day as the peak day when views exist', () => {
+        const wrapper = mount(Dashboard, {
+            props: {
+                metricsByScope: {
+                    personal: {
+                        ...createPersonalMetrics(),
+                        total_blog_post_views: 5,
+                        total_anonymous_blog_post_views: 3,
+                        average_views_per_blog_post: 5,
+                        anonymous_view_share_percentage: 60,
+                        views_30d: createBackfilledTrend({ [TODAY_UTC]: 5 }),
+                        anonymous_views_30d: createBackfilledTrend({ [TODAY_UTC]: 3 }),
+                    },
+                },
+                meta: {
+                    views_tracking_enabled: true,
+                    available_scopes: ['personal'],
+                    default_scope: 'personal',
+                    generated_at: new Date().toISOString(),
+                },
+            },
+        });
+
+        const text = wrapper.text().replace(/\s+/g, ' ');
+
+        expect(text).toMatch(/Peak day: .+ \(5\)/);
+        expect(text).not.toContain('No view counts recorded yet in this 30-day window.');
     });
 });

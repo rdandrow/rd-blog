@@ -3,9 +3,12 @@
 use App\Models\BlogPost;
 use App\Models\User;
 use App\Services\BlogPostViewTrackingService;
+use Illuminate\Contracts\Session\Session;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 function ensureBlogPostViewsTableExists(): void
 {
@@ -144,5 +147,53 @@ describe('Public Blog View Tracking', function () {
             ->assertOk();
 
         expect(DB::table('blog_post_views')->where('user_id', $user->id)->count())->toBe(1);
+    });
+
+    test('stores a hash of the session id instead of the raw value', function () {
+        $post = BlogPost::factory()->published()->create();
+        $rawSessionId = Str::random(40);
+
+        $request = Request::create(route('blog.show', ['slug' => $post->slug]));
+        $request->setLaravelSession(tap(
+            Mockery::mock(Session::class),
+            fn ($session) => $session->shouldReceive('getId')->andReturn($rawSessionId),
+        ));
+
+        app(BlogPostViewTrackingService::class)->trackView($post, $request);
+
+        $stored = DB::table('blog_post_views')->value('session_id');
+
+        expect($stored)->not->toBe($rawSessionId)
+            ->and($stored)->toBe(hash_hmac('sha256', $rawSessionId, config('app.key')));
+    });
+
+    test('still records a view when the visitor has no session id, ip, or user agent', function () {
+        $post = BlogPost::factory()->published()->create();
+
+        // An unrelated, identifiable visitor viewed the post moments ago.
+        DB::table('blog_post_views')->insert([
+            'blog_post_id' => $post->id,
+            'session_id' => 'other-visitor',
+            'ip_hash' => 'other-ip',
+            'user_agent_hash' => 'other-ua',
+            'viewed_at' => now()->subMinute(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $request = Request::create(route('blog.show', ['slug' => $post->slug]));
+        $request->server->remove('REMOTE_ADDR');
+        $request->headers->remove('User-Agent');
+        $request->setLaravelSession(tap(
+            Mockery::mock(Session::class),
+            fn ($session) => $session->shouldReceive('getId')->andReturn(''),
+        ));
+
+        expect($request->ip())->toBeNull()
+            ->and($request->userAgent())->toBeNull();
+
+        app(BlogPostViewTrackingService::class)->trackView($post, $request);
+
+        expect(DB::table('blog_post_views')->where('blog_post_id', $post->id)->count())->toBe(2);
     });
 });

@@ -288,7 +288,10 @@ const showViewMetrics = computed(() => props.meta.views_tracking_enabled);
 const viewsTrendSummary = computed(() => {
     const points = activeMetrics.value.views_30d;
 
-    if (points.length === 0) {
+    const total = points.reduce((sum, point) => sum + point.count, 0);
+
+    // With no views there is no peak; an empty peakDay lets the template render '—'.
+    if (total === 0) {
         return {
             total: 0,
             peakCount: 0,
@@ -296,7 +299,6 @@ const viewsTrendSummary = computed(() => {
         };
     }
 
-    const total = points.reduce((sum, point) => sum + point.count, 0);
     const peakPoint = points.reduce((peak, point) =>
         point.count > peak.count ? point : peak,
     );

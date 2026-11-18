@@ -299,6 +299,8 @@ Schema::create('blog_post_views', function (Blueprint $table) {
 ## Deduping recommendation
 Count one view per (`blog_post_id`, `session_id`) per rolling 30 minutes to reduce refresh inflation.
 
+`session_id` stores an HMAC-SHA256 of the session id (keyed with `APP_KEY`, like `ip_hash` and `user_agent_hash`), never the raw value, so a leaked table cannot be used to hijack sessions. When a request carries no session id and no IP/user-agent fingerprint, there is nothing to dedupe on, so the view is recorded without a dedupe check.
+
 ## Requested metric queries after this table exists
 
 ### Total blog post views
