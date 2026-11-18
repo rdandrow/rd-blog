@@ -194,6 +194,49 @@ Visit `http://localhost:8000`
 - Admin: `emily@example.com` / `password`
 - Admin: `james@example.com` / `password`
 
+## Dashboard Metrics Cache (Section 6)
+
+Dashboard metrics now use TTL caching with scheduled cache warming to reduce request-time aggregation load.
+
+### Environment variables
+
+```bash
+# Enable/disable dashboard metrics caching
+DASHBOARD_CACHE_ENABLED=true
+
+# Cache TTL in seconds (default: 600 = 10 minutes)
+DASHBOARD_CACHE_TTL_SECONDS=600
+
+# Enable/disable scheduled cache warming
+DASHBOARD_CACHE_WARM_ENABLED=true
+```
+
+### Manual cache warming
+
+```bash
+# Warm cache for all admin + master admin users
+php artisan dashboard:warm-metrics-cache
+
+# Warm cache for specific admin IDs only
+php artisan dashboard:warm-metrics-cache --user-id=1 --user-id=5
+```
+
+### Scheduler behavior
+
+- The app scheduler runs `dashboard:warm-metrics-cache` every 5 minutes.
+- Overlap protection is enabled (`withoutOverlapping`) to avoid duplicate warm jobs.
+- Ensure your scheduler is running in production:
+
+```bash
+* * * * * php /path/to/project/artisan schedule:run >> /dev/null 2>&1
+```
+
+### View tracking notes
+
+- Public post views are recorded in `blog_post_views` (best-effort: a tracking failure is logged and never breaks the page). Crawlers/scripted clients (by User-Agent), `HEAD` requests and browser prefetches are not counted.
+- `blog_post_views` grows with traffic. Set `DASHBOARD_VIEWS_RETENTION_DAYS` (for example `365`) to have the scheduler delete older rows daily via `dashboard:prune-views`, or run it manually with `--days=N`. Pruning lowers the lifetime view totals shown on the dashboard, so it is off by default.
+- The master-admin active-user metrics (daily/weekly/monthly active, inactive users) are based on `users.last_active_at`, which is only recorded from the moment this feature is deployed. Expect them to under-report until a full 30 days of activity has accumulated.
+
 ## Testing
 
 **Backend Test Suite:** 912 tests • 3,397 assertions • ~10.50s parallel (`composer test`)  

@@ -3,11 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\DashboardMetricsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class UserFollowController extends Controller
 {
+    public function __construct(
+        private DashboardMetricsService $dashboardMetricsService,
+    ) {
+    }
+
     /**
      * Toggle follow on a user.
      */
@@ -35,6 +41,8 @@ class UserFollowController extends Controller
             $currentUser->following()->attach($userToFollow->id);
             $message = 'Following successfully';
         }
+
+        $this->dashboardMetricsService->invalidateDashboardCache();
 
         return back()->with('success', $message);
     }

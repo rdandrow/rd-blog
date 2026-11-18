@@ -13,13 +13,14 @@ use App\Http\Controllers\AuthorProfileController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\DashboardController;
 
 Route::get('/', [PublicBlogController::class, 'index'])->name('home');
 
 // Admin Dashboard
-Route::get('admin/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->name('dashboard');
+Route::get('admin/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified', 'ensure.2fa', 'admin'])
+    ->name('dashboard');
 
 Route::get('blog', [PublicBlogController::class, 'list'])->name('blog');
 

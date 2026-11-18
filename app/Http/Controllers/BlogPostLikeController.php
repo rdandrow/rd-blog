@@ -4,11 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
 use App\Models\BlogPostLike;
+use App\Services\DashboardMetricsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class BlogPostLikeController extends Controller
 {
+    public function __construct(
+        private DashboardMetricsService $dashboardMetricsService,
+    ) {
+    }
+
     /**
      * Toggle like on a blog post.
      */
@@ -31,6 +37,8 @@ class BlogPostLikeController extends Controller
             ]);
             $message = 'Post liked';
         }
+
+        $this->dashboardMetricsService->invalidateDashboardCache();
 
         return back()->with('success', $message);
     }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Database\Concerns\HasBatchOperations;
+use App\Services\DashboardMetricsService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -73,12 +74,14 @@ class BlogPost extends Model
         static::saved(function () {
             if (static::$cacheInvalidationEnabled) {
                 static::invalidateBlogCache();
+                static::invalidateDashboardCache();
             }
         });
 
         static::deleted(function () {
             if (static::$cacheInvalidationEnabled) {
                 static::invalidateBlogCache();
+                static::invalidateDashboardCache();
             }
         });
     }
@@ -174,6 +177,18 @@ class BlogPost extends Model
         }
     }
 
+    private static function invalidateDashboardCache(): void
+    {
+        try {
+            app(DashboardMetricsService::class)->invalidateDashboardCache();
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to invalidate dashboard metrics cache; continuing without dashboard cache invalidation.', [
+                'exception' => $exception::class,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+    }
+
     /**
      * Generate a unique slug for the blog post.
      */
@@ -222,6 +237,11 @@ class BlogPost extends Model
     public function likes(): HasMany
     {
         return $this->hasMany(BlogPostLike::class);
+    }
+
+    public function views(): HasMany
+    {
+        return $this->hasMany(BlogPostView::class);
     }
 
     public function scopePublished(Builder $query): Builder
