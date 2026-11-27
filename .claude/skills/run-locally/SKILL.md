@@ -95,9 +95,13 @@ composer dev                                           # serve :8000 + queue + p
 until curl -sf http://127.0.0.1:8000/ >/dev/null; do sleep 0.5; done
 ```
 
-If `php artisan serve` finds 8000 busy, it picks the next free port; check the output
-for the URL. Stop the stack by killing the background task, or by port with
-`lsof -ti:8000,5173 -sTCP:LISTEN | xargs -r kill`.
+Before starting, check `lsof -i:8000,5173 -sTCP:LISTEN`. If something is already
+listening, it's the user's: use it or ask, and never kill it. If `php artisan serve`
+finds 8000 busy, it picks the next free port; check the output for the URL.
+
+Stop only what you started: stop the background task you launched (the
+`--kill-others` flag in `composer dev` takes down the whole group). Don't kill by
+port, which can hit the user's own processes.
 
 ## Logging in
 

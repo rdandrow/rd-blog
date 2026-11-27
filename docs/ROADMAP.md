@@ -27,6 +27,15 @@ Each finding lists the phase that fixes it.
 - [x] **Backend tests can't run locally.** `phpunit.xml` uses Postgres, and this
       machine had no Postgres. Now Postgres 16 runs session-only, and its lifecycle
       and cleanup are in the `run-locally` skill. → Phase 0
+- [ ] **Frontend types still don't match the shared payload.** `HandleInertiaRequests`
+      sends `auth.user` as `null` for guests and never sends `email_verified_at`,
+      `created_at`, `updated_at`, or `avatar`, but `Auth`/`User` claim all of them.
+      Profile.vue's "unverified email" banner and the avatar rendering read fields
+      that never arrive. Making `auth.user` nullable touches every authenticated page.
+      → Phase 1
+- [ ] **Dead `/dashboard` links.** The route is `/admin/dashboard`, but breadcrumbs
+      in five `Admin/BlogPosts/*` pages, and `SetupTwoFactor.vue`'s post-setup button,
+      point to `/dashboard` (404). Use the Wayfinder `dashboard()` route. → Phase 1
 - [ ] **`tests/frontend` isn't covered by Prettier** (62 files unformatted).
       `format:check` only covers `resources/`. → Phase 0 follow-up
 

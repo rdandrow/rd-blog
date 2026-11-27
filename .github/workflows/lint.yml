@@ -46,5 +46,13 @@ jobs:
       - name: ESLint
         run: npm run lint:check
 
+      # vue-tsc needs the gitignored Wayfinder output (resources/js/{actions,routes,wayfinder}).
+      # Locally the Vite plugin generates it; here nothing runs Vite, so generate it directly.
+      # The flags must match the wayfinder() options in vite.config.ts.
+      - name: Generate Wayfinder types
+        run: |
+          cp .env.example .env
+          php artisan wayfinder:generate --with-form
+
       - name: Type check
         run: npm run types

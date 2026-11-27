@@ -29,8 +29,13 @@ npm run build            # production assets
 composer dev             # server + queue + logs + vite
 ```
 
-CI runs all of the check-only commands plus both test suites. Run them before every
-commit, and don't commit a red suite.
+CI runs all of the check-only commands (`lint.yml`) and both test suites
+(`tests.yml`). Run them before every commit, and don't commit a red suite.
+
+`npm run types` needs the gitignored Wayfinder output. Vite generates it locally; on a
+fresh clone, or in CI, run `php artisan wayfinder:generate --with-form` first. If you
+change the `wayfinder()` options in `vite.config.ts`, update that flag in `lint.yml`
+too.
 
 ## Where things live
 
