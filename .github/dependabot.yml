@@ -1,5 +1,6 @@
 # Version updates: monthly, grouped into minor/patch and major PRs per ecosystem.
-# Major-update PRs can wait for roadmap Phase 3 (one major per PR). Majors are
+# Major-update PRs can wait for roadmap Phase 3 (one major per PR); the open-PR
+# limit is 10 so they can't crowd out minor/patch PRs. Majors are
 # deliberately NOT ignored here: ignore rules can also suppress security updates.
 # Security updates (enabled in repo settings) aren't tied to this schedule or to
 # these groups. See the dependency-upgrades skill for how to review and merge.
@@ -12,7 +13,7 @@ updates:
       interval: "monthly"
       time: "06:00"
       timezone: "UTC"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
       - "php"
@@ -54,13 +55,17 @@ updates:
       interval: "monthly"
       time: "06:15"
       timezone: "UTC"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     labels:
       - "dependencies"
       - "javascript"
     commit-message:
       prefix: "deps"
       include: "scope"
+    # Ignore rules also block SECURITY updates for the packages they match. That's
+    # acceptable for these: @types/node is types only, and advisories for the native
+    # bindings below are normally filed against their parent packages (rollup,
+    # tailwindcss, lightningcss), which aren't ignored.
     ignore:
       # Keep the types on the Node major that CI runs (node-version in .github/workflows).
       - dependency-name: "@types/node"

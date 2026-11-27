@@ -133,9 +133,10 @@ Each finding lists the phase that fixes it.
       baseline so it fails only on new errors. It would have flagged `decrypt()` on
       a value that can be null (the 2FA confirm 500). → Phase 1
 - [ ] **No dependency audit in CI.** Add `composer audit` and
-      `npm audit --omit=dev --audit-level=high`. Start non-blocking
-      (`continue-on-error`), and make it required once Phase 3 clears the existing
-      highs. → Phase 1 (non-blocking), Phase 3 (required)
+      `npm audit --audit-level=high`. Audit dev dependencies too: the known highs are
+      in dev tooling (the Vite dev server and build plugins), which `--omit=dev`
+      would skip. Start non-blocking (`continue-on-error`), and make it required
+      once Phase 3 clears the existing highs. → Phase 1 (non-blocking), Phase 3 (required)
 - [ ] **Migrations are never rolled back in CI.** Add `migrate`, then
       `migrate:rollback`, then `migrate` again, on the CI Postgres, before Phase 2
       removes index migrations. → Phase 2
@@ -194,7 +195,8 @@ changed classes.
 ### Phase 3: upgrades
 
 One major version per PR, with CI green after each, following the
-`dependency-upgrades` skill: open grouped minor/patch PRs and `npm audit fix` → Laravel 13 → Inertia 3 (server and client together) → Pest 5 and
+`dependency-upgrades` skill: merge the pending grouped minor/patch PRs and run
+`npm audit fix` → Laravel 13 → Inertia 3 (server and client together) → Pest 5 and
 Vitest 5 → Vite 8 and laravel-vite-plugin 3. Once the audit is clean, make the
 dependency-audit CI step required.
 
