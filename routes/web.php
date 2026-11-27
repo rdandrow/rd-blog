@@ -10,7 +10,6 @@ use App\Http\Controllers\BlogPostLikeController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PublicBlogController;
 use App\Http\Controllers\UserFollowController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicBlogController::class, 'index'])->name('home');
@@ -89,13 +88,13 @@ Route::middleware(['auth'])->group(function () {
 
 // Two-factor authentication setup routes (for new users during registration)
 Route::middleware(['auth'])->group(function () {
-    Route::get('/register/setup-two-factor', function () {
-        $registerController = new RegisterController;
+    Route::get('/register/setup-two-factor', [RegisterController::class, 'showTwoFactorSetup'])
+        ->name('register.setup-two-factor');
 
-        return $registerController->setupTwoFactorAuthentication(Auth::user());
-    })->name('register.setup-two-factor');
-
-    Route::post('/two-factor-challenge/confirm', [RegisterController::class, 'confirmTwoFactorAuthentication']);
+    // Not Fortify's 'two-factor' limiter: it keys on login.id, which is unset for
+    // authenticated users, so every user would share one bucket.
+    Route::post('/two-factor-challenge/confirm', [RegisterController::class, 'confirmTwoFactorAuthentication'])
+        ->middleware('throttle:6,1');
 });
 
 require __DIR__.'/settings.php';
