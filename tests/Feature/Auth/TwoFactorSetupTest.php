@@ -74,6 +74,46 @@ describe('2FA setup page', function () {
         );
     });
 
+    it('sends a master admin who already confirmed 2FA to the dashboard', function () {
+        $user = userWithConfirmedTwoFactor(['role' => 'master_admin']);
+
+        $this->actingAs($user)->get(route('register.setup-two-factor'))->assertRedirect(route('dashboard'));
+    });
+
+    it('clears a stale confirmation when it has to create a new secret', function () {
+        $user = User::factory()->withoutTwoFactor()->create(['two_factor_confirmed_at' => now()]);
+
+        $response = $this->actingAs($user)->get(route('register.setup-two-factor'));
+
+        $response->assertOk()->assertInertia(fn (Assert $page) => $page->component('auth/SetupTwoFactor'));
+        $user->refresh();
+        expect($user->two_factor_secret)->not->toBeNull()
+            ->and($user->two_factor_confirmed_at)->toBeNull()
+            ->and($user->hasEnabledTwoFactorAuthentication())->toBeFalse();
+    });
+
+    it('replaces a pending secret that has no recovery codes instead of erroring', function () {
+        $user = userWithPendingTwoFactor();
+        $user->forceFill(['two_factor_recovery_codes' => null])->save();
+
+        $response = $this->actingAs($user)->get(route('register.setup-two-factor'));
+
+        $response->assertOk()->assertInertia(fn (Assert $page) => $page->has('recoveryCodes', 8));
+    });
+
+    it('replaces a pending secret that cannot be decrypted instead of erroring', function () {
+        $user = User::factory()->create([
+            'two_factor_secret' => 'plain-text-seed-value',
+            'two_factor_recovery_codes' => 'plain-text-seed-value',
+            'two_factor_confirmed_at' => null,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('register.setup-two-factor'));
+
+        $response->assertOk();
+        expect(decrypt($user->fresh()->two_factor_secret))->toBeString();
+    });
+
     it('shows the same pending secret on every visit until it is confirmed', function () {
         $user = userWithPendingTwoFactor();
         $storedSecret = $user->two_factor_secret;
@@ -103,8 +143,42 @@ describe('2FA setup confirmation', function () {
 
         $response = $this->actingAs($user)->post('/two-factor-challenge/confirm', ['code' => '000000']);
 
-        $response->assertSessionHasErrors('code');
+        $response->assertSessionHasErrorsIn('confirmTwoFactorAuthentication', 'code');
         expect($user->fresh()->two_factor_confirmed_at)->toBeNull();
+    });
+
+    it('returns to the page the user originally asked for after confirming', function () {
+        $user = userWithPendingTwoFactor();
+        $code = (new Google2FA)->getCurrentOtp(decrypt($user->two_factor_secret));
+
+        $response = $this->actingAs($user)
+            ->withSession(['url.intended' => url('/settings/profile')])
+            ->post('/two-factor-challenge/confirm', ['code' => $code]);
+
+        $response->assertRedirect('/settings/profile');
+    });
+
+    it('does not re-confirm a user who already confirmed 2FA', function () {
+        $user = userWithConfirmedTwoFactor(['role' => 'member', 'two_factor_confirmed_at' => now()->subWeek()]);
+        $confirmedAt = $user->two_factor_confirmed_at;
+        $validCode = (new Google2FA)->getCurrentOtp(decrypt($user->two_factor_secret));
+
+        $response = $this->actingAs($user)->post('/two-factor-challenge/confirm', ['code' => $validCode]);
+
+        $response->assertRedirect(route('home'));
+        expect($user->fresh()->two_factor_confirmed_at->equalTo($confirmedAt))->toBeTrue();
+    });
+
+    it('rate limits confirmation attempts per user', function () {
+        $user = userWithPendingTwoFactor();
+        $other = userWithPendingTwoFactor();
+
+        foreach (range(1, 6) as $attempt) {
+            $this->actingAs($user)->post('/two-factor-challenge/confirm', ['code' => '000000']);
+        }
+
+        $this->actingAs($user)->post('/two-factor-challenge/confirm', ['code' => '000000'])->assertTooManyRequests();
+        $this->actingAs($other)->post('/two-factor-challenge/confirm', ['code' => '000000'])->assertRedirect();
     });
 
     it('sends a user with no pending secret back to setup instead of erroring', function () {

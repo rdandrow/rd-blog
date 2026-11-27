@@ -4,17 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
-use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
+use Laravel\Fortify\Actions\ConfirmTwoFactorAuthentication;
+use Laravel\Fortify\Actions\EnableTwoFactorAuthentication;
+use Laravel\Fortify\Fortify;
 
 /**
  * Mandatory 2FA setup for new users. Registration itself is handled by Fortify;
@@ -26,74 +23,80 @@ class RegisterController extends Controller
     /**
      * Show the 2FA setup page.
      *
-     * This is a GET, so it must be safe to repeat: it never replaces an existing
-     * secret. Users who already confirmed 2FA are sent on, and a pending secret is
-     * shown again unchanged, so a refresh doesn't invalidate a half-scanned QR code.
+     * This is a GET, so it must be safe to repeat: it never replaces a usable secret.
+     * Users who already confirmed 2FA are sent on, and a pending secret is shown again
+     * unchanged, so a refresh doesn't invalidate a half-scanned QR code.
+     *
+     * It still creates a secret when none is usable. Moving that to a POST is a
+     * tracked follow-up (docs/ROADMAP.md).
      */
-    public function showTwoFactorSetup(Request $request, TwoFactorAuthenticationProvider $provider): Response|RedirectResponse
+    public function showTwoFactorSetup(Request $request, EnableTwoFactorAuthentication $enable): Response|RedirectResponse
     {
         $user = $request->user();
 
         if ($user->hasEnabledTwoFactorAuthentication()) {
-            return redirect($this->homeFor($user));
+            return redirect()->intended($this->homeFor($user));
         }
 
-        if (is_null($user->two_factor_secret)) {
-            $user->forceFill([
-                'two_factor_secret' => encrypt($provider->generateSecretKey()),
-                'two_factor_recovery_codes' => encrypt(json_encode(
-                    Collection::times(8, fn () => Str::random(10).'-'.Str::random(10))->all()
-                )),
-            ])->save();
-        }
+        if (! $this->hasUsablePendingSecret($user)) {
+            $enable($user, force: true);
 
-        $secret = decrypt($user->two_factor_secret);
+            // A stale confirmation must not carry over to a secret the user hasn't scanned.
+            $user->forceFill(['two_factor_confirmed_at' => null])->save();
+        }
 
         return Inertia::render('auth/SetupTwoFactor', [
-            'qrCode' => $this->qrCodeSvg($provider->qrCodeUrl(config('app.name'), $user->email, $secret)),
-            'recoveryCodes' => json_decode(decrypt($user->two_factor_recovery_codes)),
-            'secretKey' => $secret,
+            'qrCode' => $user->twoFactorQrCodeSvg(),
+            'recoveryCodes' => $user->recoveryCodes(),
+            'secretKey' => Fortify::currentEncrypter()->decrypt($user->two_factor_secret),
         ]);
     }
 
     /**
      * Confirm the pending 2FA secret with a code from the user's authenticator app.
+     *
+     * Validation errors use Fortify's `confirmTwoFactorAuthentication` error bag.
      */
-    public function confirmTwoFactorAuthentication(Request $request, TwoFactorAuthenticationProvider $provider): RedirectResponse
+    public function confirmTwoFactorAuthentication(Request $request, ConfirmTwoFactorAuthentication $confirm): RedirectResponse
     {
-        $request->validate([
-            'code' => ['required', 'string'],
-        ]);
-
         $user = $request->user();
 
-        if (is_null($user->two_factor_secret)) {
+        if ($user->hasEnabledTwoFactorAuthentication()) {
+            return redirect()->intended($this->homeFor($user));
+        }
+
+        if (empty($user->two_factor_secret)) {
             return redirect()->route('register.setup-two-factor');
         }
 
-        if (! $provider->verify(decrypt($user->two_factor_secret), $request->code)) {
-            return back()->withErrors([
-                'code' => 'The provided two factor authentication code was invalid.',
-            ]);
+        $confirm($user, $request->input('code'));
+
+        return redirect()->intended($this->homeFor($user))
+            ->with('status', 'Two-factor authentication has been enabled successfully!');
+    }
+
+    /**
+     * A pending secret is usable when both it and the recovery codes decrypt.
+     * Rows written outside Fortify (missing codes, plain-text seed data) are not.
+     */
+    private function hasUsablePendingSecret(User $user): bool
+    {
+        if (empty($user->two_factor_secret) || empty($user->two_factor_recovery_codes)) {
+            return false;
         }
 
-        $user->forceFill([
-            'two_factor_confirmed_at' => now(),
-        ])->save();
+        try {
+            Fortify::currentEncrypter()->decrypt($user->two_factor_secret);
+            Fortify::currentEncrypter()->decrypt($user->two_factor_recovery_codes);
+        } catch (DecryptException) {
+            return false;
+        }
 
-        return redirect($this->homeFor($user))
-            ->with('status', 'Two-factor authentication has been enabled successfully!');
+        return true;
     }
 
     private function homeFor(User $user): string
     {
         return $user->isAdmin() ? route('dashboard') : route('home');
-    }
-
-    private function qrCodeSvg(string $url): string
-    {
-        $writer = new Writer(new ImageRenderer(new RendererStyle(192), new SvgImageBackEnd));
-
-        return $writer->writeString($url);
     }
 }

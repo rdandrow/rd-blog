@@ -24,6 +24,8 @@ const confirmForm = useForm({
 
 const confirmTwoFactor = () => {
     confirmForm.post('/two-factor-challenge/confirm', {
+        // The server reports errors in Fortify's named error bag.
+        errorBag: 'confirmTwoFactorAuthentication',
         onSuccess: () => {
             // Success handled by redirect
         },

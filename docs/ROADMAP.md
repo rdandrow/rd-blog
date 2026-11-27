@@ -47,6 +47,20 @@ Each finding lists the phase that fixes it.
       `two_factor_confirmed_at` stays set, so the user's authenticator stops working
       and they're locked out. The route is a GET guarded only by `auth`, so a
       cross-site `<img>` can trigger it. **Highest priority.** → Phase 1
+- [ ] **The 2FA setup GET still creates a secret when none is usable.** The rotation
+      lockout is fixed, but a first visit still writes, against the "no
+      state-changing GETs" rule. That leaves a cross-site request able to create a
+      pending secret, and two tabs able to race to create one. Fix: render a "Begin
+      setup" step that POSTs (through Fortify's `EnableTwoFactorAuthentication`), and
+      make the GET read-only. → Phase 1, next 2FA PR
+- [ ] **New users never see their recovery codes.** `SetupTwoFactor.vue` has a
+      "Save Recovery Codes" step that nothing ever reaches: confirming redirects on
+      the server. Show the codes after confirmation (same PR as above). → Phase 1
+- [ ] **Role-based home redirect is copied in three places** (`LoginResponse`,
+      `RegisterResponse`, `RegisterController::homeFor`). Extract it once. → Phase 2
+- [ ] **`DashboardSeeder` writes plain-text 2FA secrets** (`Str::random(32)`), which
+      don't decrypt. The setup page now replaces them, but seeded data should match
+      real data. → Phase 2
 - [ ] **`BlogPostPolicy::create` returns true for every user.** Only the route's
       `admin` middleware keeps members out. `BlogPostPolicyTest` asserts this
       behavior ("allows all authenticated users to create posts"), so the test

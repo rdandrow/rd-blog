@@ -91,7 +91,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/register/setup-two-factor', [RegisterController::class, 'showTwoFactorSetup'])
         ->name('register.setup-two-factor');
 
-    Route::post('/two-factor-challenge/confirm', [RegisterController::class, 'confirmTwoFactorAuthentication']);
+    // Not Fortify's 'two-factor' limiter: it keys on login.id, which is unset for
+    // authenticated users, so every user would share one bucket.
+    Route::post('/two-factor-challenge/confirm', [RegisterController::class, 'confirmTwoFactorAuthentication'])
+        ->middleware('throttle:6,1');
 });
 
 require __DIR__.'/settings.php';
