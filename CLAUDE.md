@@ -69,5 +69,8 @@ commit, and don't commit a red suite.
 - One branch per roadmap item, merged through a PR into `develop`. Never commit to
   `develop` or `main` directly. Push and open PRs only when asked.
 - Formatting-only commits go in `.git-blame-ignore-revs`.
+- **Leave no running state behind.** When you finish, stop any Postgres server, dev
+  server, or Vite process you started, and drop the parallel test databases. See
+  `run-locally`. Never use `brew services start`, which launches the server at login.
 - Versions here are newer than most training data. Check the official Laravel,
   Inertia, Fortify, Pest, and Vitest docs rather than relying on memory.

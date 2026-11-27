@@ -24,8 +24,9 @@ Each finding lists the phase that fixes it.
       `role`/`bio`/`website`, and the 2FA modal's error-bag typing was wrong. → Phase 0
 - [x] **No agent guidance.** There was no CLAUDE.md, no skills, and no permission
       allowlist, so every session started cold. → Phase 0
-- [ ] **Backend tests can't run locally.** `phpunit.xml` uses Postgres, and this
-      machine has no Postgres (or Docker). → Phase 0
+- [x] **Backend tests can't run locally.** `phpunit.xml` uses Postgres, and this
+      machine had no Postgres. Now Postgres 16 runs session-only, and its lifecycle
+      and cleanup are in the `run-locally` skill. → Phase 0
 - [ ] **`tests/frontend` isn't covered by Prettier** (62 files unformatted).
       `format:check` only covers `resources/`. → Phase 0 follow-up
 
@@ -95,9 +96,8 @@ suite locally.
       `.git-blame-ignore-revs`)
 - [x] `CLAUDE.md`, `.claude/settings.json`, and the skills `work-step`,
       `review-tests`, `run-locally`
-- [ ] Local Postgres 16 (`brew install postgresql@16`, then create the
-      `rd_blog_test` role and database; see the `run-locally` skill) and a green
-      `composer test`
+- [x] Local Postgres 16 and a green `composer test` (975 passed, parallel and
+      sequential), plus dev migrate and seed
 - [ ] Extend Prettier to `tests/frontend`, in its own formatting commit
 
 ### Phase 1: make the tests trustworthy, then fix bugs
