@@ -103,7 +103,14 @@ Each finding lists the phase that fixes it.
 
 - [ ] `npm audit`: 16 vulnerabilities (14 high, mostly Vite and tooling).
       `composer audit`: 1 low (symfony/yaml). → Phase 3
-- [ ] 5 stale Dependabot PRs (#21, #22, #23, #34, #36). → Phase 3
+- [x] 5 stale Dependabot PRs (#21, #22, #23, #34, #36): closed 2026-11-27, because
+      every version in them had been superseded. → done
+- [x] **Dependabot was effectively off.** Alerts and security updates were disabled,
+      and version updates had stopped after June 15 (npm was at its 5-open-PR cap and
+      likely auto-paused). Alerts and security updates are now on. Version updates
+      run monthly, majors grouped but not ignored (ignore rules can also suppress
+      security updates), and `@types/node` is held at Node 22. Process: the
+      `dependency-upgrades` skill. → done
 - [ ] Majors available: Laravel 13, Inertia 3 (server and client), Pest 5, Vitest 5,
       laravel-vite-plugin 3, Vite 8. → Phase 3
 
@@ -138,9 +145,13 @@ Each finding lists the phase that fixes it.
       setup, and login. Both deferred 2FA issues only show up in a real browser.
       The portfolio repo's Playwright skills can be adapted. → Phase 4
 
+- [ ] **Auto-merge for Dependabot minor/patch PRs** (`dependabot/fetch-metadata`
+      plus GitHub auto-merge). Only once CI can be trusted unattended: required
+      checks, Larastan, and the browser smoke tests in place. → Phase 4, optional
+
 Not planned: running Pest both parallel and sequential in CI (doubles backend time
-for a rare bug class), and a CI secret scanner. The repo is public, so enable
-GitHub's built-in secret scanning and push protection in settings instead.
+for a rare bug class), and a CI secret scanner. GitHub's built-in secret scanning and
+push protection are already enabled on this public repo.
 
 ## Phases
 
@@ -182,8 +193,8 @@ changed classes.
 
 ### Phase 3: upgrades
 
-One major version per PR, with CI green after each: Dependabot PRs and
-`npm audit fix` → Laravel 13 → Inertia 3 (server and client together) → Pest 5 and
+One major version per PR, with CI green after each, following the
+`dependency-upgrades` skill: open grouped minor/patch PRs and `npm audit fix` → Laravel 13 → Inertia 3 (server and client together) → Pest 5 and
 Vitest 5 → Vite 8 and laravel-vite-plugin 3. Once the audit is clean, make the
 dependency-audit CI step required.
 
