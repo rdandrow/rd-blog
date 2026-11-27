@@ -85,7 +85,7 @@ const user = page.props.auth.user;
                             type="url"
                             class="mt-1 block w-full"
                             name="website"
-                            :default-value="user.website"
+                            :default-value="user.website ?? undefined"
                             autocomplete="url"
                             placeholder="https://example.com"
                         />
@@ -108,7 +108,7 @@ const user = page.props.auth.user;
                             id="bio"
                             class="mt-1 block w-full"
                             name="bio"
-                            :default-value="user.bio"
+                            :default-value="user.bio ?? undefined"
                             rows="4"
                             placeholder="Tell us about yourself..."
                         />

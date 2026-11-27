@@ -35,10 +35,15 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
+    role: UserRole;
+    website?: string | null;
+    bio?: string | null;
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
 }
+
+export type UserRole = 'master_admin' | 'admin' | 'member';
 
 export interface BlogPost {
     id: number;
