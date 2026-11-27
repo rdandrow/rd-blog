@@ -103,9 +103,56 @@ Each finding lists the phase that fixes it.
 
 - [ ] `npm audit`: 16 vulnerabilities (14 high, mostly Vite and tooling).
       `composer audit`: 1 low (symfony/yaml). → Phase 3
-- [ ] 5 stale Dependabot PRs (#21, #22, #23, #34, #36). → Phase 3
+- [x] 5 stale Dependabot PRs (#21, #22, #23, #34, #36): closed 2026-11-27, because
+      every version in them had been superseded. → done
+- [x] **Dependabot was effectively off.** Alerts and security updates were disabled,
+      and version updates had stopped after June 15 (npm was at its 5-open-PR cap and
+      likely auto-paused). Alerts and security updates are now on. Version updates
+      run monthly, majors grouped but not ignored (ignore rules can also suppress
+      security updates), and `@types/node` is held at Node 22. Process: the
+      `dependency-upgrades` skill. → done
 - [ ] Majors available: Laravel 13, Inertia 3 (server and client), Pest 5, Vitest 5,
       laravel-vite-plugin 3, Vite 8. → Phase 3
+
+### CI enhancements
+
+- [ ] **No branch protection on `develop` or `main`**, so every check is advisory
+      and a red PR can still be merged. Add a ruleset that requires the `quality`
+      and `ci` checks and blocks direct pushes. This is a repo setting change, so
+      confirm with the owner first. → Phase 0 follow-up, do first
+- [ ] **CI runs only on PRs into `develop` or `main`.** Stacked PRs get no checks.
+      Retargeting a stacked PR after its parent merges doesn't trigger a run either
+      (#38 sat with no checks), so it needs a push or a close and reopen. Drop the
+      `branches:` filter under `pull_request:` in `lint.yml` and `tests.yml`.
+      → Phase 0 follow-up
+- [ ] **Coverage is collected but never used.** `tests.yml` sets `coverage: xdebug`,
+      which slows every run, but nothing reads the result. Measure today's number,
+      then add `pest --coverage --min=<that number>` as a floor, or set
+      `coverage: none`. → Phase 0 follow-up
+- [ ] **No PHP static analysis.** Add Larastan, starting around level 5 with a
+      baseline so it fails only on new errors. It would have flagged `decrypt()` on
+      a value that can be null (the 2FA confirm 500). → Phase 1
+- [ ] **No dependency audit in CI.** Add `composer audit` and
+      `npm audit --audit-level=high`. Audit dev dependencies too: the known highs are
+      in dev tooling (the Vite dev server and build plugins), which `--omit=dev`
+      would skip. Start non-blocking (`continue-on-error`), and make it required
+      once Phase 3 clears the existing highs. → Phase 1 (non-blocking), Phase 3 (required)
+- [ ] **Migrations are never rolled back in CI.** Add `migrate`, then
+      `migrate:rollback`, then `migrate` again, on the CI Postgres, before Phase 2
+      removes index migrations. → Phase 2
+- [ ] **Mutation testing is manual.** Add a PR check that mutates only the classes a
+      PR touches. Decide between Infection and `pest --mutate` first. → Phase 2
+- [ ] **No browser tests.** Add a few Playwright smoke tests for register, 2FA
+      setup, and login. Both deferred 2FA issues only show up in a real browser.
+      The portfolio repo's Playwright skills can be adapted. → Phase 4
+
+- [ ] **Auto-merge for Dependabot minor/patch PRs** (`dependabot/fetch-metadata`
+      plus GitHub auto-merge). Only once CI can be trusted unattended: required
+      checks, Larastan, and the browser smoke tests in place. → Phase 4, optional
+
+Not planned: running Pest both parallel and sequential in CI (doubles backend time
+for a rare bug class), and a CI secret scanner. GitHub's built-in secret scanning and
+push protection are already enabled on this public repo.
 
 ## Phases
 
@@ -122,6 +169,8 @@ suite locally.
 - [x] Local Postgres 16 and a green `composer test` (975 passed, parallel and
       sequential), plus dev migrate and seed
 - [ ] Extend Prettier to `tests/frontend`, in its own formatting commit
+- [ ] CI follow-ups (see "CI enhancements"): require checks with a ruleset, run CI on
+      all PRs, use or drop coverage
 
 ### Phase 1: make the tests trustworthy, then fix bugs
 
@@ -134,18 +183,24 @@ middleware tests survive mutation testing.
 2. Rewrite tests that assert current behavior instead of intended behavior. Start
    with `BlogPostPolicyTest`.
 3. Fix each bug test-first, starting with the 2FA rotation.
+4. CI: add Larastan with a baseline, and a non-blocking dependency audit.
 
 ### Phase 2: prune and split
 
 Done when the pruned code and its tests are gone, the suite is still green, and no
-Vue file is over about 400 lines without a written reason.
+Vue file is over about 400 lines without a written reason. CI checks migration
+rollbacks before any index migration is removed, and mutation testing runs on
+changed classes.
 
 ### Phase 3: upgrades
 
-One major version per PR, with CI green after each: Dependabot PRs and
+One major version per PR, with CI green after each, following the
+`dependency-upgrades` skill: merge the pending grouped minor/patch PRs and run
 `npm audit fix` → Laravel 13 → Inertia 3 (server and client together) → Pest 5 and
-Vitest 5 → Vite 8 and laravel-vite-plugin 3.
+Vitest 5 → Vite 8 and laravel-vite-plugin 3. Once the audit is clean, make the
+dependency-audit CI step required.
 
 ### Phase 4: features
 
-Resume feature work, test-first, through the `work-step` skill.
+Resume feature work, test-first, through the `work-step` skill. Add Playwright smoke
+tests for the auth flows first.

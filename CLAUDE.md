@@ -14,6 +14,8 @@ It lists every known issue and which phase fixes it.
 - `review-tests`: before trusting, rewriting, or deleting existing tests, and after
   `/code-review` on any branch that changes tests.
 - `run-locally`: Postgres, the dev server, and running the app or test suites.
+- `dependency-upgrades`: Dependabot PRs and alerts, `npm audit` / `composer audit`
+  fixes, and major upgrades (Phase 3).
 
 ## Commands
 
