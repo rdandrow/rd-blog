@@ -101,8 +101,24 @@ Each finding lists the phase that fixes it.
 
 ### Dependencies
 
-- [ ] `npm audit`: 16 vulnerabilities (14 high, mostly Vite and tooling).
-      `composer audit`: 1 low (symfony/yaml). → Phase 3
+- [x] **Known vulnerabilities.** Once alerts were on, GitHub listed 146 open (2
+      critical, 59 high), including a critical laravel/framework TokenGuard bypass.
+      Fixed 2026-11-27 ahead of Phase 3, because security updates take priority:
+      - Dependabot security PRs #39–#45 were merged after CI and local checks. #45 is
+        the one out-of-order major (happy-dom 20 → 21, test-only; its only breaking
+        change turns off CSS and iframe loading, which no test uses).
+      - #46 (Vitest) was closed: Dependabot couldn't rebase it after the
+        `dependabot.yml` change, and the refresh below covers it.
+      - `chore/security-lockfile-refresh`: a targeted `composer update` (Laravel
+        12.74, Pest 4.7, PHPUnit 12.5) plus `npm audit fix`, both within existing
+        constraints. `composer audit` is clean. → done
+- [ ] **Two moderate npm findings left**, both build or test tooling. The patched
+      version is outside a range their parent pins exactly, so `npm audit fix` can't
+      reach them and `--force` would *downgrade* the parent:
+      `postcss-selector-parser` (exact pin in `@tailwindcss/typography`) and
+      `minimatch` (via `@vue/test-utils` → `js-beautify` → `editorconfig`). Fix
+      either when a parent release unpins it, or with an npm `overrides` entry if the
+      audit step needs to be required sooner. → Phase 3
 - [x] 5 stale Dependabot PRs (#21, #22, #23, #34, #36): closed 2026-11-27, because
       every version in them had been superseded. → done
 - [x] **Dependabot was effectively off.** Alerts and security updates were disabled,
@@ -195,8 +211,8 @@ changed classes.
 ### Phase 3: upgrades
 
 One major version per PR, with CI green after each, following the
-`dependency-upgrades` skill: merge the pending grouped minor/patch PRs and run
-`npm audit fix` → Laravel 13 → Inertia 3 (server and client together) → Pest 5 and
+`dependency-upgrades` skill: merge the pending grouped minor/patch PRs (the security
+fixes already landed; see Dependencies) → Laravel 13 → Inertia 3 (server and client together) → Pest 5 and
 Vitest 5 → Vite 8 and laravel-vite-plugin 3. Once the audit is clean, make the
 dependency-audit CI step required.
 

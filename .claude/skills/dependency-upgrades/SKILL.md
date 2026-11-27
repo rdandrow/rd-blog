@@ -94,6 +94,26 @@ Update `CLAUDE.md`'s stack line and this skill when a major lands.
 
 ## Watch for
 
+- **Alerts without PRs (yet).** Security PRs arrive in batches. In 2026-11 the first
+  batch was 8 npm PRs and none for Composer's 41 alerts; about 30 more, Composer
+  included, arrived an hour later. For a large backlog, one targeted refresh is
+  faster than merging dozens of single-package PRs, and Dependabot closes the ones
+  it supersedes on its next run. Compare
+  `gh api --paginate 'repos/rdandrow/rd-blog/dependabot/alerts?state=open&per_page=100'`
+  with the open PRs, and cover the gap on a `chore/` branch with a targeted
+  `composer update <pkgs> --with-dependencies` (add a blocking dependency such as
+  Pest by name; don't run a bare `composer update`) and `npm audit fix` (never
+  `--force`, which can downgrade). Confirm with `composer audit --locked` and
+  `npm audit`.
+- **Several security PRs at once.** Lockfile changes to different packages usually
+  merge cleanly, so check `gh pr view <n> --json mergeable` after each merge rather
+  than waiting for a rebase. To verify several PRs locally in one run, merge them
+  into a throwaway branch (`git fetch origin pull/<n>/head:pr-<n>`), and only test
+  them one at a time if the combined run fails.
+- **"The dependabot.yml entry that created this PR has been deleted."** After a
+  `dependabot.yml` change, older PRs can't be rebased. Close them; Dependabot
+  re-creates any that are still needed.
+
 - **Lockfile-only churn.** A PR that rewrites most of `package-lock.json` for a few
   patches usually means a lockfile format or npm version change. Check
   `npm --version` against what generated the lockfile before merging.
