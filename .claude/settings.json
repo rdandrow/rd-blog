@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer test)",
+      "Bash(composer test:sequential)",
+      "Bash(vendor/bin/pest*)",
+      "Bash(vendor/bin/pint --test*)",
+      "Bash(php artisan route:list*)",
+      "Bash(php artisan about*)",
+      "Bash(npm run test:run*)",
+      "Bash(npm run types)",
+      "Bash(npm run lint:check)",
+      "Bash(npm run format:check)",
+      "Bash(npm run build)",
+      "Bash(npx vitest run*)",
+      "Bash(npx vitest list*)",
+      "Bash(npx vue-tsc --noEmit*)",
+      "Bash(npx eslint*)",
+      "Bash(npx prettier --check*)",
+      "Bash(pg_isready*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr view*)",
+      "Bash(gh pr checks*)",
+      "Bash(gh pr diff*)",
+      "Bash(gh run list*)",
+      "Bash(gh run view*)"
+    ]
+  }
+}
