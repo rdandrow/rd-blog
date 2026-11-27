@@ -14,7 +14,7 @@ uses(Tests\TestCase::class, RefreshDatabase::class);
 beforeEach(function () {
     Cache::flush();
     config(['dashboard.cache.enabled' => false]);
-    $this->service = new DashboardMetricsService();
+    $this->service = new DashboardMetricsService;
 });
 
 describe('DashboardMetricsService', function () {
@@ -329,8 +329,8 @@ describe('DashboardMetricsService', function () {
             ->and($high['follower_growth_30d'])->toHaveCount(30)
             ->and($high['top_authors_by_published_posts_30d'])->toHaveCount(2)
             ->and(collect($high['top_authors_by_published_posts_30d'])->pluck('id')->toArray())
-                ->toContain($admin->id)
-                ->toContain($otherAuthor->id);
+            ->toContain($admin->id)
+            ->toContain($otherAuthor->id);
     });
 
     test('backfills missing trend dates with zero counts', function () {

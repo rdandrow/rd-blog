@@ -12,8 +12,7 @@ class BlogPostLikeController extends Controller
 {
     public function __construct(
         private DashboardMetricsService $dashboardMetricsService,
-    ) {
-    }
+    ) {}
 
     /**
      * Toggle like on a blog post.

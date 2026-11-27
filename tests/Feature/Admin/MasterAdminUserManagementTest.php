@@ -8,7 +8,6 @@
  */
 
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 
 // Disable 2FA middleware for these tests to focus on user management
 beforeEach(function () {
@@ -19,32 +18,32 @@ describe('User Management Access Control', function () {
     it('allows master admin to access admin users index', function () {
         $response = $this->actingAs(createTestMasterAdmin())
             ->get(route('admin.users.admins'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('Admin/Users/AdminUsers');
     })->group('user-management', 'access-control', 'authorized');
 
     it('allows master admin to access member users index', function () {
         $response = $this->actingAs(createTestMasterAdmin())
             ->get(route('admin.users.members'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('Admin/Users/MemberUsers');
     })->group('user-management', 'access-control', 'authorized');
 
     it('denies non-master-admin roles from accessing admin users index', function ($userFactory) {
         $user = is_callable($userFactory) ? $userFactory() : $userFactory;
         $response = $this->actingAs($user)->get(route('admin.users.admins'));
-        
+
         expect($response)->toBeForbidden();
     })->with('unauthorized_for_master_admin')
-      ->group('user-management', 'access-control', 'unauthorized');
+        ->group('user-management', 'access-control', 'unauthorized');
 
     it('denies non-master-admin roles from accessing member users index', function ($userFactory) {
         $user = is_callable($userFactory) ? $userFactory() : $userFactory;
         $response = $this->actingAs($user)->get(route('admin.users.members'));
-        
+
         expect($response)->toBeForbidden();
     })->with('unauthorized_for_master_admin')
-      ->group('user-management', 'access-control', 'unauthorized');
+        ->group('user-management', 'access-control', 'unauthorized');
 
     it('redirects unauthenticated users from admin users index', function () {
         expect($this->get(route('admin.users.admins')))->toRedirectToLogin();
@@ -61,15 +60,15 @@ describe('Admin Users Listing', function () {
         $admin1 = createTestAdmin(['name' => 'Admin One', 'email' => 'admin1@test.com']);
         $admin2 = createTestAdmin(['name' => 'Admin Two', 'email' => 'admin2@test.com']);
         $member = createTestMember(['name' => 'Member One']); // Should not appear
-        
+
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
-        
+
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Users/AdminUsers')
             ->has('admins.data', 3) // masterAdmin + 2 admins (paginated data)
         );
-        
+
         // Verify all admin users are present (regardless of order)
         $adminNames = $response->viewData('page')['props']['admins']['data'];
         $names = collect($adminNames)->pluck('name')->toArray();
@@ -82,9 +81,9 @@ describe('Admin Users Listing', function () {
         $masterAdmin = createTestMasterAdmin();
         createTestMember(['name' => 'Member One']);
         createTestMember(['name' => 'Member Two']);
-        
+
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
-        
+
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->has('admins.data', 1) // Only the master admin (paginated data)
@@ -94,32 +93,32 @@ describe('Admin Users Listing', function () {
     it('orders admin users by creation date descending', function () {
         // Create master admin with explicit older timestamp
         $masterAdmin = User::factory()->masterAdmin()->create([
-            'created_at' => now()->subDays(10)
+            'created_at' => now()->subDays(10),
         ]);
-        
+
         // Create with explicit timestamps - no sleep needed, just set created_at directly
         $admin1 = User::factory()->admin()->create([
             'name' => 'Admin One',
-            'created_at' => now()->subDays(2)
+            'created_at' => now()->subDays(2),
         ]);
-        
+
         $admin2 = User::factory()->admin()->create([
             'name' => 'Admin Two',
-            'created_at' => now()->subDay()
+            'created_at' => now()->subDay(),
         ]);
-        
+
         $admin3 = User::factory()->admin()->create([
             'name' => 'Admin Three',
-            'created_at' => now()
+            'created_at' => now(),
         ]);
-        
+
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.admins'));
-        
+
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->has('admins.data', 4) // 3 admins + masterAdmin (paginated data)
         );
-        
+
         // Verify most recent is first
         $admins = $response->viewData('page')['props']['admins']['data'];
         expect($admins[0]['name'])->toBe('Admin Three');
@@ -132,15 +131,15 @@ describe('Member Users Listing', function () {
         $member1 = createTestMember(['name' => 'Member One', 'email' => 'member1@test.com']);
         $member2 = createTestMember(['name' => 'Member Two', 'email' => 'member2@test.com']);
         $admin = createTestAdmin(['name' => 'Admin One']); // Should not appear
-        
+
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.members'));
-        
+
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->component('Admin/Users/MemberUsers')
             ->has('members.data', 2) // paginated data
         );
-        
+
         // Verify both members are present
         $members = $response->viewData('page')['props']['members']['data'];
         $names = collect($members)->pluck('name')->toArray();
@@ -152,9 +151,9 @@ describe('Member Users Listing', function () {
         $masterAdmin = createTestMasterAdmin();
         createTestAdmin(['name' => 'Admin One']);
         createTestAdmin(['name' => 'Admin Two']);
-        
+
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.members'));
-        
+
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->has('members.data', 0) // paginated data
@@ -166,9 +165,9 @@ describe('Member Users Listing', function () {
         $member1 = createTestMember(['name' => 'Member One', 'created_at' => now()->subDays(2)]);
         $member2 = createTestMember(['name' => 'Member Two', 'created_at' => now()->subDay()]);
         $member3 = createTestMember(['name' => 'Member Three', 'created_at' => now()]);
-        
+
         $response = $this->actingAs($masterAdmin)->get(route('admin.users.members'));
-        
+
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->where('members.data.0.name', 'Member Three') // Most recent first (paginated data)
@@ -181,7 +180,7 @@ describe('Member Users Listing', function () {
 describe('User Creation', function () {
     it('allows master admin to create users with any role', function ($role) {
         $masterAdmin = createTestMasterAdmin();
-        
+
         $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
             'name' => "New {$role}",
             'email' => "new{$role}@test.com",
@@ -194,14 +193,14 @@ describe('User Creation', function () {
             'email' => "new{$role}@test.com",
             'role' => $role,
         ]);
-        
+
         $user = User::where('email', "new{$role}@test.com")->first();
     })->with('valid_user_roles')
-      ->group('user-management', 'creation', 'authorized');
+        ->group('user-management', 'creation', 'authorized');
 
     it('automatically verifies email for created users', function () {
         $masterAdmin = createTestMasterAdmin();
-        
+
         $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
             'name' => 'New User',
             'email' => 'newuser@test.com',
@@ -217,7 +216,7 @@ describe('User Creation', function () {
 
     it('denies non-master-admin roles from creating users', function ($userFactory) {
         $user = is_callable($userFactory) ? $userFactory() : $userFactory;
-        
+
         $response = $this->actingAs($user)->post(route('admin.users.store'), [
             'name' => 'New Member',
             'email' => 'newmember@test.com',
@@ -231,7 +230,7 @@ describe('User Creation', function () {
             'email' => 'newmember@test.com',
         ]);
     })->with('unauthorized_for_master_admin')
-      ->group('user-management', 'creation', 'unauthorized');
+        ->group('user-management', 'creation', 'unauthorized');
 
     it('redirects unauthenticated users from user creation', function () {
         $response = $this->post(route('admin.users.store'), [
@@ -299,7 +298,7 @@ describe('User Creation Validation', function () {
 
     it('requires unique email', function () {
         $existingUser = createTestMember(['email' => 'existing@test.com']);
-        
+
         $response = authenticatedPost($this->masterAdmin, route('admin.users.store'), [
             'name' => 'New User',
             'email' => 'existing@test.com', // Duplicate email - must be unique
@@ -324,7 +323,7 @@ describe('Role Updates', function () {
 
     it('allows master admin to promote member to admin', function () {
         $member = createTestMember();
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->patch(route('admin.users.updateRole', $member), ['role' => 'admin']);
 
@@ -334,7 +333,7 @@ describe('Role Updates', function () {
 
     it('allows master admin to promote member to master admin', function () {
         $member = createTestMember();
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->patch(route('admin.users.updateRole', $member), ['role' => 'master_admin']);
 
@@ -344,7 +343,7 @@ describe('Role Updates', function () {
 
     it('allows master admin to promote admin to master admin', function () {
         $admin = createTestAdmin();
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->patch(route('admin.users.updateRole', $admin), ['role' => 'master_admin']);
 
@@ -354,7 +353,7 @@ describe('Role Updates', function () {
 
     it('allows master admin to demote admin to member', function () {
         $admin = createTestAdmin();
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->patch(route('admin.users.updateRole', $admin), ['role' => 'member']);
 
@@ -364,7 +363,7 @@ describe('Role Updates', function () {
 
     it('allows master admin to demote master admin to admin when multiple exist', function () {
         $masterAdmin2 = createTestMasterAdmin(['email' => 'ma2@test.com']);
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->patch(route('admin.users.updateRole', $masterAdmin2), ['role' => 'admin']);
 
@@ -374,7 +373,7 @@ describe('Role Updates', function () {
 
     it('allows master admin to demote master admin to member when multiple exist', function () {
         $masterAdmin2 = createTestMasterAdmin(['email' => 'ma2@test.com']);
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->patch(route('admin.users.updateRole', $masterAdmin2), ['role' => 'member']);
 
@@ -403,18 +402,18 @@ describe('Role Updates', function () {
     it('denies non-master-admin roles from updating user roles', function ($userFactory) {
         $actor = is_callable($userFactory) ? $userFactory() : $userFactory;
         $targetUser = createTestMember(['email' => 'target@test.com']);
-        
+
         $response = $this->actingAs($actor)
             ->patch(route('admin.users.updateRole', $targetUser), ['role' => 'admin']);
 
         expect($response)->toBeForbidden();
         expect($targetUser->fresh()->role)->toBe('member');
     })->with('unauthorized_for_master_admin')
-      ->group('user-management', 'role-updates', 'unauthorized');
+        ->group('user-management', 'role-updates', 'unauthorized');
 
     it('redirects unauthenticated users from role updates', function () {
         $member = createTestMember();
-        
+
         $response = $this->patch(route('admin.users.updateRole', $member), ['role' => 'admin']);
 
         expect($response)->toRedirectToLogin();
@@ -450,7 +449,7 @@ describe('User Deletion', function () {
 
     it('allows master admin to delete member users', function () {
         $member = createTestMember();
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->delete(route('admin.users.destroy', $member));
 
@@ -460,7 +459,7 @@ describe('User Deletion', function () {
 
     it('allows master admin to delete admin users', function () {
         $admin = createTestAdmin();
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->delete(route('admin.users.destroy', $admin));
 
@@ -470,7 +469,7 @@ describe('User Deletion', function () {
 
     it('allows master admin to delete other master admin users when multiple exist', function () {
         $masterAdmin2 = createTestMasterAdmin(['email' => 'ma2@test.com']);
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->delete(route('admin.users.destroy', $masterAdmin2));
 
@@ -489,7 +488,7 @@ describe('User Deletion', function () {
 
     it('prevents master admin from deleting themselves', function () {
         $masterAdmin2 = createTestMasterAdmin(['email' => 'ma2@test.com']); // Ensure not last
-        
+
         $response = $this->actingAs($this->masterAdmin)
             ->delete(route('admin.users.destroy', $this->masterAdmin));
 
@@ -501,18 +500,18 @@ describe('User Deletion', function () {
     it('denies non-master-admin roles from deleting users', function ($userFactory) {
         $actor = is_callable($userFactory) ? $userFactory() : $userFactory;
         $targetUser = createTestMember(['email' => 'target@test.com']);
-        
+
         $response = $this->actingAs($actor)
             ->delete(route('admin.users.destroy', $targetUser));
 
         expect($response)->toBeForbidden();
         $this->assertDatabaseHas('users', ['id' => $targetUser->id]);
     })->with('unauthorized_for_master_admin')
-      ->group('user-management', 'deletion', 'unauthorized');
+        ->group('user-management', 'deletion', 'unauthorized');
 
     it('redirects unauthenticated users from user deletion', function () {
         $member = createTestMember();
-        
+
         $response = $this->delete(route('admin.users.destroy', $member));
 
         expect($response)->toRedirectToLogin();
@@ -555,8 +554,8 @@ describe('Edge Cases and Complex Scenarios', function () {
         // Verify correct role distribution
         $admins = $response->viewData('page')['props']['admins']['data'];
         $roles = collect($admins)->pluck('role')->toArray();
-        $masterAdminCount = collect($roles)->filter(fn($role) => $role === 'master_admin')->count();
-        $adminCount = collect($roles)->filter(fn($role) => $role === 'admin')->count();
+        $masterAdminCount = collect($roles)->filter(fn ($role) => $role === 'master_admin')->count();
+        $adminCount = collect($roles)->filter(fn ($role) => $role === 'admin')->count();
 
         expect($masterAdminCount)->toBe(2)
             ->and($adminCount)->toBe(2);
@@ -679,7 +678,7 @@ describe('Error Handling and Transactions', function () {
 
     it('provides user feedback when invitation sending fails', function () {
         $masterAdmin = createTestMasterAdmin();
-        
+
         // This test verifies the error message format without actually failing
         // Real failure scenarios would require mocking the mail system
         $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
@@ -696,7 +695,7 @@ describe('Error Handling and Transactions', function () {
 describe('Rate Limiting', function () {
     it('rate limits user creation attempts', function () {
         $masterAdmin = createTestMasterAdmin();
-        
+
         // Make 21 rapid requests (limit is 20 per minute)
         for ($i = 1; $i <= 21; $i++) {
             $response = $this->actingAs($masterAdmin)->post(route('admin.users.store'), [
@@ -704,7 +703,7 @@ describe('Rate Limiting', function () {
                 'email' => "user{$i}@test.com",
                 'role' => 'member',
             ]);
-            
+
             if ($i === 21) {
                 // 21st request should be rate limited
                 expect($response->status())->toBe(429);
@@ -719,12 +718,12 @@ describe('Rate Limiting', function () {
             'invitation_sent_at' => now()->subHours(1),
             'invitation_accepted_at' => null,
         ]);
-        
+
         // Make 21 rapid requests (limit is 20 per minute)
         for ($i = 1; $i <= 21; $i++) {
             $response = $this->actingAs($masterAdmin)
                 ->post(route('admin.users.resendInvitation', $user));
-            
+
             if ($i === 21) {
                 // 21st request should be rate limited
                 expect($response->status())->toBe(429);
@@ -732,4 +731,3 @@ describe('Rate Limiting', function () {
         }
     })->group('user-management', 'rate-limiting');
 });
-

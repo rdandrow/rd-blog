@@ -10,7 +10,7 @@ class ResetQueryMonitoring
 {
     /**
      * Reset query monitoring counters at the start of each request.
-     * 
+     *
      * This ensures clean state for N+1 detection, especially important in:
      * - Laravel Octane where request objects are reused
      * - Long-running processes where state might persist

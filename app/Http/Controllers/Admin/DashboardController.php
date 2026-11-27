@@ -12,8 +12,7 @@ class DashboardController extends Controller
 {
     public function __construct(
         private DashboardMetricsService $dashboardMetricsService,
-    ) {
-    }
+    ) {}
 
     /**
      * Display the admin dashboard with Section 1A metrics.

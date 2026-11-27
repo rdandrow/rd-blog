@@ -181,14 +181,14 @@ describe('Unfollowing Authors', function () {
         $author = createTestAdmin();
 
         $member->following()->attach($author->id);
-        
+
         $this->assertDatabaseHas('user_follows', [
             'follower_id' => $member->id,
             'following_id' => $author->id,
         ]);
 
         $this->actingAs($member)->post(route('user.follow.toggle', $author->id));
-        
+
         $this->assertDatabaseMissing('user_follows', [
             'follower_id' => $member->id,
             'following_id' => $author->id,
@@ -203,7 +203,7 @@ describe('Follow Database Integrity', function () {
 
         $member->following()->attach($author->id);
 
-        expect(fn() => $member->following()->attach($author->id))
+        expect(fn () => $member->following()->attach($author->id))
             ->toThrow(\Illuminate\Database\QueryException::class);
     })->group('follows', 'database', 'constraints');
 
@@ -229,7 +229,7 @@ describe('Follow Relationships', function () {
         $member->following()->attach([$author1->id, $author2->id]);
 
         $following = $member->following;
-        
+
         expect($following)->toHaveCount(2)
             ->and($following->pluck('id')->toArray())->toContain($author1->id, $author2->id);
     })->group('follows', 'relationships');
@@ -243,7 +243,7 @@ describe('Follow Relationships', function () {
         $member2->following()->attach($author->id);
 
         $followers = $author->followers;
-        
+
         expect($followers)->toHaveCount(2)
             ->and($followers->pluck('id')->toArray())->toContain($member1->id, $member2->id);
     })->group('follows', 'relationships');
@@ -268,7 +268,7 @@ describe('Follow Relationships', function () {
         $member->following()->attach($author->id);
 
         $followedAuthor = $member->following()->first();
-        
+
         expect($followedAuthor->name)->toBe('Test Author')
             ->and($followedAuthor->email)->toBe('author@test.com')
             ->and($followedAuthor->role)->toBe('admin');
@@ -284,7 +284,7 @@ describe('Follow Relationships', function () {
         $member->following()->attach($author->id);
 
         $follower = $author->followers()->first();
-        
+
         expect($follower->name)->toBe('Test Member')
             ->and($follower->email)->toBe('member@test.com')
             ->and($follower->role)->toBe('member');
@@ -376,26 +376,26 @@ describe('Follow Queries', function () {
     it('can query follower count for an author', function () {
         $author = User::factory()->admin()->create();
         $members = User::factory()->count(5)->create();
-        
+
         foreach ($members as $member) {
             $member->following()->attach($author->id);
         }
 
         $followerCount = $author->followers()->count();
-        
+
         expect($followerCount)->toBe(5);
     })->group('follows', 'queries');
 
     it('can query following count for a user', function () {
         $member = User::factory()->create();
         $authors = User::factory()->admin()->count(3)->create();
-        
+
         foreach ($authors as $author) {
             $member->following()->attach($author->id);
         }
 
         $followingCount = $member->following()->count();
-        
+
         expect($followingCount)->toBe(3);
     })->group('follows', 'queries');
 

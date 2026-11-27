@@ -15,7 +15,7 @@ class EnsureUserIsMasterAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!$request->user() || !$request->user()->isMasterAdmin()) {
+        if (! $request->user() || ! $request->user()->isMasterAdmin()) {
             abort(403, 'Access denied. Master admin privileges required.');
         }
 

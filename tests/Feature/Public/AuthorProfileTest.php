@@ -22,8 +22,8 @@ describe('Viewing Author Profiles', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->has('author')
-                ->where('author.name', 'Test Author')
+            ->has('author')
+            ->where('author.name', 'Test Author')
             );
     })->group('author-profile', 'public', 'guest');
 
@@ -62,7 +62,7 @@ describe('Viewing Author Profiles', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('author.name', 'Master Admin')
+            ->where('author.name', 'Master Admin')
             );
     })->group('author-profile', 'public');
 
@@ -85,7 +85,7 @@ describe('Viewing Author Profiles', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('author.name', 'Other Author')
+            ->where('author.name', 'Other Author')
             );
     })->group('author-profile', 'authenticated');
 });
@@ -128,7 +128,7 @@ describe('Profile Data', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('author.bio', null)
+            ->where('author.bio', null)
             );
     })->group('author-profile', 'edge-cases');
 
@@ -142,7 +142,7 @@ describe('Profile Data', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('author.website', null)
+            ->where('author.website', null)
             );
     })->group('author-profile', 'edge-cases');
 
@@ -218,10 +218,10 @@ describe('Author Statistics', function () {
 
     it('displays published posts count', function () {
         $author = createTestAdmin();
-        
+
         // Create published posts
         BlogPost::factory()->published()->count(7)->create(['user_id' => $author->id]);
-        
+
         // Create draft posts (should not be counted)
         BlogPost::factory()->draft()->count(3)->create(['user_id' => $author->id]);
 
@@ -244,7 +244,7 @@ describe('Author Statistics', function () {
 
     it('only counts published posts not drafts', function () {
         $author = createTestAdmin();
-        
+
         // Create only draft posts
         BlogPost::factory()->draft()->count(5)->create(['user_id' => $author->id]);
 
@@ -257,19 +257,19 @@ describe('Author Statistics', function () {
 
     it('calculates statistics accurately with mixed activity', function () {
         $author = User::factory()->admin()->create();
-        
+
         // Add followers
         $followers = User::factory()->count(3)->create();
         foreach ($followers as $follower) {
             $follower->following()->attach($author->id);
         }
-        
+
         // Author follows others
         $otherAuthors = User::factory()->admin()->count(2)->create();
         foreach ($otherAuthors as $otherAuthor) {
             $author->following()->attach($otherAuthor->id);
         }
-        
+
         // Create posts
         BlogPost::factory()->published()->count(5)->create(['user_id' => $author->id]);
         BlogPost::factory()->draft()->count(2)->create(['user_id' => $author->id]);
@@ -287,7 +287,7 @@ describe('Author Statistics', function () {
 describe('Author Blog Posts', function () {
     it('displays recent published posts', function () {
         $author = createTestAdmin();
-        
+
         $post = BlogPost::factory()->published()->create([
             'user_id' => $author->id,
             'title' => 'Test Blog Post',
@@ -307,7 +307,7 @@ describe('Author Blog Posts', function () {
 
     it('displays post metadata', function () {
         $author = createTestAdmin();
-        
+
         $post = BlogPost::factory()->published()->create([
             'user_id' => $author->id,
             'tags' => ['Laravel', 'PHP'],
@@ -326,7 +326,7 @@ describe('Author Blog Posts', function () {
 
     it('limits posts to most recent 10', function () {
         $author = createTestAdmin();
-        
+
         // Create 15 published posts
         BlogPost::factory()->published()->count(15)->create(['user_id' => $author->id]);
 
@@ -339,14 +339,14 @@ describe('Author Blog Posts', function () {
 
     it('shows posts in latest order', function () {
         $author = createTestAdmin();
-        
+
         // Create posts with different timestamps
         $oldPost = BlogPost::factory()->published()->create([
             'user_id' => $author->id,
             'title' => 'Old Post',
             'created_at' => now()->subDays(10),
         ]);
-        
+
         $newPost = BlogPost::factory()->published()->create([
             'user_id' => $author->id,
             'title' => 'New Post',
@@ -364,12 +364,12 @@ describe('Author Blog Posts', function () {
 
     it('excludes draft posts from display', function () {
         $author = createTestAdmin();
-        
+
         BlogPost::factory()->published()->create([
             'user_id' => $author->id,
             'title' => 'Published Post',
         ]);
-        
+
         BlogPost::factory()->draft()->create([
             'user_id' => $author->id,
             'title' => 'Draft Post',
@@ -395,7 +395,7 @@ describe('Author Blog Posts', function () {
 
     it('handles posts with no tags', function () {
         $author = createTestAdmin();
-        
+
         BlogPost::factory()->published()->create([
             'user_id' => $author->id,
             'tags' => [],
@@ -406,14 +406,14 @@ describe('Author Blog Posts', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->has('posts', 1)
-                ->where('posts.0.tags', [])
+            ->has('posts', 1)
+            ->where('posts.0.tags', [])
             );
     })->group('author-profile', 'posts', 'edge-cases');
 
     it('loads efficiently with many posts', function () {
         $author = createTestAdmin();
-        
+
         // Create 50 posts
         BlogPost::factory()->published()->count(50)->create(['user_id' => $author->id]);
 
@@ -424,8 +424,8 @@ describe('Author Blog Posts', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->has('posts', 10)
-                ->where('author.posts_count', 10) // Count of loaded posts (limited to 10)
+            ->has('posts', 10)
+            ->where('author.posts_count', 10) // Count of loaded posts (limited to 10)
             );
     })->group('author-profile', 'posts', 'edge-cases');
 });
@@ -455,7 +455,7 @@ describe('Following Status', function () {
     it('shows is_following as true when user is following author', function () {
         $member = createTestMember();
         $author = createTestAdmin();
-        
+
         $member->following()->attach($author->id);
 
         $response = $this->actingAs($member)->get(route('author.profile', $author->id));
@@ -503,7 +503,7 @@ describe('Edge Cases', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('author.name', "O'Brien & Sons")
+            ->where('author.name', "O'Brien & Sons")
             );
     })->group('author-profile', 'edge-cases', 'validation');
 
@@ -518,7 +518,7 @@ describe('Edge Cases', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('author.bio', $longBio)
+            ->where('author.bio', $longBio)
             );
     })->group('author-profile', 'edge-cases', 'validation');
 
@@ -532,7 +532,7 @@ describe('Edge Cases', function () {
         expect($response)
             ->toBeSuccessfulInertiaResponse('AuthorProfile')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('author.bio', '🚀 Developer | ❤️ Code | 🌍 World')
+            ->where('author.bio', '🚀 Developer | ❤️ Code | 🌍 World')
             );
     })->group('author-profile', 'edge-cases', 'validation');
 

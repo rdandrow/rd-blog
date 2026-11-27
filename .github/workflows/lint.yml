@@ -10,8 +10,10 @@ on:
       - develop
       - main
 
+# Check-only: every step below fails the build instead of rewriting files.
+# Fix locally with `vendor/bin/pint`, `npm run format`, and `npm run lint`.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   quality:
@@ -24,22 +26,33 @@ jobs:
         with:
           php-version: '8.4'
 
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Install Dependencies
         run: |
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-          npm install
+          npm ci
 
-      - name: Run Pint
-        run: vendor/bin/pint
+      - name: Pint (PHP style)
+        run: vendor/bin/pint --test
 
-      - name: Format Frontend
-        run: npm run format
+      - name: Prettier (frontend style)
+        run: npm run format:check
 
-      - name: Lint Frontend
-        run: npm run lint
+      - name: ESLint
+        run: npm run lint:check
 
-      # - name: Commit Changes
-      #   uses: stefanzweifel/git-auto-commit-action@v5
-      #   with:
-      #     commit_message: fix code style
-      #     commit_options: '--no-verify'
+      # vue-tsc needs the gitignored Wayfinder output (resources/js/{actions,routes,wayfinder}).
+      # Locally the Vite plugin generates it; here nothing runs Vite, so generate it directly.
+      # The flags must match the wayfinder() options in vite.config.ts.
+      - name: Generate Wayfinder types
+        run: |
+          cp .env.example .env
+          php artisan wayfinder:generate --with-form
+
+      - name: Type check
+        run: npm run types

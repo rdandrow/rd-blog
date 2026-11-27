@@ -11,8 +11,7 @@ class UserFollowController extends Controller
 {
     public function __construct(
         private DashboardMetricsService $dashboardMetricsService,
-    ) {
-    }
+    ) {}
 
     /**
      * Toggle follow on a user.
@@ -28,7 +27,7 @@ class UserFollowController extends Controller
         }
 
         // Only allow following admin users (authors)
-        if (!$userToFollow->isAdmin()) {
+        if (! $userToFollow->isAdmin()) {
             return back()->with('error', 'You can only follow authors');
         }
 

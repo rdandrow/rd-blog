@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use App\Models\BlogPost;
 
 uses(Tests\TestCase::class);
 
@@ -72,44 +71,44 @@ describe('role helper methods', function () {
 describe('relationship methods', function () {
     it('has following relationship', function () {
         // Arrange: Create a user in-memory
-        $user = new User();
-        
+        $user = new User;
+
         // Act: Get the following relationship
         $relationship = $user->following();
-        
+
         // Assert: Should return a BelongsToMany relationship
         expect($relationship)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
     });
 
     it('has followers relationship', function () {
         // Arrange: Create a user in-memory
-        $user = new User();
-        
+        $user = new User;
+
         // Act: Get the followers relationship
         $relationship = $user->followers();
-        
+
         // Assert: Should return a BelongsToMany relationship
         expect($relationship)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
     });
 
     it('has blog posts relationship', function () {
         // Arrange: Create a user in-memory
-        $user = new User();
-        
+        $user = new User;
+
         // Act: Get the blog posts relationship
         $relationship = $user->blogPosts();
-        
+
         // Assert: Should return a HasMany relationship
         expect($relationship)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
     });
 
     it('following relationship uses correct pivot table and columns', function () {
         // Arrange: Create a user in-memory
-        $user = new User();
-        
+        $user = new User;
+
         // Act: Get the following relationship
         $relationship = $user->following();
-        
+
         // Assert: Should use correct pivot table and keys
         expect($relationship->getTable())->toBe('user_follows')
             ->and($relationship->getForeignPivotKeyName())->toBe('follower_id')
@@ -118,11 +117,11 @@ describe('relationship methods', function () {
 
     it('followers relationship uses correct pivot table and columns', function () {
         // Arrange: Create a user in-memory
-        $user = new User();
-        
+        $user = new User;
+
         // Act: Get the followers relationship
         $relationship = $user->followers();
-        
+
         // Assert: Should use correct pivot table and keys
         expect($relationship->getTable())->toBe('user_follows')
             ->and($relationship->getForeignPivotKeyName())->toBe('following_id')
@@ -136,19 +135,19 @@ describe('role combinations', function () {
         $masterAdmin = new User(['role' => 'master_admin']);
         $admin = new User(['role' => 'admin']);
         $member = new User(['role' => 'member']);
-        
+
         // Assert: Master admin checks
         expect($masterAdmin->isMasterAdmin())->toBeTrue();
         expect($masterAdmin->isAdmin())->toBeTrue();
         expect($masterAdmin->isRegularAdmin())->toBeFalse();
         expect($masterAdmin->isMember())->toBeFalse();
-        
+
         // Assert: Admin checks
         expect($admin->isMasterAdmin())->toBeFalse();
         expect($admin->isAdmin())->toBeTrue();
         expect($admin->isRegularAdmin())->toBeTrue();
         expect($admin->isMember())->toBeFalse();
-        
+
         // Assert: Member checks
         expect($member->isMasterAdmin())->toBeFalse();
         expect($member->isAdmin())->toBeFalse();
@@ -166,10 +165,10 @@ describe('factory defaults', function () {
     it('creates users with remember_token as null by default', function () {
         // Arrange & Act: Create a user using the factory
         $user = User::factory()->create();
-        
+
         // Assert: remember_token should be null (not set until user uses "Remember Me")
         expect($user->remember_token)->toBeNull();
-        
+
         // Cleanup
         $user->delete();
     });
@@ -177,13 +176,13 @@ describe('factory defaults', function () {
     it('creates users without two-factor authentication by default', function () {
         // Arrange & Act: Create a user using the factory
         $user = User::factory()->create();
-        
+
         // Assert: 2FA fields should be null (not set until user enables 2FA)
         expect($user->two_factor_secret)->toBeNull()
             ->and($user->two_factor_recovery_codes)->toBeNull()
             ->and($user->two_factor_confirmed_at)->toBeNull()
             ->and($user->hasEnabledTwoFactorAuthentication())->toBeFalse();
-        
+
         // Cleanup
         $user->delete();
     });
@@ -191,10 +190,10 @@ describe('factory defaults', function () {
     it('creates users with email verified by default', function () {
         // Arrange & Act: Create a user using the factory
         $user = User::factory()->create();
-        
+
         // Assert: email_verified_at should be set (common test scenario)
         expect($user->email_verified_at)->not->toBeNull();
-        
+
         // Cleanup
         $user->delete();
     });
@@ -202,13 +201,13 @@ describe('factory defaults', function () {
     it('can create users with two-factor authentication when explicitly requested', function () {
         // Arrange & Act: Create a user with 2FA enabled
         $user = User::factory()->withTwoFactor()->create();
-        
+
         // Assert: 2FA fields should be set
         expect($user->two_factor_secret)->not->toBeNull()
             ->and($user->two_factor_recovery_codes)->not->toBeNull()
             ->and($user->two_factor_confirmed_at)->not->toBeNull()
             ->and($user->hasEnabledTwoFactorAuthentication())->toBeTrue();
-        
+
         // Cleanup
         $user->delete();
     });

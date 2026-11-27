@@ -39,6 +39,7 @@ class ExplainQuery extends Command
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
             $this->error('This command only works with PostgreSQL databases.');
+
             return self::FAILURE;
         }
 
@@ -70,9 +71,10 @@ class ExplainQuery extends Command
 
             return self::SUCCESS;
         } catch (\Exception $e) {
-            $this->error('Failed to analyze query: ' . $e->getMessage());
+            $this->error('Failed to analyze query: '.$e->getMessage());
             $this->newLine();
-            $this->warn('Query: ' . substr($query, 0, 200) . '...');
+            $this->warn('Query: '.substr($query, 0, 200).'...');
+
             return self::FAILURE;
         }
     }
@@ -85,11 +87,13 @@ class ExplainQuery extends Command
         if ($file = $this->option('file')) {
             if (! file_exists($file)) {
                 $this->error("File not found: {$file}");
+
                 return null;
             }
 
             if (! is_file($file) || ! is_readable($file)) {
                 $this->error("Unable to read file: {$file}");
+
                 return null;
             }
 
@@ -97,6 +101,7 @@ class ExplainQuery extends Command
             $query = @file_get_contents($file);
             if ($query === false) {
                 $this->error("Unable to read file: {$file}");
+
                 return null;
             }
 
@@ -112,6 +117,7 @@ class ExplainQuery extends Command
             $this->line('Examples:');
             $this->line('  php artisan db:explain "SELECT * FROM blog_posts WHERE is_published = true"');
             $this->line('  php artisan db:explain --file=query.sql');
+
             return null;
         }
 
@@ -202,6 +208,7 @@ class ExplainQuery extends Command
                 if ($char === '/' && $next === '*') {
                     $blockCommentDepth++;
                     $i++;
+
                     continue;
                 }
 
@@ -251,22 +258,26 @@ class ExplainQuery extends Command
             if ($char === '-' && $next === '-') {
                 $lineComment = true;
                 $i++;
+
                 continue;
             }
 
             if ($char === '/' && $next === '*') {
                 $blockCommentDepth = 1;
                 $i++;
+
                 continue;
             }
 
             if ($char === "'") {
                 $inSingleQuote = true;
+
                 continue;
             }
 
             if ($char === '"') {
                 $inDoubleQuote = true;
+
                 continue;
             }
 
@@ -276,6 +287,7 @@ class ExplainQuery extends Command
                 if ($tag !== null) {
                     $dollarQuoteTag = $tag;
                     $i += strlen($tag) - 1;
+
                     continue;
                 }
             }
@@ -308,6 +320,7 @@ class ExplainQuery extends Command
                 while ($i < $length && $sql[$i] !== "\n" && $sql[$i] !== "\r") {
                     $i++;
                 }
+
                 continue;
             }
 
@@ -322,12 +335,14 @@ class ExplainQuery extends Command
                     if ($current === '/' && $following === '*') {
                         $depth++;
                         $i += 2;
+
                         continue;
                     }
 
                     if ($current === '*' && $following === '/') {
                         $depth--;
                         $i += 2;
+
                         continue;
                     }
 
@@ -335,6 +350,7 @@ class ExplainQuery extends Command
                 }
 
                 $i--;
+
                 continue;
             }
 
@@ -356,7 +372,7 @@ class ExplainQuery extends Command
             return null;
         }
 
-        return '$' . ($matches[1] ?? '') . '$';
+        return '$'.($matches[1] ?? '').'$';
     }
 
     /**
@@ -416,7 +432,7 @@ class ExplainQuery extends Command
         }
 
         // Include COSTS by default unless --no-costs flag is set
-        if (!$this->option('no-costs')) {
+        if (! $this->option('no-costs')) {
             $options[] = 'COSTS';
         }
 
@@ -458,19 +474,19 @@ class ExplainQuery extends Command
 
             // Extract and highlight key information
             if (str_contains($line, 'Seq Scan')) {
-                $this->line('<fg=yellow>' . $line . '</>');
+                $this->line('<fg=yellow>'.$line.'</>');
             } elseif (str_contains($line, 'Index')) {
-                $this->line('<fg=green>' . $line . '</>');
+                $this->line('<fg=green>'.$line.'</>');
             } elseif (str_contains($line, 'cost=')) {
-                $this->line('<fg=blue>' . $line . '</>');
+                $this->line('<fg=blue>'.$line.'</>');
             } elseif (str_contains($line, 'Planning Time:')) {
                 preg_match('/Planning Time: ([\d.]+)/', $line, $matches);
                 $planningTime = $matches[1] ?? null;
-                $this->line('<fg=magenta>' . $line . '</>');
+                $this->line('<fg=magenta>'.$line.'</>');
             } elseif (str_contains($line, 'Execution Time:')) {
                 preg_match('/Execution Time: ([\d.]+)/', $line, $matches);
                 $executionTime = $matches[1] ?? null;
-                $this->line('<fg=magenta>' . $line . '</>');
+                $this->line('<fg=magenta>'.$line.'</>');
             } else {
                 $this->line($line);
             }
@@ -529,7 +545,7 @@ class ExplainQuery extends Command
         if ($executionTime && $planningTime) {
             $total = $executionTime + $planningTime;
             $color = $this->getTimingColor($total);
-            $this->line("<fg={$color}>Total Time: " . number_format($total, 3) . " ms</>");
+            $this->line("<fg={$color}>Total Time: ".number_format($total, 3).' ms</>');
         }
 
         $this->newLine();
@@ -550,6 +566,7 @@ class ExplainQuery extends Command
         if ($timeMs < 500) {
             return 'red';
         }
+
         return 'magenta';
     }
 
@@ -583,7 +600,7 @@ class ExplainQuery extends Command
         // Check for sequential scans
         if (preg_match('/Seq Scan on (\w+)/', $planText, $matches)) {
             $suggestions[] = "🔍 Sequential scan detected on table '{$matches[1]}'";
-            $suggestions[] = "   Consider adding an index on the filtered columns";
+            $suggestions[] = '   Consider adding an index on the filtered columns';
         }
 
         // Check for missing indexes
@@ -596,7 +613,7 @@ class ExplainQuery extends Command
         if (preg_match('/cost=[\d.]+\.\.([\d.]+)/', $planText, $matches)) {
             $cost = (float) $matches[1];
             if ($cost > 10000) {
-                $suggestions[] = '💰 High query cost detected (' . number_format($cost, 2) . ')';
+                $suggestions[] = '💰 High query cost detected ('.number_format($cost, 2).')';
                 $suggestions[] = '   Review the query plan for optimization opportunities';
             }
         }
@@ -611,7 +628,7 @@ class ExplainQuery extends Command
         if (preg_match('/Nested Loop.*rows=(\d+)/', $planText, $matches)) {
             $rows = (int) $matches[1];
             if ($rows > 10000) {
-                $suggestions[] = '🔄 Nested loop with many rows (' . number_format($rows) . ')';
+                $suggestions[] = '🔄 Nested loop with many rows ('.number_format($rows).')';
                 $suggestions[] = '   Consider using a hash join by adding appropriate indexes';
             }
         }
@@ -619,6 +636,7 @@ class ExplainQuery extends Command
         if (empty($suggestions)) {
             $this->newLine();
             $this->info('✓ No obvious optimization opportunities detected');
+
             return;
         }
 

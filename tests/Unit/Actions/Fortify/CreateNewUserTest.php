@@ -13,7 +13,6 @@ uses(Tests\TestCase::class);
  * @group user-creation
  * @group unit
  */
-
 beforeEach(function () {
     // Default validator: pass-through (no-op)
     $this->validatorPass = function (array $input): void {};
@@ -21,13 +20,14 @@ beforeEach(function () {
     // In-memory persister that simulates Eloquent create without DB
     $this->persister = function (array $data): User {
         $user = new User($data);
-        if (!isset($user->role)) {
+        if (! isset($user->role)) {
             $user->role = 'member';
         }
         $user->id = $user->id ?? random_int(1, 100000);
         $user->exists = true;
         $user->setAttribute('created_at', now());
         $user->setAttribute('updated_at', now());
+
         return $user;
     };
 
@@ -43,10 +43,10 @@ describe('user creation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: User created with correct attributes
         expect($user)->toBeValidUser()
             ->and($user->name)->toBe('John Doe')
@@ -62,10 +62,10 @@ describe('user creation', function () {
             'password' => 'mypassword123',
             'password_confirmation' => 'mypassword123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: Password is hashed (not plain text)
         expect($user->password)->not->toBe('mypassword123')
             ->and(Hash::check('mypassword123', $user->password))->toBeTrue();
@@ -79,10 +79,10 @@ describe('user creation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: Role defaults to member
         expect($user->role)->toBe('member');
     });
@@ -95,10 +95,10 @@ describe('user creation', function () {
             'password' => 'securepass123',
             'password_confirmation' => 'securepass123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: All attributes set on returned model
         expect($user->id)->not->toBeNull()
             ->and($user->name)->toBe('Alice Johnson')
@@ -117,13 +117,13 @@ describe('name validation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['name' => ['required']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
@@ -135,13 +135,13 @@ describe('name validation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['name' => ['max']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
@@ -153,10 +153,10 @@ describe('name validation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: Name stored as-is (no automatic trimming by action)
         expect($user->name)->toBe('  John   Doe  ');
     });
@@ -170,13 +170,13 @@ describe('email validation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['email' => ['required']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
@@ -188,32 +188,32 @@ describe('email validation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['email' => ['email']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
     test('validates email max length 255', function () {
         // Arrange: Input with email exceeding 255 characters
-        $longEmail = str_repeat('a', 247) . '@test.com'; // 257 chars total
+        $longEmail = str_repeat('a', 247).'@test.com'; // 257 chars total
         $input = [
             'name' => 'John Doe',
             'email' => $longEmail,
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['email' => ['max']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
@@ -224,13 +224,13 @@ describe('email validation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['email' => ['unique']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception for duplicate email
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
@@ -242,10 +242,10 @@ describe('email validation', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: Email stored as provided (no automatic lowercase conversion)
         expect($user->email)->toBe('UPPERCASE@EXAMPLE.COM');
     });
@@ -258,13 +258,13 @@ describe('password validation', function () {
             'name' => 'John Doe',
             'email' => 'test@example.com',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['password' => ['required']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
@@ -276,13 +276,13 @@ describe('password validation', function () {
             'password' => 'password123',
             'password_confirmation' => 'differentpassword',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['password' => ['confirmed']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
@@ -294,13 +294,13 @@ describe('password validation', function () {
             'password' => 'short',
             'password_confirmation' => 'short',
         ];
-        
+
         // Swap action with validator that throws
         $this->action = new CreateNewUser(function (array $input): void {
             throw ValidationException::withMessages(['password' => ['min']]);
         }, $this->persister);
         // Act & Assert: Expect validation exception
-        expect(fn() => $this->action->create($input))
+        expect(fn () => $this->action->create($input))
             ->toThrow(ValidationException::class);
     });
 
@@ -312,10 +312,10 @@ describe('password validation', function () {
             'password' => 'validpassword123',
             'password_confirmation' => 'validpassword123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: User created successfully
         expect($user->exists)->toBeTrue();
     });
@@ -330,10 +330,10 @@ describe('edge cases', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: User created successfully
         expect($user->exists)->toBeTrue()
             ->and(strlen($user->name))->toBe(255);
@@ -341,17 +341,17 @@ describe('edge cases', function () {
 
     test('accepts valid email at max length', function () {
         // Arrange: Input with email at exactly 254 characters (actual valid max)
-        $longEmail = str_repeat('a', 245) . '@test.com'; // 254 chars total
+        $longEmail = str_repeat('a', 245).'@test.com'; // 254 chars total
         $input = [
             'name' => 'John Doe',
             'email' => $longEmail,
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Act: Create user
         $user = $this->action->create($input);
-        
+
         // Assert: User created successfully
         expect($user->exists)->toBeTrue()
             ->and(strlen($user->email))->toBe(254);
@@ -365,18 +365,18 @@ describe('edge cases', function () {
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         $user2Input = [
             'name' => 'User Two',
             'email' => 'user2@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ];
-        
+
         // Act: Create both users
         $user1 = $this->action->create($user1Input);
         $user2 = $this->action->create($user2Input);
-        
+
         // Assert: Both users created successfully
         expect($user1->exists)->toBeTrue()
             ->and($user2->exists)->toBeTrue()

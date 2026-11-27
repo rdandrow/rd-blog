@@ -7,7 +7,6 @@
  * including validation, authorization, and rate limiting.
  */
 
-use App\Models\User;
 use App\Services\BlogImageService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -47,10 +46,10 @@ describe('Image Upload for Markdown Content', function () {
         ]);
 
         $data = $response->json();
-        
+
         expect($data['url'])
             ->toContain('/storage/blog-images/');
-        
+
         expect($data['path'])
             ->toStartWith('/storage/blog-images/');
     })->group('blog-posts', 'image-upload', 'url-format');
@@ -190,7 +189,7 @@ describe('Image Upload Rate Limiting', function () {
         // Make 20 requests - all should succeed
         for ($i = 0; $i < 20; $i++) {
             $image = UploadedFile::fake()->image("test-{$i}.jpg");
-            
+
             $response = authenticatedPost($admin, route('admin.blog-posts.upload-image'), [
                 'image' => $image,
             ]);
@@ -220,7 +219,7 @@ describe('Image Upload Rate Limiting', function () {
         ]);
 
         expect($response->status())->toBe(429); // Too Many Requests
-        
+
         // Verify only 20 images were uploaded
         expect(count(Storage::disk('public')->allFiles('blog-images')))->toBe(20);
     })->group('blog-posts', 'image-upload', 'rate-limiting', 'blocked');
@@ -262,7 +261,7 @@ describe('Image Upload Storage', function () {
         ]);
 
         $data = $response->json();
-        
+
         expect($data['path'])->toStartWith('/storage/blog-images/');
         $diskPath = str_replace('/storage/', '', $data['path']);
         Storage::disk('public')->assertExists($diskPath);
@@ -270,7 +269,7 @@ describe('Image Upload Storage', function () {
 
     it('generates unique filenames for uploaded images', function () {
         $admin = createTestAdmin();
-        
+
         // Upload same filename twice
         $image1 = UploadedFile::fake()->image('test.jpg');
         $response1 = authenticatedPost($admin, route('admin.blog-posts.upload-image'), [
@@ -286,7 +285,7 @@ describe('Image Upload Storage', function () {
         $path2 = $response2->json()['path'];
 
         expect($path1)->not->toBe($path2);
-        
+
         $diskPath1 = str_replace('/storage/', '', $path1);
         $diskPath2 = str_replace('/storage/', '', $path2);
         Storage::disk('public')->assertExists($diskPath1);
@@ -302,7 +301,7 @@ describe('Image Upload Storage', function () {
         ]);
 
         $path = $response->json()['path'];
-        
+
         expect($path)->toEndWith('.png');
     })->group('blog-posts', 'image-upload', 'storage', 'extension');
 });
@@ -322,7 +321,7 @@ describe('Image Upload Error Handling', function () {
         ]);
 
         expect($response->status())->toBe(500);
-        
+
         $data = $response->json();
         expect($data)
             ->toHaveKey('success', false)

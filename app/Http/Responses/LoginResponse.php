@@ -20,12 +20,12 @@ class LoginResponse implements LoginResponseContract, TwoFactorLoginResponseCont
         $user = $request->user();
 
         // Ensure user is authenticated
-        if (!$user) {
+        if (! $user) {
             return redirect('/login');
         }
 
         // Redirect based on user role
-        if (!$user->hasEnabledTwoFactorAuthentication()) {
+        if (! $user->hasEnabledTwoFactorAuthentication()) {
             return redirect()->route('register.setup-two-factor');
         }
 

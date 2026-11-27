@@ -15,10 +15,10 @@ class BlogImageService
     {
         $extension = $file->getClientOriginalExtension();
         $timestamp = round(microtime(true) * 1000); // Use milliseconds for uniqueness
-        $filename = $timestamp . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $extension;
+        $filename = $timestamp.'_'.Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)).'.'.$extension;
         $path = $file->storeAs('blog-images', $filename, 'public');
-        
-        return '/storage/' . $path;
+
+        return '/storage/'.$path;
     }
 
     /**
@@ -34,28 +34,18 @@ class BlogImageService
 
     /**
      * Handle image input for creating a new blog post.
-     * 
-     * @param  \Illuminate\Http\UploadedFile|null  $file
-     * @param  string|null  $url
-     * @return string|null
      */
     public function handleCreate(?UploadedFile $file, ?string $url): ?string
     {
         if ($file) {
             return $this->upload($file);
         }
-        
+
         return $url;
     }
 
     /**
      * Handle image update logic based on the request inputs.
-     * 
-     * @param  \Illuminate\Http\UploadedFile|null  $newFile
-     * @param  string|null  $newUrl
-     * @param  bool  $removeCurrentImage
-     * @param  string|null  $currentImagePath
-     * @return string|null
      */
     public function handleUpdate(
         ?UploadedFile $newFile,
@@ -66,18 +56,21 @@ class BlogImageService
         // Priority 1: New file uploaded
         if ($newFile) {
             $this->delete($currentImagePath);
+
             return $this->upload($newFile);
         }
 
         // Priority 2: Explicit removal requested
         if ($removeCurrentImage) {
             $this->delete($currentImagePath);
+
             return null;
         }
 
         // Priority 3: New URL provided and it's different
         if ($newUrl && $newUrl !== $currentImagePath) {
             $this->delete($currentImagePath);
+
             return $newUrl;
         }
 

@@ -40,6 +40,12 @@ const codeValue = computed<string>(() => code.value.join(''));
 
 const pinInputContainerRef = useTemplateRef('pinInputContainerRef');
 
+// Fortify reports this error in the `confirmTwoFactorAuthentication` error bag,
+// which Inertia nests under the bag name. Inertia's types assume a flat map.
+const confirmCodeError = (errors: Record<string, unknown>) =>
+    (errors.confirmTwoFactorAuthentication as { code?: string } | undefined)
+        ?.code;
+
 const modalConfig = computed<{
     title: string;
     description: string;
@@ -264,10 +270,7 @@ watch(
                                     </PinInputGroup>
                                 </PinInput>
                                 <InputError
-                                    :message="
-                                        errors?.confirmTwoFactorAuthentication
-                                            ?.code
-                                    "
+                                    :message="confirmCodeError(errors)"
                                 />
                             </div>
 

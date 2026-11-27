@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
-use App\Http\Controllers\Auth\RegisterController;
 use App\Listeners\HandlePostRegistrationMfa;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -29,7 +28,7 @@ class FortifyServiceProvider extends ServiceProvider
         // Register custom login response for role-based redirects
         $this->app->singleton(LoginResponse::class, \App\Http\Responses\LoginResponse::class);
         $this->app->singleton(TwoFactorLoginResponse::class, \App\Http\Responses\LoginResponse::class);
-        
+
         // Register custom register response for role-based redirects
         $this->app->singleton(RegisterResponse::class, \App\Http\Responses\RegisterResponse::class);
     }

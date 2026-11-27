@@ -18,17 +18,17 @@ class BlogPostFactory extends Factory
     {
         $title = fake()->sentence(4, true);
         $publishedAt = fake()->boolean(80) ? fake()->dateTimeBetween('-1 year', 'now') : null;
-        
+
         return [
             'title' => rtrim($title, '.'),
             'slug' => \Illuminate\Support\Str::slug($title),
             'excerpt' => fake()->paragraph(2),
             'content' => fake()->paragraphs(8, true),
-            'featured_image' => fake()->boolean(30) ? 'https://picsum.photos/800/400?random=' . fake()->numberBetween(1, 1000) : null,
+            'featured_image' => fake()->boolean(30) ? 'https://picsum.photos/800/400?random='.fake()->numberBetween(1, 1000) : null,
             'tags' => fake()->randomElements([
-                'Vue.js', 'Laravel', 'JavaScript', 'PHP', 'Frontend', 'Backend', 
-                'Tutorial', 'Tips', 'Web Development', 'CSS', 'Tailwind', 
-                'Inertia.js', 'Database', 'API', 'Performance'
+                'Vue.js', 'Laravel', 'JavaScript', 'PHP', 'Frontend', 'Backend',
+                'Tutorial', 'Tips', 'Web Development', 'CSS', 'Tailwind',
+                'Inertia.js', 'Database', 'API', 'Performance',
             ], fake()->numberBetween(1, 4)),
             'is_featured' => fake()->boolean(20),
             'is_published' => $publishedAt !== null,

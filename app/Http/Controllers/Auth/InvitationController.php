@@ -27,7 +27,7 @@ class InvitationController extends Controller
             ->first();
 
         // Check if invitation exists
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login')
                 ->with('error', 'Invalid or expired invitation link.');
         }
@@ -62,7 +62,7 @@ class InvitationController extends Controller
             ->first();
 
         // Check if invitation exists
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login')
                 ->with('error', 'Invalid or expired invitation link.');
         }

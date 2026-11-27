@@ -207,7 +207,7 @@ describe('Invitation Resending', function () {
     it('allows master admin to resend invitation', function () {
         Notification::fake();
         $this->withoutMiddleware(\App\Http\Middleware\EnsureTwoFactorEnabled::class);
-        
+
         $masterAdmin = User::factory()->masterAdmin()->create();
         $user = User::factory()->create([
             'invitation_token' => hash('sha256', Str::random(64)),
@@ -232,7 +232,7 @@ describe('Invitation Resending', function () {
 
     it('prevents resending invitation to user who already accepted', function () {
         $this->withoutMiddleware(\App\Http\Middleware\EnsureTwoFactorEnabled::class);
-        
+
         $masterAdmin = User::factory()->masterAdmin()->create();
         $user = User::factory()->create([
             'invitation_token' => null,
@@ -251,7 +251,7 @@ describe('Invitation Resending', function () {
 describe('Invitation Security', function () {
     it('does not expose invitation token in user listing', function () {
         $this->withoutMiddleware(\App\Http\Middleware\EnsureTwoFactorEnabled::class);
-        
+
         $masterAdmin = User::factory()->masterAdmin()->create();
         $user = User::factory()->admin()->create([
             'invitation_token' => hash('sha256', Str::random(64)),
@@ -263,7 +263,7 @@ describe('Invitation Security', function () {
             ->get(route('admin.users.admins'));
 
         $response->assertStatus(200);
-        
+
         // Verify the response doesn't contain invitation_token in any user data
         $adminsData = $response->viewData('page')['props']['admins']['data'];
         foreach ($adminsData as $admin) {

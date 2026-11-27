@@ -15,9 +15,9 @@ class ProfileUpdateRequest extends FormRequest
     {
         if ($this->filled('website') && $this->website) {
             // Auto-prepend https:// if no protocol is provided
-            if (!preg_match('/^https?:\/\//i', $this->website)) {
+            if (! preg_match('/^https?:\/\//i', $this->website)) {
                 $this->merge([
-                    'website' => 'https://' . $this->website,
+                    'website' => 'https://'.$this->website,
                 ]);
             }
         }

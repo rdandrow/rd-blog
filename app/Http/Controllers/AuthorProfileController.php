@@ -15,24 +15,24 @@ class AuthorProfileController extends Controller
     public function show(string $id, Request $request): Response
     {
         $currentUser = $request->user();
-        
+
         $author = User::withCount(['followers', 'following'])
             ->with([
                 'blogPosts' => function ($query) {
                     $query->published()->latest()->take(10);
                 },
             ])
-            ->when($currentUser, function ($query) use ($currentUser, $id) {
+            ->when($currentUser, function ($query) use ($currentUser) {
                 $query->withExists([
                     'followers as is_following' => function ($query) use ($currentUser) {
                         $query->where('follower_id', $currentUser->id);
-                    }
+                    },
                 ]);
             })
             ->findOrFail($id);
 
         // Only show profile for admin users (authors)
-        if (!$author->isAdmin()) {
+        if (! $author->isAdmin()) {
             abort(404);
         }
 

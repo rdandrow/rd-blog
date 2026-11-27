@@ -27,7 +27,7 @@ class CreateNewUser implements CreatesNewUsers
      * Create a new CreateNewUser action instance.
      *
      * @param  callable(array): void|null  $validateInput  Optional validation strategy (receives input, throws ValidationException on failure)
-     * @param  callable(array): User|null  $persistUser    Optional persistence strategy (receives attributes, returns User instance)
+     * @param  callable(array): User|null  $persistUser  Optional persistence strategy (receives attributes, returns User instance)
      */
     public function __construct(?callable $validateInput = null, ?callable $persistUser = null)
     {
@@ -67,6 +67,7 @@ class CreateNewUser implements CreatesNewUsers
         ];
 
         $persist = $this->persistUser;
+
         return $persist($attributes);
     }
 }

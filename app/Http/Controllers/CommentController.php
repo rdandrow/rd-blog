@@ -12,8 +12,7 @@ class CommentController extends Controller
 {
     public function __construct(
         private DashboardMetricsService $dashboardMetricsService,
-    ) {
-    }
+    ) {}
 
     /**
      * Store a newly created comment.
@@ -53,7 +52,7 @@ class CommentController extends Controller
     public function destroy(Comment $comment): RedirectResponse
     {
         // Only allow user to delete their own comments or admins can delete any
-        if ($comment->user_id !== auth()->id() && !auth()->user()->isAdmin()) {
+        if ($comment->user_id !== auth()->id() && ! auth()->user()->isAdmin()) {
             abort(403);
         }
 

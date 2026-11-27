@@ -10,8 +10,8 @@ uses(Tests\TestCase::class);
 
 describe('EnsureTwoFactorEnabled Middleware', function () {
     beforeEach(function () {
-        $this->middleware = new EnsureTwoFactorEnabled();
-        $this->next = fn($req) => new Response('success');
+        $this->middleware = new EnsureTwoFactorEnabled;
+        $this->next = fn ($req) => new Response('success');
     });
 
     it('allows authenticated users with 2FA enabled to pass through', function () {
@@ -20,13 +20,13 @@ describe('EnsureTwoFactorEnabled Middleware', function () {
             'two_factor_secret' => 'secret',
             'two_factor_confirmed_at' => now(),
         ]);
-        
+
         $request = Request::create('/dashboard', 'GET');
-        $request->setUserResolver(fn() => $user);
+        $request->setUserResolver(fn () => $user);
         Auth::shouldReceive('user')->andReturn($user);
-        
+
         $response = $this->middleware->handle($request, $this->next);
-        
+
         expect($response->getContent())->toBe('success');
     })->group('middleware', 'two-factor', 'authentication');
 
@@ -36,24 +36,24 @@ describe('EnsureTwoFactorEnabled Middleware', function () {
             'two_factor_secret' => null,
             'two_factor_confirmed_at' => null,
         ]);
-        
+
         $request = Request::create('/dashboard', 'GET');
-        $request->setUserResolver(fn() => $user);
+        $request->setUserResolver(fn () => $user);
         Auth::shouldReceive('user')->andReturn($user);
-        
+
         $response = $this->middleware->handle($request, $this->next);
-        
+
         expect($response->isRedirect())->toBeTrue()
             ->and($response->headers->get('Location'))->toContain('setup-two-factor');
     })->group('middleware', 'two-factor', 'authentication');
 
     it('allows unauthenticated requests to pass through', function () {
         $request = Request::create('/dashboard', 'GET');
-        $request->setUserResolver(fn() => null);
+        $request->setUserResolver(fn () => null);
         Auth::shouldReceive('user')->andReturn(null);
-        
+
         $response = $this->middleware->handle($request, $this->next);
-        
+
         expect($response->getContent())->toBe('success');
     })->group('middleware', 'two-factor', 'authentication');
 
@@ -62,13 +62,13 @@ describe('EnsureTwoFactorEnabled Middleware', function () {
             'role' => 'member',
             'two_factor_secret' => null, // No 2FA setup
         ]);
-        
+
         $request = Request::create($route, 'GET');
-        $request->setUserResolver(fn() => $user);
+        $request->setUserResolver(fn () => $user);
         Auth::shouldReceive('user')->andReturn($user);
-        
+
         $response = $this->middleware->handle($request, $this->next);
-        
+
         expect($response->getContent())->toBe('success');
     })->with([
         'login' => '/login',
@@ -86,13 +86,13 @@ describe('EnsureTwoFactorEnabled Middleware', function () {
             'role' => 'member',
             'two_factor_secret' => null,
         ]);
-        
+
         $request = Request::create('/settings/two-factor', 'GET');
-        $request->setUserResolver(fn() => $user);
+        $request->setUserResolver(fn () => $user);
         Auth::shouldReceive('user')->andReturn($user);
-        
+
         $response = $this->middleware->handle($request, $this->next);
-        
+
         expect($response->getContent())->toBe('success')
             ->and($response->isRedirect())->toBeFalse();
     })->group('middleware', 'two-factor', 'authentication');

@@ -25,7 +25,7 @@ class UserManagementController extends Controller
         $admins = User::whereIn('role', ['admin', 'master_admin'])
             ->orderBy('created_at', 'desc')
             ->paginate(20)
-            ->through(fn($user) => [
+            ->through(fn ($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
@@ -49,7 +49,7 @@ class UserManagementController extends Controller
         $members = User::where('role', 'member')
             ->orderBy('created_at', 'desc')
             ->paginate(20)
-            ->through(fn($user) => [
+            ->through(fn ($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,

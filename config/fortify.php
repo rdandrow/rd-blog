@@ -150,7 +150,7 @@ return [
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
-            'window' => 1 // Allow 1 time step before and after (30 seconds each)
+            'window' => 1, // Allow 1 time step before and after (30 seconds each)
         ]),
     ],
 

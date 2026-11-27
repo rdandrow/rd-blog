@@ -11,9 +11,6 @@ defineProps<{
 
 <template>
     <div :class="heightClass ?? 'h-64'">
-        <Line
-            :data="data"
-            :options="options"
-        />
+        <Line :data="data" :options="options" />
     </div>
 </template>
