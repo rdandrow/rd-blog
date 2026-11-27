@@ -41,7 +41,7 @@ Each finding lists the phase that fixes it.
 
 ### Bugs (fix test-first)
 
-- [ ] **2FA secret rotation on GET.** `GET /register/setup-two-factor`
+- [x] **2FA secret rotation on GET.** `GET /register/setup-two-factor`
       (`routes/web.php`, `RegisterController::setupTwoFactorAuthentication`) generates
       a new secret and recovery codes on every visit, even after 2FA is confirmed.
       `two_factor_confirmed_at` stays set, so the user's authenticator stops working
@@ -56,7 +56,7 @@ Each finding lists the phase that fixes it.
       policy. → Phase 1
 - [ ] **`/blog` is unpaginated.** `BlogPostService::getAllPublishedPosts` loads every
       published post, with its content, on each request. → Phase 1
-- [ ] **The 2FA setup route is a closure that calls `new RegisterController()`.**
+- [x] **The 2FA setup route is a closure that calls `new RegisterController()`.**
       Make it a normal controller route; it's fixed along with the rotation bug.
       → Phase 1
 - [ ] **Dead code:** `BlogPostController::showBySlug` (no route uses it). → Phase 2

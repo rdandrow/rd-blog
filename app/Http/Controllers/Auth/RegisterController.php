@@ -8,125 +8,92 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
-use Illuminate\Auth\Events\Registered;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules;
 use Inertia\Inertia;
+use Inertia\Response;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
 
+/**
+ * Mandatory 2FA setup for new users. Registration itself is handled by Fortify;
+ * RegisterResponse, LoginResponse, and EnsureTwoFactorEnabled send users here
+ * until they confirm 2FA.
+ */
 class RegisterController extends Controller
 {
     /**
-     * Display the registration form.
+     * Show the 2FA setup page.
+     *
+     * This is a GET, so it must be safe to repeat: it never replaces an existing
+     * secret. Users who already confirmed 2FA are sent on, and a pending secret is
+     * shown again unchanged, so a refresh doesn't invalidate a half-scanned QR code.
      */
-    public function create()
+    public function showTwoFactorSetup(Request $request, TwoFactorAuthenticationProvider $provider): Response|RedirectResponse
     {
-        return Inertia::render('auth/Register');
-    }
+        $user = $request->user();
 
-    /**
-     * Handle an incoming registration request with mandatory MFA setup.
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Rules\Password::min(14)],
-        ]);
+        if ($user->hasEnabledTwoFactorAuthentication()) {
+            return redirect($this->homeFor($user));
+        }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        if (is_null($user->two_factor_secret)) {
+            $user->forceFill([
+                'two_factor_secret' => encrypt($provider->generateSecretKey()),
+                'two_factor_recovery_codes' => encrypt(json_encode(
+                    Collection::times(8, fn () => Str::random(10).'-'.Str::random(10))->all()
+                )),
+            ])->save();
+        }
 
-        event(new Registered($user));
-
-        Auth::login($user);
-
-        // Always redirect to MFA setup for new users (mandatory)
-        return $this->setupTwoFactorAuthentication($user);
-    }
-
-    /**
-     * Setup two-factor authentication for the user.
-     */
-    public function setupTwoFactorAuthentication(User $user)
-    {
-        $twoFactorProvider = app(TwoFactorAuthenticationProvider::class);
-
-        // Generate recovery codes using Laravel's standard approach
-        $recoveryCodes = Collection::times(8, function () {
-            return Str::random(10).'-'.Str::random(10);
-        })->toArray();
-
-        // Enable 2FA for the user
-        $user->forceFill([
-            'two_factor_secret' => encrypt($twoFactorProvider->generateSecretKey()),
-            'two_factor_recovery_codes' => encrypt(json_encode($recoveryCodes)),
-        ])->save();
+        $secret = decrypt($user->two_factor_secret);
 
         return Inertia::render('auth/SetupTwoFactor', [
-            'qrCode' => $this->generateQrCodeSvg($user, $twoFactorProvider),
+            'qrCode' => $this->qrCodeSvg($provider->qrCodeUrl(config('app.name'), $user->email, $secret)),
             'recoveryCodes' => json_decode(decrypt($user->two_factor_recovery_codes)),
-            'secretKey' => decrypt($user->two_factor_secret),
+            'secretKey' => $secret,
         ]);
     }
 
     /**
-     * Confirm two-factor authentication setup.
+     * Confirm the pending 2FA secret with a code from the user's authenticator app.
      */
-    public function confirmTwoFactorAuthentication(Request $request)
+    public function confirmTwoFactorAuthentication(Request $request, TwoFactorAuthenticationProvider $provider): RedirectResponse
     {
         $request->validate([
             'code' => ['required', 'string'],
         ]);
 
-        $user = Auth::user();
-        $twoFactorProvider = app(TwoFactorAuthenticationProvider::class);
+        $user = $request->user();
 
-        if (! $twoFactorProvider->verify(decrypt($user->two_factor_secret), $request->code)) {
+        if (is_null($user->two_factor_secret)) {
+            return redirect()->route('register.setup-two-factor');
+        }
+
+        if (! $provider->verify(decrypt($user->two_factor_secret), $request->code)) {
             return back()->withErrors([
                 'code' => 'The provided two factor authentication code was invalid.',
             ]);
         }
 
-        // Mark 2FA as confirmed
         $user->forceFill([
             'two_factor_confirmed_at' => now(),
         ])->save();
 
-        // Redirect based on user role
-        $redirectUrl = ($user->isMasterAdmin() || $user->isRegularAdmin())
-            ? '/admin/dashboard'
-            : '/';
-
-        return redirect($redirectUrl)->with('status', 'Two-factor authentication has been enabled successfully!');
+        return redirect($this->homeFor($user))
+            ->with('status', 'Two-factor authentication has been enabled successfully!');
     }
 
-    /**
-     * Generate QR Code SVG for two-factor authentication.
-     */
-    private function generateQrCodeSvg(User $user, TwoFactorAuthenticationProvider $provider)
+    private function homeFor(User $user): string
     {
-        $qrCodeUrl = $provider->qrCodeUrl(
-            config('app.name'),
-            $user->email,
-            decrypt($user->two_factor_secret)
-        );
+        return $user->isAdmin() ? route('dashboard') : route('home');
+    }
 
-        $renderer = new ImageRenderer(
-            new RendererStyle(192),
-            new SvgImageBackEnd
-        );
+    private function qrCodeSvg(string $url): string
+    {
+        $writer = new Writer(new ImageRenderer(new RendererStyle(192), new SvgImageBackEnd));
 
-        $writer = new Writer($renderer);
-
-        return $writer->writeString($qrCodeUrl);
+        return $writer->writeString($url);
     }
 }
