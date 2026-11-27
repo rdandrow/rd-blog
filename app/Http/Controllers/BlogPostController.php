@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BlogPost;
 use App\Http\Requests\StoreBlogPostRequest;
 use App\Http\Requests\UpdateBlogPostRequest;
+use App\Models\BlogPost;
 use App\Services\BlogImageService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
 
 class BlogPostController extends Controller
 {
@@ -32,7 +32,7 @@ class BlogPostController extends Controller
             ->paginate(10);
 
         return Inertia::render('Admin/BlogPosts/Index', [
-            'posts' => $posts
+            'posts' => $posts,
         ]);
     }
 
@@ -48,7 +48,7 @@ class BlogPostController extends Controller
             ->paginate(10);
 
         return Inertia::render('Admin/BlogPosts/Drafts', [
-            'posts' => $drafts
+            'posts' => $drafts,
         ]);
     }
 
@@ -76,8 +76,8 @@ class BlogPostController extends Controller
         $post = BlogPost::create([
             ...$validated,
             'user_id' => Auth::id(),
-            'published_at' => $validated['is_published'] 
-                ? ($validated['published_at'] ?? now()) 
+            'published_at' => $validated['is_published']
+                ? ($validated['published_at'] ?? now())
                 : null,
         ]);
 
@@ -94,7 +94,7 @@ class BlogPostController extends Controller
         $blogPost->load('author');
 
         return Inertia::render('Admin/BlogPosts/Show', [
-            'post' => $blogPost
+            'post' => $blogPost,
         ]);
     }
 
@@ -107,9 +107,9 @@ class BlogPostController extends Controller
             ->where('slug', $slug)
             ->where('is_published', true)
             ->firstOrFail();
-            
+
         return Inertia::render('BlogPost', [
-            'post' => $post
+            'post' => $post,
         ]);
     }
 
@@ -119,9 +119,9 @@ class BlogPostController extends Controller
     public function edit(BlogPost $blogPost): Response
     {
         $this->authorize('update', $blogPost);
-        
+
         return Inertia::render('Admin/BlogPosts/Edit', [
-            'post' => $blogPost
+            'post' => $blogPost,
         ]);
     }
 
@@ -139,14 +139,14 @@ class BlogPostController extends Controller
             removeCurrentImage: $validated['remove_current_image'] ?? false,
             currentImagePath: $blogPost->featured_image
         );
-        
+
         // Remove the flag from data to be saved
         unset($validated['remove_current_image']);
 
         $blogPost->update([
             ...$validated,
-            'published_at' => $validated['is_published'] 
-                ? ($validated['published_at'] ?? $blogPost->published_at ?? now()) 
+            'published_at' => $validated['is_published']
+                ? ($validated['published_at'] ?? $blogPost->published_at ?? now())
                 : null,
         ]);
 
@@ -161,10 +161,10 @@ class BlogPostController extends Controller
     public function destroy(BlogPost $blogPost): RedirectResponse
     {
         $this->authorize('delete', $blogPost);
-        
+
         // Delete associated image if it exists
         $this->imageService->delete($blogPost->featured_image);
-        
+
         $blogPost->delete();
 
         return redirect()
@@ -184,7 +184,7 @@ class BlogPostController extends Controller
         try {
             $fullPath = $this->imageService->upload($request->file('image'));
             $url = asset($fullPath);
-            
+
             return response()->json([
                 'success' => true,
                 'url' => $url,
@@ -193,14 +193,14 @@ class BlogPostController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to upload blog post image', [
                 'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            
+
             return response()->json([
                 'success' => false,
-                'error' => config('app.debug') 
-                    ? 'Failed to upload image: ' . $e->getMessage()
-                    : 'Failed to upload image. Please try again.'
+                'error' => config('app.debug')
+                    ? 'Failed to upload image: '.$e->getMessage()
+                    : 'Failed to upload image. Please try again.',
             ], 500);
         }
     }

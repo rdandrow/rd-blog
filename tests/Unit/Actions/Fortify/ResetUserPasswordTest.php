@@ -13,12 +13,11 @@ uses(Tests\TestCase::class);
  * @group password-reset
  * @group unit
  */
-
 beforeEach(function () {
-    $this->action = new ResetUserPassword();
-    $this->user = new User();
+    $this->action = new ResetUserPassword;
+    $this->user = new User;
     $this->user->password = Hash::make('OldPassword123!');
-    $this->persister = fn($user) => null; // No-op persister for testing
+    $this->persister = fn ($user) => null; // No-op persister for testing
 });
 
 describe('password reset', function () {
@@ -28,10 +27,10 @@ describe('password reset', function () {
             'password' => 'NewPassword123!',
             'password_confirmation' => 'NewPassword123!',
         ];
-        
+
         // Act
         $this->action->reset($this->user, $input, $this->persister);
-        
+
         // Assert
         expect(Hash::check('NewPassword123!', $this->user->password))->toBeTrue();
     });
@@ -42,10 +41,10 @@ describe('password reset', function () {
             'password' => 'NewPassword123!',
             'password_confirmation' => 'NewPassword123!',
         ];
-        
+
         // Act
         $this->action->reset($this->user, $input, $this->persister);
-        
+
         // Assert
         expect($this->user->password)
             ->not->toBe('NewPassword123!')
@@ -58,10 +57,10 @@ describe('password reset', function () {
             'password' => 'NewPassword123!',
             'password_confirmation' => 'NewPassword123!',
         ];
-        
+
         // Act
         $this->action->reset($this->user, $input, $this->persister);
-        
+
         // Assert: Password is updated even though it's not mass assignable
         expect(Hash::check('NewPassword123!', $this->user->password))->toBeTrue();
     });
@@ -73,13 +72,13 @@ describe('password reset', function () {
             'password_confirmation' => 'NewPassword123!',
         ];
         $persisted = false;
-        $persister = function($user) use (&$persisted) {
+        $persister = function ($user) use (&$persisted) {
             $persisted = true;
         };
-        
+
         // Act
         $this->action->reset($this->user, $input, $persister);
-        
+
         // Assert: Persister was called
         expect($persisted)->toBeTrue();
     });
@@ -91,9 +90,9 @@ describe('password validation', function () {
         $input = [
             'password_confirmation' => 'NewPassword123!',
         ];
-        
+
         // Act & Assert
-        expect(fn() => $this->action->reset($this->user, $input, $this->persister))
+        expect(fn () => $this->action->reset($this->user, $input, $this->persister))
             ->toThrow(ValidationException::class);
     });
 
@@ -103,9 +102,9 @@ describe('password validation', function () {
             'password' => 'short',
             'password_confirmation' => 'short',
         ];
-        
+
         // Act & Assert
-        expect(fn() => $this->action->reset($this->user, $input, $this->persister))
+        expect(fn () => $this->action->reset($this->user, $input, $this->persister))
             ->toThrow(ValidationException::class);
     });
 
@@ -115,10 +114,10 @@ describe('password validation', function () {
             'password' => 'NewPassword123!',
             'password_confirmation' => 'NewPassword123!',
         ];
-        
+
         // Act & Assert: Should not throw
         $this->action->reset($this->user, $input, $this->persister);
-        
+
         expect(Hash::check('NewPassword123!', $this->user->password))->toBeTrue();
     });
 
@@ -128,9 +127,9 @@ describe('password validation', function () {
             'password' => 'NewPassword123!',
             'password_confirmation' => 'DifferentPassword123!',
         ];
-        
+
         // Act & Assert
-        expect(fn() => $this->action->reset($this->user, $input, $this->persister))
+        expect(fn () => $this->action->reset($this->user, $input, $this->persister))
             ->toThrow(ValidationException::class);
     });
 });
@@ -142,10 +141,10 @@ describe('edge cases', function () {
             'password' => 'OldPassword123!',
             'password_confirmation' => 'OldPassword123!',
         ];
-        
+
         // Act: Should allow resetting to same password
         $this->action->reset($this->user, $input, $this->persister);
-        
+
         // Assert: Password is still valid (hashed again)
         expect(Hash::check('OldPassword123!', $this->user->password))->toBeTrue();
     });
@@ -156,9 +155,9 @@ describe('edge cases', function () {
             'password' => 'weakpw', // Too short, will fail minimum length
             'password_confirmation' => 'weakpw',
         ];
-        
+
         // Act & Assert: Should validate using trait rules
-        expect(fn() => $this->action->reset($this->user, $input, $this->persister))
+        expect(fn () => $this->action->reset($this->user, $input, $this->persister))
             ->toThrow(ValidationException::class);
     });
 
@@ -168,24 +167,24 @@ describe('edge cases', function () {
             'password' => '',
             'password_confirmation' => '',
         ];
-        
+
         // Act & Assert
-        expect(fn() => $this->action->reset($this->user, $input, $this->persister))
+        expect(fn () => $this->action->reset($this->user, $input, $this->persister))
             ->toThrow(ValidationException::class);
     });
 
     test('handles user with no existing password', function () {
         // Arrange: User with null password (edge case)
-        $newUser = new User();
+        $newUser = new User;
         $newUser->password = null;
         $input = [
             'password' => 'NewPassword123!',
             'password_confirmation' => 'NewPassword123!',
         ];
-        
+
         // Act: Reset password
         $this->action->reset($newUser, $input, $this->persister);
-        
+
         // Assert: Password is set correctly
         expect(Hash::check('NewPassword123!', $newUser->password))->toBeTrue();
     });
@@ -195,22 +194,22 @@ describe('edge cases', function () {
         $input = [
             'password' => 'NewPassword123!',
         ];
-        
+
         // Act & Assert
-        expect(fn() => $this->action->reset($this->user, $input, $this->persister))
+        expect(fn () => $this->action->reset($this->user, $input, $this->persister))
             ->toThrow(ValidationException::class);
     });
-    
+
     test('accepts password with various special characters', function () {
         // Arrange: Password with multiple special characters
         $input = [
             'password' => 'C0mpl3x!P@ssw#rd$2026',
             'password_confirmation' => 'C0mpl3x!P@ssw#rd$2026',
         ];
-        
+
         // Act: Reset with complex password
         $this->action->reset($this->user, $input, $this->persister);
-        
+
         // Assert: Complex password is accepted and hashed
         expect(Hash::check('C0mpl3x!P@ssw#rd$2026', $this->user->password))->toBeTrue()
             ->and($this->user->password)->not->toBe('C0mpl3x!P@ssw#rd$2026');

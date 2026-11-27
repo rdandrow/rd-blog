@@ -8,7 +8,6 @@
  */
 
 use App\Models\BlogPost;
-use App\Models\User;
 
 // Rate limiting thresholds
 const RATE_LIMIT_MAX_REQUESTS = 10;
@@ -117,7 +116,7 @@ describe('Blog Post Update Rate Limiting', function () {
         $response = authenticatedPut($admin, route('admin.blog-posts.update', $post), $data);
 
         $post->refresh();
-        
+
         expect($response->status())->toBe(429) // Too Many Requests
             ->and($post->title)->not->toBe('This should be blocked');
     })->group('blog-posts', 'rate-limiting', 'update', 'blocked');

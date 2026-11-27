@@ -53,9 +53,9 @@ class UserInvitation extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('You\'ve been invited to join ' . config('app.name'))
-            ->greeting('Hello ' . $notifiable->name . ',')
-            ->line($this->inviterName . ' has invited you to join ' . config('app.name') . '.')
+            ->subject('You\'ve been invited to join '.config('app.name'))
+            ->greeting('Hello '.$notifiable->name.',')
+            ->line($this->inviterName.' has invited you to join '.config('app.name').'.')
             ->line('To accept this invitation and set up your account, please click the button below:')
             ->action('Accept Invitation', $this->invitationUrl)
             ->line('This invitation will expire in 48 hours.')

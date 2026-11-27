@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
 import DashboardBarChart from '@/components/charts/DashboardBarChart.vue';
 import DashboardLineChart from '@/components/charts/DashboardLineChart.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import {
+    buildBarChartData,
+    buildBarDataset,
+    buildBarOptions,
+    buildChartData,
+    buildLineDataset,
+    buildTrendOptions,
+} from '@/lib/chart';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
@@ -16,10 +24,18 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
-import { buildBarChartData, buildBarDataset, buildBarOptions, buildChartData, buildLineDataset, buildTrendOptions } from '@/lib/chart';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, Filler);
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Tooltip,
+    Legend,
+    Filler,
+);
 
 interface TrendPoint {
     day: string;
@@ -134,10 +150,14 @@ const showUserTrends = computed(
         !!props.metricsByScope.global?.high_value_metrics.user_trends,
 );
 
-const showActiveAuthorsMetric = computed(() => selectedScope.value === 'global');
+const showActiveAuthorsMetric = computed(
+    () => selectedScope.value === 'global',
+);
 
 const totalFollowersLabel = computed(() =>
-    selectedScope.value === 'global' ? 'Total Follow Relationships' : 'Total Followers',
+    selectedScope.value === 'global'
+        ? 'Total Follow Relationships'
+        : 'Total Followers',
 );
 
 const followerGrowthHeading = computed(() =>
@@ -155,7 +175,11 @@ const topAuthorsHeading = computed(() =>
 const showInvitationFunnel = computed(() => {
     const funnel = activeMetrics.value.high_value_metrics.invitation_funnel;
 
-    return funnel.pending !== null || funnel.accepted !== null || funnel.expired !== null;
+    return (
+        funnel.pending !== null ||
+        funnel.accepted !== null ||
+        funnel.expired !== null
+    );
 });
 
 const activeDayCount = (trend: Array<{ day: string; count: number }>) =>
@@ -198,13 +222,15 @@ const contentActivityChartData = computed(() =>
 
 const followerGrowthChartData = computed(() =>
     buildChartData(
-        activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) =>
-            formatDashboardDate(point.day),
+        activeMetrics.value.high_value_metrics.follower_growth_30d.map(
+            (point) => formatDashboardDate(point.day),
         ),
         [
             buildLineDataset(
                 'Followers',
-                activeMetrics.value.high_value_metrics.follower_growth_30d.map((point) => point.count),
+                activeMetrics.value.high_value_metrics.follower_growth_30d.map(
+                    (point) => point.count,
+                ),
                 '--chart-4',
                 true,
             ),
@@ -213,7 +239,9 @@ const followerGrowthChartData = computed(() =>
     ),
 );
 
-const trendChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
+const trendChartOptions = computed(() =>
+    buildTrendOptions(true, chartThemeVersion.value),
+);
 
 const topPostsChartData = computed(() =>
     buildBarChartData(
@@ -225,12 +253,16 @@ const topPostsChartData = computed(() =>
         [
             buildBarDataset(
                 'Comments',
-                activeMetrics.value.comments_per_blog_post.map((p) => p.comments_count),
+                activeMetrics.value.comments_per_blog_post.map(
+                    (p) => p.comments_count,
+                ),
                 '--chart-1',
             ),
             buildBarDataset(
                 'Likes',
-                activeMetrics.value.comments_per_blog_post.map((p) => p.likes_count),
+                activeMetrics.value.comments_per_blog_post.map(
+                    (p) => p.likes_count,
+                ),
                 '--chart-2',
             ),
         ],
@@ -238,7 +270,9 @@ const topPostsChartData = computed(() =>
     ),
 );
 
-const topPostsChartOptions = computed(() => buildBarOptions(true, chartThemeVersion.value));
+const topPostsChartOptions = computed(() =>
+    buildBarOptions(true, chartThemeVersion.value),
+);
 
 const topAuthorsChartData = computed(() =>
     buildBarChartData(
@@ -258,11 +292,15 @@ const topAuthorsChartData = computed(() =>
     ),
 );
 
-const topAuthorsChartOptions = computed(() => buildBarOptions(false, chartThemeVersion.value));
+const topAuthorsChartOptions = computed(() =>
+    buildBarOptions(false, chartThemeVersion.value),
+);
 
 const viewTrendChartData = computed(() =>
     buildChartData(
-        activeMetrics.value.views_30d.map((point) => formatDashboardDate(point.day)),
+        activeMetrics.value.views_30d.map((point) =>
+            formatDashboardDate(point.day),
+        ),
         [
             buildLineDataset(
                 'Total Views',
@@ -272,7 +310,9 @@ const viewTrendChartData = computed(() =>
             ),
             buildLineDataset(
                 'Anonymous Views',
-                activeMetrics.value.anonymous_views_30d.map((point) => point.count),
+                activeMetrics.value.anonymous_views_30d.map(
+                    (point) => point.count,
+                ),
                 '--chart-2',
                 false,
             ),
@@ -281,7 +321,9 @@ const viewTrendChartData = computed(() =>
     ),
 );
 
-const viewTrendChartOptions = computed(() => buildTrendOptions(true, chartThemeVersion.value));
+const viewTrendChartOptions = computed(() =>
+    buildTrendOptions(true, chartThemeVersion.value),
+);
 
 const showViewMetrics = computed(() => props.meta.views_tracking_enabled);
 
@@ -358,7 +400,10 @@ const personalGlobalBenchmarks = computed(() => {
     ) {
         chips.push({
             label: 'Views/Post vs Global',
-            delta: formatDelta(personal.average_views_per_blog_post, global.average_views_per_blog_post),
+            delta: formatDelta(
+                personal.average_views_per_blog_post,
+                global.average_views_per_blog_post,
+            ),
         });
     }
 
@@ -456,13 +501,22 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <div class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Published Posts</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ formatNumber(activeMetrics.high_value_metrics.published_posts) }}
+                        {{
+                            formatNumber(
+                                activeMetrics.high_value_metrics
+                                    .published_posts,
+                            )
+                        }}
                     </p>
                 </div>
                 <div class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Featured Posts</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ formatNumber(activeMetrics.high_value_metrics.featured_posts) }}
+                        {{
+                            formatNumber(
+                                activeMetrics.high_value_metrics.featured_posts,
+                            )
+                        }}
                     </p>
                 </div>
             </div>
@@ -470,7 +524,9 @@ const breadcrumbs: BreadcrumbItem[] = [
             <!-- Row 2: Audience & engagement totals -->
             <div class="grid gap-4 sm:grid-cols-3">
                 <div class="rounded-xl border border-border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">{{ totalFollowersLabel }}</p>
+                    <p class="text-sm text-muted-foreground">
+                        {{ totalFollowersLabel }}
+                    </p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
                         {{ formatNumber(activeMetrics.total_followers) }}
                     </p>
@@ -478,35 +534,72 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <div class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Total Comments</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ formatNumber(activeMetrics.high_value_metrics.total_comments_on_published_posts) }}
+                        {{
+                            formatNumber(
+                                activeMetrics.high_value_metrics
+                                    .total_comments_on_published_posts,
+                            )
+                        }}
                     </p>
                 </div>
                 <div class="rounded-xl border border-border bg-card p-4">
                     <p class="text-sm text-muted-foreground">Total Likes</p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ formatNumber(activeMetrics.high_value_metrics.total_likes_on_published_posts) }}
+                        {{
+                            formatNumber(
+                                activeMetrics.high_value_metrics
+                                    .total_likes_on_published_posts,
+                            )
+                        }}
                     </p>
                 </div>
             </div>
 
             <!-- Row 3: Averages + activity (always 3 cols) -->
-            <div class="grid gap-4" :class="showActiveAuthorsMetric ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
+            <div
+                class="grid gap-4"
+                :class="
+                    showActiveAuthorsMetric
+                        ? 'sm:grid-cols-3'
+                        : 'sm:grid-cols-2'
+                "
+            >
                 <div class="rounded-xl border border-border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">Avg Comments / Post</p>
+                    <p class="text-sm text-muted-foreground">
+                        Avg Comments / Post
+                    </p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ activeMetrics.high_value_metrics.avg_comments_per_published_post }}
+                        {{
+                            activeMetrics.high_value_metrics
+                                .avg_comments_per_published_post
+                        }}
                     </p>
                 </div>
                 <div class="rounded-xl border border-border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">Avg Likes / Post</p>
+                    <p class="text-sm text-muted-foreground">
+                        Avg Likes / Post
+                    </p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ activeMetrics.high_value_metrics.avg_likes_per_published_post }}
+                        {{
+                            activeMetrics.high_value_metrics
+                                .avg_likes_per_published_post
+                        }}
                     </p>
                 </div>
-                <div v-if="showActiveAuthorsMetric" class="rounded-xl border border-border bg-card p-4">
-                    <p class="text-sm text-muted-foreground">Active Authors (30d)</p>
+                <div
+                    v-if="showActiveAuthorsMetric"
+                    class="rounded-xl border border-border bg-card p-4"
+                >
+                    <p class="text-sm text-muted-foreground">
+                        Active Authors (30d)
+                    </p>
                     <p class="mt-2 text-2xl font-semibold text-foreground">
-                        {{ formatNumber(activeMetrics.high_value_metrics.active_authors_30d ?? 0) }}
+                        {{
+                            formatNumber(
+                                activeMetrics.high_value_metrics
+                                    .active_authors_30d ?? 0,
+                            )
+                        }}
                     </p>
                 </div>
             </div>
@@ -520,7 +613,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                     :key="chip.label"
                     class="w-full rounded-md border border-border bg-card px-3 py-1 text-xs text-muted-foreground sm:w-auto sm:rounded-full"
                 >
-                    {{ chip.label }}: <span class="font-medium text-foreground">{{ chip.delta }}</span>
+                    {{ chip.label }}:
+                    <span class="font-medium text-foreground">{{
+                        chip.delta
+                    }}</span>
                 </div>
             </div>
 
@@ -531,40 +627,76 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </h2>
                 <div class="mt-3 grid gap-4 sm:grid-cols-3">
                     <div class="rounded-xl border border-border bg-card p-4">
-                        <p class="text-sm text-muted-foreground">Daily Active Users</p>
+                        <p class="text-sm text-muted-foreground">
+                            Daily Active Users
+                        </p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
-                            {{ formatNumber(activeMetrics.high_value_metrics.user_trends!.daily_active_users) }}
+                            {{
+                                formatNumber(
+                                    activeMetrics.high_value_metrics
+                                        .user_trends!.daily_active_users,
+                                )
+                            }}
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-4">
-                        <p class="text-sm text-muted-foreground">Weekly Active Users</p>
+                        <p class="text-sm text-muted-foreground">
+                            Weekly Active Users
+                        </p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
-                            {{ formatNumber(activeMetrics.high_value_metrics.user_trends!.weekly_active_users) }}
+                            {{
+                                formatNumber(
+                                    activeMetrics.high_value_metrics
+                                        .user_trends!.weekly_active_users,
+                                )
+                            }}
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-4">
-                        <p class="text-sm text-muted-foreground">Active Users (Last 30d)</p>
+                        <p class="text-sm text-muted-foreground">
+                            Active Users (Last 30d)
+                        </p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
-                            {{ formatNumber(activeMetrics.high_value_metrics.user_trends!.monthly_active_users) }}
+                            {{
+                                formatNumber(
+                                    activeMetrics.high_value_metrics
+                                        .user_trends!.monthly_active_users,
+                                )
+                            }}
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-4">
                         <p class="text-sm text-muted-foreground">Total Users</p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
-                            {{ formatNumber(activeMetrics.high_value_metrics.user_trends!.total_users) }}
+                            {{
+                                formatNumber(
+                                    activeMetrics.high_value_metrics
+                                        .user_trends!.total_users,
+                                )
+                            }}
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-4">
-                        <p class="text-sm text-muted-foreground">Total Inactive Users (30d)</p>
-                        <p class="mt-2 text-2xl font-semibold text-foreground">
-                            {{ formatNumber(activeMetrics.high_value_metrics.user_trends!.total_inactive_users) }}
+                        <p class="text-sm text-muted-foreground">
+                            Total Inactive Users (30d)
                         </p>
-                    </div>
-                    <div class="rounded-xl border border-border bg-card p-4">
-                        <p class="text-sm text-muted-foreground">2FA Adoption Rate</p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
                             {{
-                                activeMetrics.high_value_metrics.two_factor_adoption_rate === null
+                                formatNumber(
+                                    activeMetrics.high_value_metrics
+                                        .user_trends!.total_inactive_users,
+                                )
+                            }}
+                        </p>
+                    </div>
+                    <div class="rounded-xl border border-border bg-card p-4">
+                        <p class="text-sm text-muted-foreground">
+                            2FA Adoption Rate
+                        </p>
+                        <p class="mt-2 text-2xl font-semibold text-foreground">
+                            {{
+                                activeMetrics.high_value_metrics
+                                    .two_factor_adoption_rate === null
                                     ? '—'
                                     : `${activeMetrics.high_value_metrics.two_factor_adoption_rate}%`
                             }}
@@ -583,9 +715,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <p class="text-sm text-muted-foreground">Pending</p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
                             {{
-                                activeMetrics.high_value_metrics.invitation_funnel.pending === null
+                                activeMetrics.high_value_metrics
+                                    .invitation_funnel.pending === null
                                     ? '—'
-                                    : formatNumber(activeMetrics.high_value_metrics.invitation_funnel.pending)
+                                    : formatNumber(
+                                          activeMetrics.high_value_metrics
+                                              .invitation_funnel.pending,
+                                      )
                             }}
                         </p>
                     </div>
@@ -593,9 +729,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <p class="text-sm text-muted-foreground">Accepted</p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
                             {{
-                                activeMetrics.high_value_metrics.invitation_funnel.accepted === null
+                                activeMetrics.high_value_metrics
+                                    .invitation_funnel.accepted === null
                                     ? '—'
-                                    : formatNumber(activeMetrics.high_value_metrics.invitation_funnel.accepted)
+                                    : formatNumber(
+                                          activeMetrics.high_value_metrics
+                                              .invitation_funnel.accepted,
+                                      )
                             }}
                         </p>
                     </div>
@@ -603,9 +743,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <p class="text-sm text-muted-foreground">Expired</p>
                         <p class="mt-2 text-2xl font-semibold text-foreground">
                             {{
-                                activeMetrics.high_value_metrics.invitation_funnel.expired === null
+                                activeMetrics.high_value_metrics
+                                    .invitation_funnel.expired === null
                                     ? '—'
-                                    : formatNumber(activeMetrics.high_value_metrics.invitation_funnel.expired)
+                                    : formatNumber(
+                                          activeMetrics.high_value_metrics
+                                              .invitation_funnel.expired,
+                                      )
                             }}
                         </p>
                     </div>
@@ -632,10 +776,15 @@ const breadcrumbs: BreadcrumbItem[] = [
                         />
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
-                        <h3 class="text-sm font-medium text-foreground">{{ followerGrowthHeading }}</h3>
+                        <h3 class="text-sm font-medium text-foreground">
+                            {{ followerGrowthHeading }}
+                        </h3>
                         <p class="mt-1 text-xs text-muted-foreground">
                             {{
-                                activeDayCount(activeMetrics.high_value_metrics.follower_growth_30d) > 0
+                                activeDayCount(
+                                    activeMetrics.high_value_metrics
+                                        .follower_growth_30d,
+                                ) > 0
                                     ? `${activeDayCount(activeMetrics.high_value_metrics.follower_growth_30d)} day(s) with activity`
                                     : 'No activity in last 30 days'
                             }}
@@ -660,7 +809,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                             Top Posts by Engagement
                         </h3>
                         <div
-                            v-if="activeMetrics.comments_per_blog_post.length === 0"
+                            v-if="
+                                activeMetrics.comments_per_blog_post.length ===
+                                0
+                            "
                             class="mt-3 text-xs text-muted-foreground"
                         >
                             No published posts available yet.
@@ -674,9 +826,15 @@ const breadcrumbs: BreadcrumbItem[] = [
                         />
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
-                        <h3 class="text-sm font-medium text-foreground">{{ topAuthorsHeading }}</h3>
+                        <h3 class="text-sm font-medium text-foreground">
+                            {{ topAuthorsHeading }}
+                        </h3>
                         <div
-                            v-if="activeMetrics.high_value_metrics.top_authors_by_published_posts_30d.length === 0"
+                            v-if="
+                                activeMetrics.high_value_metrics
+                                    .top_authors_by_published_posts_30d
+                                    .length === 0
+                            "
                             class="mt-3 text-xs text-muted-foreground"
                         >
                             No authors with published posts in the last 30 days.
@@ -703,7 +861,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                             Total Blog Post Views
                         </p>
                         <p class="mt-1 text-xl font-semibold text-foreground">
-                            {{ formatNumber(activeMetrics.total_blog_post_views ?? 0) }}
+                            {{
+                                formatNumber(
+                                    activeMetrics.total_blog_post_views ?? 0,
+                                )
+                            }}
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
@@ -711,7 +873,12 @@ const breadcrumbs: BreadcrumbItem[] = [
                             Anonymous Blog Post Views
                         </p>
                         <p class="mt-1 text-xl font-semibold text-foreground">
-                            {{ formatNumber(activeMetrics.total_anonymous_blog_post_views ?? 0) }}
+                            {{
+                                formatNumber(
+                                    activeMetrics.total_anonymous_blog_post_views ??
+                                        0,
+                                )
+                            }}
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
@@ -719,7 +886,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                             Anonymous View Share
                         </p>
                         <p class="mt-1 text-xl font-semibold text-foreground">
-                            {{ activeMetrics.anonymous_view_share_percentage ?? 0 }}%
+                            {{
+                                activeMetrics.anonymous_view_share_percentage ??
+                                0
+                            }}%
                         </p>
                     </div>
                     <div class="rounded-xl border border-border bg-card p-3">
@@ -742,29 +912,44 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 : 'No activity in last 30 days'
                         }}
                     </p>
-                    <div class="mt-3 rounded-xl border border-border bg-card p-3">
+                    <div
+                        class="mt-3 rounded-xl border border-border bg-card p-3"
+                    >
                         <DashboardLineChart
                             :data="viewTrendChartData"
                             :options="viewTrendChartOptions"
                             height-class="h-40"
                         />
-                        <div class="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+                        <div
+                            class="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3"
+                        >
                             <p>
                                 Total 30d views:
-                                <span class="font-medium text-foreground">{{ formatNumber(viewsTrendSummary.total) }}</span>
+                                <span class="font-medium text-foreground">{{
+                                    formatNumber(viewsTrendSummary.total)
+                                }}</span>
                             </p>
                             <p>
                                 Anonymous 30d views:
-                                <span class="font-medium text-foreground">{{ formatNumber(anonymousViewsTrendSummary) }}</span>
+                                <span class="font-medium text-foreground">{{
+                                    formatNumber(anonymousViewsTrendSummary)
+                                }}</span>
                             </p>
                             <p>
                                 Peak day:
                                 <span class="font-medium text-foreground">
-                                    {{ viewsTrendSummary.peakDay ? `${formatDashboardDate(viewsTrendSummary.peakDay)} (${viewsTrendSummary.peakCount})` : '—' }}
+                                    {{
+                                        viewsTrendSummary.peakDay
+                                            ? `${formatDashboardDate(viewsTrendSummary.peakDay)} (${viewsTrendSummary.peakCount})`
+                                            : '—'
+                                    }}
                                 </span>
                             </p>
                         </div>
-                        <p v-if="viewsTrendSummary.total === 0" class="mt-2 text-xs text-muted-foreground">
+                        <p
+                            v-if="viewsTrendSummary.total === 0"
+                            class="mt-2 text-xs text-muted-foreground"
+                        >
                             No view counts recorded yet in this 30-day window.
                         </p>
                     </div>

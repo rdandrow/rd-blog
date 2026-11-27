@@ -24,7 +24,7 @@ return new class extends Migration
 
         // Validate regconfig token before embedding into DDL.
         // PostgreSQL identifiers/config names may include letters, digits, underscores, and dots.
-        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $language)) {
+        if (! preg_match('/^[a-zA-Z0-9_.]+$/', $language)) {
             throw new RuntimeException("Invalid full-text search language config: {$language}");
         }
 
@@ -105,7 +105,7 @@ return new class extends Migration
 
         // 9. Index for finding comments by post (already exists via foreign key, but ensure it's there)
         // The comments_blog_post_id_index already exists from previous migration
-        
+
         // 10. Composite index for threaded comments (MEDIUM VALUE)
         // Used when loading comment threads with parent_id
         DB::statement('

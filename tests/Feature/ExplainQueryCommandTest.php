@@ -291,7 +291,7 @@ describe('EXPLAIN ANALYZE Command', function () {
     });
 
     test('handles queries with parameters', function () {
-        $query = "SELECT * FROM blog_posts WHERE id = 1 AND is_published = true";
+        $query = 'SELECT * FROM blog_posts WHERE id = 1 AND is_published = true';
 
         $this->artisan('db:explain', [
             'query' => $query,

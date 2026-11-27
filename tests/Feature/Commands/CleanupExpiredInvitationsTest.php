@@ -95,7 +95,7 @@ describe('Cleanup Command Execution', function () {
         $exitCode = Artisan::call('invitations:cleanup', ['--force' => true]);
 
         expect($exitCode)->toBe(0);
-        
+
         $output = Artisan::output();
         expect($output)->toContain('No expired invitations found');
     })->group('cleanup-command', 'edge-cases');

@@ -11,7 +11,6 @@
  * server-side markdown preparation. For full frontend rendering tests,
  * see FRONTEND_TESTING.md for Vitest examples.
  */
-
 describe('Markdown Table Syntax', function () {
     it('validates basic table structure with headers and rows', function () {
         $tableMarkdown = <<<'MD'
@@ -36,7 +35,7 @@ MD;
 MD;
 
         $lines = explode("\n", $tableMarkdown);
-        
+
         expect($lines[1])->toContain('---')
             ->and($lines[1])->toContain('|');
     })->group('markdown', 'tables', 'separator');
@@ -51,7 +50,7 @@ MD;
 MD;
 
         $lines = explode("\n", $tableMarkdown);
-        
+
         // Should have header + separator + 3 data rows = 5 lines
         expect(count($lines))->toBe(5)
             ->and($lines[0])->toContain('Column A')
@@ -73,7 +72,7 @@ describe('Markdown Table Template Generation', function () {
 MD;
 
         $lines = array_filter(explode("\n", trim($template)));
-        
+
         expect(count($lines))->toBe(4) // header + separator + 2 data rows
             ->and($lines[0])->toContain('Header 1')
             ->and($lines[0])->toContain('Header 2')
@@ -85,10 +84,10 @@ MD;
 
     it('template has proper column alignment', function () {
         $template = '| Header 1 | Header 2 | Header 3 |';
-        
+
         // Count pipes to verify structure
         $pipeCount = substr_count($template, '|');
-        
+
         expect($pipeCount)->toBe(4) // 4 pipes for 3 columns (including edges)
             ->and($template)->toStartWith('|')
             ->and($template)->toEndWith('|');
@@ -98,10 +97,10 @@ MD;
 describe('Markdown Table Column Parsing', function () {
     it('correctly identifies number of columns in table', function () {
         $headerRow = '| Name | Email | Age |';
-        
+
         // Remove leading/trailing pipes and split
         $columns = array_filter(array_map('trim', explode('|', trim($headerRow, '|'))));
-        
+
         expect(count($columns))->toBe(3)
             ->and($columns)->toContain('Name')
             ->and($columns)->toContain('Email')
@@ -111,10 +110,10 @@ describe('Markdown Table Column Parsing', function () {
     it('handles tables with different column counts', function () {
         $twoColumnHeader = '| A | B |';
         $fiveColumnHeader = '| A | B | C | D | E |';
-        
+
         $cols2 = count(array_filter(explode('|', trim($twoColumnHeader, '|'))));
         $cols5 = count(array_filter(explode('|', trim($fiveColumnHeader, '|'))));
-        
+
         expect($cols2)->toBe(2)
             ->and($cols5)->toBe(5);
     })->group('markdown', 'tables', 'columns', 'variable');
@@ -164,7 +163,7 @@ MD;
 describe('Markdown Table Keyboard Shortcut Format', function () {
     it('validates Ctrl+Shift+T shortcut format', function () {
         $shortcut = 'Ctrl+Shift+T';
-        
+
         expect($shortcut)->toContain('Ctrl')
             ->and($shortcut)->toContain('Shift')
             ->and($shortcut)->toContain('T');
@@ -172,7 +171,7 @@ describe('Markdown Table Keyboard Shortcut Format', function () {
 
     it('shortcut uses uppercase T for table', function () {
         $shortcut = 'Ctrl+Shift+T';
-        
+
         expect($shortcut)->toEndWith('T')
             ->and($shortcut)->not->toEndWith('t');
     })->group('markdown', 'tables', 'shortcuts', 'case');
@@ -183,9 +182,9 @@ describe('Markdown Table Insertion Position', function () {
         $beforeContent = 'Some text before';
         $afterContent = 'Some text after';
         $table = "\n| A | B |\n|---|---|\n| 1 | 2 |\n";
-        
-        $fullContent = $beforeContent . $table . $afterContent;
-        
+
+        $fullContent = $beforeContent.$table.$afterContent;
+
         expect($fullContent)->toContain('Some text before')
             ->and($fullContent)->toContain('| A | B |')
             ->and($fullContent)->toContain('Some text after')
@@ -195,7 +194,7 @@ describe('Markdown Table Insertion Position', function () {
 
     it('table has proper line breaks around it', function () {
         $table = "\n| Header |\n|--------|\n| Data   |\n";
-        
+
         expect($table)->toStartWith("\n")
             ->and($table)->toEndWith("\n");
     })->group('markdown', 'tables', 'formatting', 'line-breaks');
@@ -204,7 +203,7 @@ describe('Markdown Table Insertion Position', function () {
 describe('Markdown Table Cell Content Validation', function () {
     it('validates header cell content matches expected format', function () {
         $headerCell = 'Header 1';
-        
+
         expect($headerCell)->toMatch('/^Header \d+$/')
             ->and($headerCell)->toContain('Header')
             ->and(strlen($headerCell))->toBeGreaterThan(0);
@@ -212,7 +211,7 @@ describe('Markdown Table Cell Content Validation', function () {
 
     it('validates data cell content matches expected format', function () {
         $dataCell = 'Cell 1';
-        
+
         expect($dataCell)->toMatch('/^Cell \d+$/')
             ->and($dataCell)->toContain('Cell')
             ->and(strlen($dataCell))->toBeGreaterThan(0);
@@ -220,7 +219,7 @@ describe('Markdown Table Cell Content Validation', function () {
 
     it('validates separator row uses dashes', function () {
         $separatorRow = '|----------|----------|----------|';
-        
+
         expect($separatorRow)->toContain('----------')
             ->and($separatorRow)->toMatch('/^\|[-|]+\|$/');
     })->group('markdown', 'tables', 'validation', 'separator');

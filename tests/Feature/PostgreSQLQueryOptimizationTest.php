@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 /*
  * PostgreSQL Query Optimization Tests
- * 
+ *
  * These tests verify that the PostgreSQL-specific query optimizations
  * (full-text search, stemming, etc.) are working correctly.
  */
@@ -17,7 +17,7 @@ describe('PostgreSQL Query Optimizations', function () {
     it('uses full-text search for PostgreSQL', function () {
         // Create test data
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         BlogPost::factory()->create([
             'user_id' => $admin->id,
             'title' => 'Understanding Laravel Framework',
@@ -38,7 +38,7 @@ describe('PostgreSQL Query Optimizations', function () {
         DB::enableQueryLog();
 
         // Perform search
-        $service = new BlogPostService();
+        $service = new BlogPostService;
         $results = $service->getAllPublishedPosts(['search' => 'Laravel']);
 
         $queries = DB::getQueryLog();
@@ -60,7 +60,7 @@ describe('PostgreSQL Query Optimizations', function () {
 
     it('handles special characters in search queries', function () {
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         BlogPost::factory()->create([
             'user_id' => $admin->id,
             'title' => 'C++ Programming Guide',
@@ -69,8 +69,8 @@ describe('PostgreSQL Query Optimizations', function () {
             'published_at' => now(),
         ]);
 
-        $service = new BlogPostService();
-        
+        $service = new BlogPostService;
+
         // Should handle C++ without errors
         $results = $service->getAllPublishedPosts(['search' => 'C++']);
 
@@ -80,7 +80,7 @@ describe('PostgreSQL Query Optimizations', function () {
 
     it('performs case-insensitive searches', function () {
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         BlogPost::factory()->create([
             'user_id' => $admin->id,
             'title' => 'PostgreSQL Database Design',
@@ -89,8 +89,8 @@ describe('PostgreSQL Query Optimizations', function () {
             'published_at' => now(),
         ]);
 
-        $service = new BlogPostService();
-        
+        $service = new BlogPostService;
+
         // All these should find the post (case-insensitive)
         $lowercase = $service->getAllPublishedPosts(['search' => 'postgresql']);
         $uppercase = $service->getAllPublishedPosts(['search' => 'POSTGRESQL']);
@@ -103,7 +103,7 @@ describe('PostgreSQL Query Optimizations', function () {
 
     it('searches across title, excerpt, and content', function () {
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         // Post with term only in title
         BlogPost::factory()->create([
             'user_id' => $admin->id,
@@ -134,7 +134,7 @@ describe('PostgreSQL Query Optimizations', function () {
             'published_at' => now()->subDays(1),
         ]);
 
-        $service = new BlogPostService();
+        $service = new BlogPostService;
         $results = $service->getAllPublishedPosts(['search' => 'TypeScript']);
 
         // Should find all three posts
@@ -144,7 +144,7 @@ describe('PostgreSQL Query Optimizations', function () {
     it('combines search with other filters', function () {
         $admin = User::factory()->create(['role' => 'admin']);
         $member = User::factory()->create(['role' => 'member']);
-        
+
         // Admin post with Laravel tag
         BlogPost::factory()->create([
             'user_id' => $admin->id,
@@ -172,8 +172,8 @@ describe('PostgreSQL Query Optimizations', function () {
             'published_at' => now(),
         ]);
 
-        $service = new BlogPostService();
-        
+        $service = new BlogPostService;
+
         // Search for Laravel + filter by admin + filter by Laravel tag
         $results = $service->getAllPublishedPosts([
             'search' => 'Laravel',
@@ -191,7 +191,7 @@ describe('Query Performance Benchmarks', function () {
 
     it('demonstrates full-text search performance advantage', function () {
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         // Create a decent amount of content to search through
         BlogPost::factory()->count(50)->create([
             'user_id' => $admin->id,
@@ -208,7 +208,7 @@ describe('Query Performance Benchmarks', function () {
             'published_at' => now(),
         ]);
 
-        $service = new BlogPostService();
+        $service = new BlogPostService;
 
         // Warm up application-level cache so the subsequent query reflects
         // only DB work, not cache population overhead.

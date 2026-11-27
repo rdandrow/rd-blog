@@ -43,6 +43,7 @@ class CleanupExpiredInvitations extends Command
 
         if ($count === 0) {
             $this->info('No expired invitations found.');
+
             return self::SUCCESS;
         }
 
@@ -54,12 +55,14 @@ class CleanupExpiredInvitations extends Command
                     $this->line("  - {$user->email} ({$user->role}) - Expired {$expiredHours}h ago");
                 }
             });
+
             return self::SUCCESS;
         }
 
         // Confirm cleanup (skip if --force is used)
-        if (!$this->option('force') && !$this->confirm("Found {$count} expired invitations. Proceed with cleanup?", true)) {
+        if (! $this->option('force') && ! $this->confirm("Found {$count} expired invitations. Proceed with cleanup?", true)) {
             $this->info('Cleanup cancelled.');
+
             return self::SUCCESS;
         }
 
@@ -87,7 +90,7 @@ class CleanupExpiredInvitations extends Command
         });
 
         $this->info("Successfully cleaned up {$cleaned} expired invitations.");
-        
+
         return self::SUCCESS;
     }
 }

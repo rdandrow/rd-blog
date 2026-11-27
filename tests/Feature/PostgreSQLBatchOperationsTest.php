@@ -301,8 +301,8 @@ describe('PostgreSQL Batch Operations', function () {
         });
 
         it('throws for an invalid keyColumn', function () {
-            $user  = User::factory()->create();
-            $post  = BlogPost::factory()->create(['user_id' => $user->id]);
+            $user = User::factory()->create();
+            $post = BlogPost::factory()->create(['user_id' => $user->id]);
 
             expect(fn () => BlogPost::bulkUpdate(
                 [$post->id => ['title' => 'X']],
@@ -311,12 +311,14 @@ describe('PostgreSQL Batch Operations', function () {
         });
 
         it('throws a clear exception on non-PostgreSQL drivers', function () {
-            $model = new class {
+            $model = new class
+            {
                 use HasBatchOperations;
 
                 public function getConnection()
                 {
-                    return new class {
+                    return new class
+                    {
                         public function getDriverName(): string
                         {
                             return 'mysql';
@@ -412,7 +414,7 @@ describe('PostgreSQL Batch Operations', function () {
         });
 
         it('deletes only existing records when IDs are mixed', function () {
-            $user  = User::factory()->create();
+            $user = User::factory()->create();
             $posts = BlogPost::factory(2)->create(['user_id' => $user->id]);
 
             $ids = [$posts[0]->id, $posts[1]->id, 999999];
@@ -497,7 +499,7 @@ describe('PostgreSQL Batch Operations', function () {
             $ids = BlogPost::insertReturning($posts);
 
             expect($ids)->toHaveCount(1);
-            
+
             $post = BlogPost::find($ids[0]);
             expect($post->tags)->toBe(['laravel', 'php']);
         });
@@ -528,12 +530,14 @@ describe('PostgreSQL Batch Operations', function () {
         });
 
         it('throws a clear exception on non-PostgreSQL drivers', function () {
-            $model = new class {
+            $model = new class
+            {
                 use HasBatchOperations;
 
                 public function getConnection()
                 {
-                    return new class {
+                    return new class
+                    {
                         public function getDriverName(): string
                         {
                             return 'mysql';
@@ -565,7 +569,7 @@ describe('PostgreSQL Batch Operations', function () {
             // Manually set reading_time (bypasses model events)
             DB::table('blog_posts')->whereIn('id', [$posts[0]->id, $posts[1]->id, $posts[2]->id])
                 ->update(['reading_time' => 5]);
-            
+
             $posts[0]->refresh();
             $posts[1]->refresh();
             $posts[2]->refresh();
@@ -596,7 +600,7 @@ describe('PostgreSQL Batch Operations', function () {
             // Manually set reading_time
             DB::table('blog_posts')->whereIn('id', [$posts[0]->id, $posts[1]->id])
                 ->update(['reading_time' => 10]);
-            
+
             $posts[0]->refresh();
             $posts[1]->refresh();
 
@@ -627,7 +631,7 @@ describe('PostgreSQL Batch Operations', function () {
         });
 
         it('processes increments across chunk boundaries', function () {
-            $user  = User::factory()->create();
+            $user = User::factory()->create();
             $posts = BlogPost::factory(5)->create(['user_id' => $user->id]);
 
             DB::table('blog_posts')
@@ -758,6 +762,7 @@ class TestModelWithBatchOperations extends \Illuminate\Database\Eloquent\Model
     use HasBatchOperations;
 
     protected $table = 'blog_posts';
+
     protected $guarded = [];
 }
 
@@ -766,7 +771,9 @@ class TestPgsqlModelWithBatchOperations extends \Illuminate\Database\Eloquent\Mo
     use HasBatchOperations;
 
     protected $connection = 'pgsql';
+
     protected $table = 'blog_posts';
+
     protected $guarded = [];
 }
 
@@ -817,8 +824,8 @@ describe('Column Cache', function () {
 
         // Seed the static cache directly with two fake connection entries
         $cacheProperty->setValue(null, [
-            'pgsql.blog_posts'   => ['id', 'title'],
-            'sqlite.blog_posts'  => ['id', 'title'],
+            'pgsql.blog_posts' => ['id', 'title'],
+            'sqlite.blog_posts' => ['id', 'title'],
         ]);
 
         BlogPost::clearColumnCache('pgsql');
@@ -839,7 +846,7 @@ describe('Column Cache', function () {
 
         // Access after clear should re-query and repopulate
         $user2 = User::factory()->create();
-        $post  = BlogPost::factory()->create(['user_id' => $user2->id, 'title' => 'Cache Repop']);
+        $post = BlogPost::factory()->create(['user_id' => $user2->id, 'title' => 'Cache Repop']);
 
         $affected = BlogPost::bulkUpdate([$post->id => ['title' => 'Updated After Clear']]);
 
@@ -857,7 +864,7 @@ describe('Column Cache', function () {
         $runtimeConnectionName = (new TestPgsqlModelWithBatchOperations)->getConnection()->getName();
 
         expect($keys)->not->toBeEmpty();
-        expect(collect($keys)->contains(fn ($key) => str_starts_with($key, $runtimeConnectionName . '.')))->toBeTrue();
+        expect(collect($keys)->contains(fn ($key) => str_starts_with($key, $runtimeConnectionName.'.')))->toBeTrue();
     });
 
 });

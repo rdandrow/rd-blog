@@ -16,7 +16,7 @@ class BlogPostResource extends JsonResource
     {
         // Include content if we're on a blog.show route or if viewing a single post
         $includeContent = $request->routeIs('blog.show') || $request->route()?->getName() === 'blog.show';
-        
+
         return [
             'id' => $this->id,
             'title' => $this->title,

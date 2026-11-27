@@ -4,19 +4,19 @@ namespace App\Models;
 
 use App\Database\Concerns\HasBatchOperations;
 use App\Services\DashboardMetricsService;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BlogPost extends Model
 {
-    use HasFactory;
     use HasBatchOperations;
+    use HasFactory;
 
     /**
      * Flag to temporarily disable cache invalidation during bulk operations.
@@ -53,17 +53,17 @@ class BlogPost extends Model
             if (empty($post->slug)) {
                 $post->slug = static::generateUniqueSlug($post->title);
             }
-            
+
             // Calculate reading time
             $post->reading_time = static::calculateReadingTime($post->content);
         });
 
         static::updating(function (self $post) {
             // Regenerate slug if title changed and no custom slug provided
-            if ($post->isDirty('title') && !$post->isDirty('slug')) {
+            if ($post->isDirty('title') && ! $post->isDirty('slug')) {
                 $post->slug = static::generateUniqueSlug($post->title, $post->id);
             }
-            
+
             // Recalculate reading time if content changed
             if ($post->isDirty('content')) {
                 $post->reading_time = static::calculateReadingTime($post->content);
@@ -108,33 +108,33 @@ class BlogPost extends Model
 
     /**
      * Get the current blog cache version.
-     * 
+     *
      * This version is included in all cache keys to enable instant invalidation
      * by simply incrementing the version number.
-     * 
+     *
      * NOTE: The version counter is stored in cache using Cache::forever().
      * When you run `php artisan cache:clear`, the version resets to 1 and all
      * cached data is cleared, so the cache will naturally warm from scratch with
      * version 1 keys. This is the expected behavior and requires no manual intervention.
-     * 
+     *
      * If you need the version to persist across cache clears (e.g., for debugging
      * or strict version monotonicity), store it in the database instead of cache.
      */
     public static function getCacheVersion(): int
     {
         $version = Cache::get('blog:cache_version');
-        
+
         if ($version === null) {
             $version = 1;
             Cache::forever('blog:cache_version', $version);
         }
-        
+
         return $version;
     }
 
     /**
      * Bump the blog cache version to invalidate all cached data.
-     * 
+     *
      * This is more efficient than deleting individual keys, especially for
      * drivers that don't support cache tags (file, database, array).
      */
@@ -153,7 +153,7 @@ class BlogPost extends Model
 
     /**
      * Invalidate all blog-related caches.
-     * 
+     *
      * Uses cache tags for efficient invalidation (Redis/Memcached)
      * Falls back to version bumping for other drivers.
      */
@@ -163,6 +163,7 @@ class BlogPost extends Model
             // Use tag flushing when the active store reports tag support.
             if (Cache::supportsTags()) {
                 Cache::tags(['blog_posts'])->flush();
+
                 return;
             }
 
@@ -197,21 +198,21 @@ class BlogPost extends Model
         $slug = Str::slug($title);
         $originalSlug = $slug;
         $counter = 1;
-        
+
         $query = static::where('slug', $slug);
         if ($excludeId) {
             $query->where('id', '!=', $excludeId);
         }
-        
+
         while ($query->exists()) {
-            $slug = $originalSlug . '-' . $counter;
+            $slug = $originalSlug.'-'.$counter;
             $counter++;
             $query = static::where('slug', $slug);
             if ($excludeId) {
                 $query->where('id', '!=', $excludeId);
             }
         }
-        
+
         return $slug;
     }
 
@@ -221,6 +222,7 @@ class BlogPost extends Model
     public static function calculateReadingTime(string $content): int
     {
         $wordCount = str_word_count(strip_tags($content));
+
         return max(1, ceil($wordCount / 200));
     }
 
@@ -247,7 +249,7 @@ class BlogPost extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('is_published', true)
-                    ->where('published_at', '<=', now());
+            ->where('published_at', '<=', now());
     }
 
     public function scopeFeatured(Builder $query): Builder

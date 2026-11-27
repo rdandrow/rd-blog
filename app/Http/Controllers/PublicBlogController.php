@@ -24,7 +24,7 @@ class PublicBlogController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->only(['search', 'tag', 'author']);
-        
+
         $data = $this->blogPostService->getLandingPageData($filters);
 
         return Inertia::render('Welcome', [
@@ -43,7 +43,7 @@ class PublicBlogController extends Controller
     public function list(Request $request): Response
     {
         $filters = $request->only(['search', 'tag', 'author']);
-        
+
         $data = $this->blogPostService->getBlogListingData($filters);
 
         return Inertia::render('BlogSimple', [
@@ -62,7 +62,7 @@ class PublicBlogController extends Controller
     public function show(string $slug, Request $request): Response
     {
         $user = $request->user();
-        
+
         $post = BlogPost::withCount('likes')
             ->with([
                 'author',
@@ -74,7 +74,7 @@ class PublicBlogController extends Controller
                 $query->withExists([
                     'likes as user_has_liked' => function ($query) use ($user) {
                         $query->where('user_id', $user->id);
-                    }
+                    },
                 ]);
             })
             ->published()
@@ -82,7 +82,7 @@ class PublicBlogController extends Controller
             ->firstOrFail();
 
         $isFollowingAuthor = false;
-        
+
         if ($user && $post->author) {
             $isFollowingAuthor = $user->following()->where('following_id', $post->author->id)->exists();
         }

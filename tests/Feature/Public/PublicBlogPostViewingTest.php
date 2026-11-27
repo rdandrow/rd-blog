@@ -14,15 +14,15 @@ use App\Models\User;
 describe('Landing Page (Home)', function () {
     it('allows guests to view landing page', function () {
         $response = $this->get(route('home'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('Welcome');
     })->group('public', 'guest', 'home');
 
     it('allows authenticated users to view landing page', function () {
         $user = createTestMember();
-        
+
         $response = $this->actingAs($user)->get(route('home'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('Welcome');
     })->group('public', 'authenticated', 'home');
 
@@ -34,14 +34,14 @@ describe('Landing Page (Home)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('Welcome')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->has('featured_posts', 1)
-                ->where('featured_posts.0.id', $featuredPost->id)
-                ->where('featured_posts.0.title', $featuredPost->title)
+            ->has('featured_posts', 1)
+            ->where('featured_posts.0.id', $featuredPost->id)
+            ->where('featured_posts.0.title', $featuredPost->title)
             );
     })->group('public', 'home', 'featured');
 
@@ -53,13 +53,13 @@ describe('Landing Page (Home)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('Welcome')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->has('posts', 1)
-                ->where('posts.0.id', $recentPost->id)
+            ->has('posts', 1)
+            ->where('posts.0.id', $recentPost->id)
             );
     })->group('public', 'home');
 
@@ -71,9 +71,9 @@ describe('Landing Page (Home)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('featured_posts', 2));
     })->group('public', 'home', 'featured');
 
@@ -85,9 +85,9 @@ describe('Landing Page (Home)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('posts', 6));
     })->group('public', 'home');
 
@@ -97,9 +97,9 @@ describe('Landing Page (Home)', function () {
             'user_id' => $author->id,
             'is_published' => false,
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('posts', 0)
             ->has('featured_posts', 0)
@@ -113,9 +113,9 @@ describe('Landing Page (Home)', function () {
             'is_published' => true,
             'published_at' => now()->addDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('posts', 0)
             ->has('featured_posts', 0)
@@ -136,9 +136,9 @@ describe('Landing Page (Home)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->where('posts.0.id', $newPost->id)
             ->where('posts.1.id', $oldPost->id)
@@ -149,15 +149,15 @@ describe('Landing Page (Home)', function () {
 describe('Blog Index (Listing)', function () {
     it('allows guests to view blog list page', function () {
         $response = $this->get(route('blog'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogSimple');
     })->group('public', 'guest', 'blog-list');
 
     it('allows authenticated users to view blog list page', function () {
         $user = createTestMember();
-        
+
         $response = $this->actingAs($user)->get(route('blog'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogSimple');
     })->group('public', 'authenticated', 'blog-list');
 
@@ -169,9 +169,9 @@ describe('Blog Index (Listing)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('posts', 3));
     })->group('public', 'blog-list');
 
@@ -189,9 +189,9 @@ describe('Blog Index (Listing)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('featured_posts', 1)
             ->where('featured_posts.0.id', $featuredPost->id)
@@ -208,9 +208,9 @@ describe('Blog Index (Listing)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('featured_posts', 4));
     })->group('public', 'blog-list', 'featured');
 
@@ -222,9 +222,9 @@ describe('Blog Index (Listing)', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('posts', 20));
     })->group('public', 'blog-list');
 
@@ -234,9 +234,9 @@ describe('Blog Index (Listing)', function () {
             'user_id' => $author->id,
             'is_published' => false,
         ]);
-        
+
         $response = $this->get(route('blog'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('posts', 0)
             ->has('featured_posts', 0)
@@ -261,9 +261,9 @@ describe('Search and Filtering', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home', ['search' => 'Laravel']));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->where('filters.search', 'Laravel')
             ->has('posts', 1)
@@ -280,9 +280,9 @@ describe('Search and Filtering', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home', ['search' => 'PHP testing']));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('posts', 1));
     })->group('public', 'search', 'home');
 
@@ -295,9 +295,9 @@ describe('Search and Filtering', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home', ['search' => 'TypeScript']));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('posts', 1));
     })->group('public', 'search', 'home');
 
@@ -317,9 +317,9 @@ describe('Search and Filtering', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog', ['tag' => 'laravel']));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->where('filters.tag', 'laravel')
             ->has('posts', 1)
@@ -330,7 +330,7 @@ describe('Search and Filtering', function () {
     it('can filter posts by author', function () {
         $author1 = createTestAdmin();
         $author2 = createTestAdmin();
-        
+
         $post1 = BlogPost::factory()->create([
             'user_id' => $author1->id,
             'is_featured' => false,
@@ -343,9 +343,9 @@ describe('Search and Filtering', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog', ['author' => $author1->id]));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->where('filters.author', (string) $author1->id)
             ->has('posts', 1)
@@ -379,9 +379,9 @@ describe('Search and Filtering', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog', ['search' => 'Laravel', 'tag' => 'testing']));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('posts', 1)
             ->where('posts.0.id', $matchingPost->id)
@@ -404,9 +404,9 @@ describe('Available Filters', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('availableTags', 4)
             ->where('availableTags.0', 'javascript')
@@ -420,7 +420,7 @@ describe('Available Filters', function () {
         $author1 = createTestAdmin(['name' => 'Author One']);
         $author2 = createTestAdmin(['name' => 'Author Two']);
         $memberWithoutPosts = createTestMember(['name' => 'Member User']);
-        
+
         BlogPost::factory()->create([
             'user_id' => $author1->id,
             'is_published' => true,
@@ -431,9 +431,9 @@ describe('Available Filters', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('availableAuthors', 2));
     })->group('public', 'filtering', 'home');
 
@@ -450,9 +450,9 @@ describe('Available Filters', function () {
             'tags' => ['draft-tag'],
             'is_published' => false,
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('availableTags', 1)
             ->where('availableTags.0', 'published-tag')
@@ -462,7 +462,7 @@ describe('Available Filters', function () {
     it('includes only authors with published posts', function () {
         $authorWithPublished = createTestAdmin();
         $authorWithDraftsOnly = createTestAdmin();
-        
+
         BlogPost::factory()->create([
             'user_id' => $authorWithPublished->id,
             'is_published' => true,
@@ -472,9 +472,9 @@ describe('Available Filters', function () {
             'user_id' => $authorWithDraftsOnly->id,
             'is_published' => false,
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('availableAuthors', 1));
     })->group('public', 'filtering', 'visibility');
 });
@@ -488,14 +488,14 @@ describe('Individual Post Viewing', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogPost')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('post.id', $post->id)
-                ->where('post.title', $post->title)
-                ->where('post.slug', $post->slug)
+            ->where('post.id', $post->id)
+            ->where('post.title', $post->title)
+            ->where('post.slug', $post->slug)
             );
     })->group('public', 'guest', 'blog-post');
 
@@ -507,9 +507,9 @@ describe('Individual Post Viewing', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->actingAs($user)->get(route('blog.show', $post->slug));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogPost')
             ->and($response)->assertInertia(fn ($page) => $page->where('post.id', $post->id));
     })->group('public', 'authenticated', 'blog-post');
@@ -520,9 +520,9 @@ describe('Individual Post Viewing', function () {
             'user_id' => $author->id,
             'is_published' => false,
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->toBeNotFound();
     })->group('public', 'blog-post', 'visibility');
 
@@ -533,15 +533,15 @@ describe('Individual Post Viewing', function () {
             'is_published' => true,
             'published_at' => now()->addDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->toBeNotFound();
     })->group('public', 'blog-post', 'visibility');
 
     it('returns 404 for non-existent slug', function () {
         $response = $this->get(route('blog.show', 'non-existent-slug'));
-        
+
         expect($response)->toBeNotFound();
     })->group('public', 'blog-post');
 });
@@ -559,9 +559,9 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->where('post.title', 'Test Post Title')
             ->where('post.excerpt', 'Test excerpt')
@@ -580,9 +580,9 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->where('post.author.id', $author->id)
             ->where('post.author.name', 'John Doe')
@@ -597,15 +597,15 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $user = createTestMember();
         Comment::factory()->count(3)->create([
             'blog_post_id' => $post->id,
             'user_id' => $user->id,
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('post.comments', 3));
     })->group('public', 'blog-post', 'metadata');
 
@@ -616,7 +616,7 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $user = createTestMember();
         $parentComment = Comment::factory()->create([
             'blog_post_id' => $post->id,
@@ -628,9 +628,9 @@ describe('Post Metadata Display', function () {
             'user_id' => $user->id,
             'parent_id' => $parentComment->id,
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('post.comments', 1)
             ->has('post.comments.0.replies', 1)
@@ -644,14 +644,14 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $users = User::factory()->count(5)->create();
         foreach ($users as $user) {
             $post->likes()->create(['user_id' => $user->id]);
         }
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.likes_count', 5));
     })->group('public', 'blog-post', 'metadata');
 
@@ -662,9 +662,9 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.user_has_liked', false));
     })->group('public', 'guest', 'blog-post', 'metadata');
 
@@ -676,11 +676,11 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $post->likes()->create(['user_id' => $user->id]);
-        
+
         $response = $this->actingAs($user)->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.user_has_liked', true));
     })->group('public', 'authenticated', 'blog-post', 'metadata');
 
@@ -692,9 +692,9 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->actingAs($user)->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.user_has_liked', false));
     })->group('public', 'authenticated', 'blog-post', 'metadata');
 
@@ -705,9 +705,9 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.is_following_author', false));
     })->group('public', 'guest', 'blog-post', 'metadata');
 
@@ -719,11 +719,11 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $user->following()->attach($author->id);
-        
+
         $response = $this->actingAs($user)->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.is_following_author', true));
     })->group('public', 'authenticated', 'blog-post', 'metadata');
 
@@ -735,9 +735,9 @@ describe('Post Metadata Display', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->actingAs($user)->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.is_following_author', false));
     })->group('public', 'authenticated', 'blog-post', 'metadata');
 });
@@ -751,9 +751,9 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.tags', []));
     })->group('public', 'blog-post', 'edge-cases');
 
@@ -764,9 +764,9 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('post.comments', 0));
     })->group('public', 'blog-post', 'edge-cases');
 
@@ -777,31 +777,31 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->where('post.likes_count', 0));
     })->group('public', 'blog-post', 'edge-cases');
 
     it('handles empty blog with no posts on landing page', function () {
         $response = $this->get(route('home'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('Welcome')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->has('posts', 0)
-                ->has('featured_posts', 0)
-                ->has('availableTags', 0)
-                ->has('availableAuthors', 0)
+            ->has('posts', 0)
+            ->has('featured_posts', 0)
+            ->has('availableTags', 0)
+            ->has('availableAuthors', 0)
             );
     })->group('public', 'home', 'edge-cases');
 
     it('handles empty blog with no posts on blog list', function () {
         $response = $this->get(route('blog'));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogSimple')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->has('posts', 0)
-                ->has('featured_posts', 0)
+            ->has('posts', 0)
+            ->has('featured_posts', 0)
             );
     })->group('public', 'blog-list', 'edge-cases');
 
@@ -813,9 +813,9 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog', ['search' => 'NonExistentTerm']));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('posts', 0)
             ->has('featured_posts', 0)
@@ -831,9 +831,9 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogPost')
             ->and($response)->assertInertia(fn ($page) => $page->where('post.content', $longContent));
     })->group('public', 'blog-post', 'edge-cases');
@@ -847,9 +847,9 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogPost')
             ->and($response)->assertInertia(fn ($page) => $page->where('post.content', $specialContent));
     })->group('public', 'blog-post', 'edge-cases');
@@ -868,9 +868,9 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('home'));
-        
+
         expect($response)->assertInertia(fn ($page) => $page
             ->has('featured_posts', 2) // Limited to 2
             ->has('posts', 6) // Limited to 6
@@ -886,11 +886,11 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response1 = $this->get(route('blog', ['search' => 'laravel']));
         $response2 = $this->get(route('blog', ['search' => 'LARAVEL']));
         $response3 = $this->get(route('blog', ['search' => 'LaRaVeL']));
-        
+
         expect($response1)->assertInertia(fn ($page) => $page->has('posts', 1))
             ->and($response2)->assertInertia(fn ($page) => $page->has('posts', 1))
             ->and($response3)->assertInertia(fn ($page) => $page->has('posts', 1));
@@ -905,9 +905,9 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog', ['search' => 'Laravel']));
-        
+
         expect($response)->assertInertia(fn ($page) => $page->has('posts', 1));
     })->group('public', 'search', 'edge-cases');
 
@@ -918,13 +918,13 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogPost')
             ->and($response)->assertInertia(fn ($page) => $page
-                ->where('post.id', $post->id)
-                ->where('post.author.id', $admin->id)
+            ->where('post.id', $post->id)
+            ->where('post.author.id', $admin->id)
             );
     })->group('public', 'blog-post', 'visibility');
 
@@ -935,9 +935,9 @@ describe('Edge Cases', function () {
             'is_published' => true,
             'published_at' => now()->subDay(),
         ]);
-        
+
         $response = $this->get(route('blog.show', $post->slug));
-        
+
         expect($response)->toBeSuccessfulInertiaResponse('BlogPost')
             ->and($response)->assertInertia(fn ($page) => $page->where('post.author.id', $masterAdmin->id));
     })->group('public', 'blog-post', 'visibility');

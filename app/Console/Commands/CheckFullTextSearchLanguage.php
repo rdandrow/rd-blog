@@ -31,13 +31,15 @@ class CheckFullTextSearchLanguage extends Command
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
             $this->error('This command only works with PostgreSQL databases.');
+
             return self::FAILURE;
         }
 
         $configuredLanguage = (string) config('database.full_text_search.language', 'english');
 
-        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $configuredLanguage)) {
+        if (! preg_match('/^[a-zA-Z0-9_.]+$/', $configuredLanguage)) {
             $this->error("Invalid configured full-text language: {$configuredLanguage}");
+
             return self::FAILURE;
         }
 
@@ -47,6 +49,7 @@ class CheckFullTextSearchLanguage extends Command
         if ($indexExpression === null) {
             $this->error("Index not found or does not use expression columns: {$indexName}");
             $this->line('Run migrations, or recreate the full-text index before using this check.');
+
             return self::FAILURE;
         }
 
@@ -54,7 +57,8 @@ class CheckFullTextSearchLanguage extends Command
 
         if ($indexLanguage === null) {
             $this->error("Could not determine to_tsvector language from index expression for: {$indexName}");
-            $this->line('Expression: ' . $indexExpression);
+            $this->line('Expression: '.$indexExpression);
+
             return self::FAILURE;
         }
 
@@ -64,6 +68,7 @@ class CheckFullTextSearchLanguage extends Command
             $this->line("Index language  : {$indexLanguage}");
             $this->newLine();
             $this->line('Action required: create and run a migration to drop/recreate the full-text index with the configured language.');
+
             return self::FAILURE;
         }
 
@@ -95,7 +100,7 @@ class CheckFullTextSearchLanguage extends Command
 
         $expression = is_object($row) ? ($row->expression ?? null) : ($row['expression'] ?? null);
 
-        if (!is_string($expression) || trim($expression) === '') {
+        if (! is_string($expression) || trim($expression) === '') {
             return null;
         }
 
@@ -107,7 +112,7 @@ class CheckFullTextSearchLanguage extends Command
      */
     private function extractTsVectorLanguage(string $expression): ?string
     {
-        if (!preg_match("/to_tsvector\\('([^']+)'(?:\\:\\:regconfig)?\\s*,/i", $expression, $matches)) {
+        if (! preg_match("/to_tsvector\\('([^']+)'(?:\\:\\:regconfig)?\\s*,/i", $expression, $matches)) {
             return null;
         }
 

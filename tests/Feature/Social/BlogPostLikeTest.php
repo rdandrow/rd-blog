@@ -7,7 +7,6 @@
  * like counting, and access control.
  */
 
-use App\Models\BlogPost;
 use App\Models\BlogPostLike;
 use App\Models\User;
 
@@ -92,7 +91,7 @@ describe('Liking Blog Posts', function () {
             'blog_post_id' => $publishedPost->id,
             'user_id' => $this->user->id,
         ]);
-        
+
         $this->assertDatabaseHas('blog_post_likes', [
             'blog_post_id' => $draftPost->id,
             'user_id' => $this->user->id,
@@ -176,7 +175,7 @@ describe('Unliking Blog Posts', function () {
             'blog_post_id' => $post->id,
             'user_id' => $user1->id,
         ]);
-        
+
         $this->assertDatabaseHas('blog_post_likes', [
             'blog_post_id' => $post->id,
             'user_id' => $user2->id,
@@ -202,7 +201,7 @@ describe('Unliking Blog Posts', function () {
             'blog_post_id' => $post1->id,
             'user_id' => $user->id,
         ]);
-        
+
         $this->assertDatabaseHas('blog_post_likes', [
             'blog_post_id' => $post2->id,
             'user_id' => $user->id,
@@ -222,7 +221,7 @@ describe('Like Database Integrity', function () {
             'user_id' => $user->id,
         ]);
 
-        expect(fn() => BlogPostLike::create([
+        expect(fn () => BlogPostLike::create([
             'blog_post_id' => $post->id,
             'user_id' => $user->id,
         ]))->toThrow(\Illuminate\Database\QueryException::class);
@@ -346,7 +345,7 @@ describe('Like Edge Cases', function () {
 
         $response = $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
         expect($response)->toHaveSuccessMessage('Post liked');
-        
+
         $response = $this->actingAs($user)->post(route('blog.like.toggle', $post->slug));
         expect($response)->toHaveSuccessMessage('Like removed');
     })->group('likes', 'edge-cases', 'featured');
@@ -355,9 +354,9 @@ describe('Like Edge Cases', function () {
 describe('Like Queries', function () {
     it('can query likes count for a blog post', function () {
         $post = createPublishedPost();
-        
+
         $users = User::factory()->count(5)->create();
-        
+
         foreach ($users as $user) {
             BlogPostLike::create([
                 'blog_post_id' => $post->id,
@@ -366,7 +365,7 @@ describe('Like Queries', function () {
         }
 
         $likesCount = BlogPostLike::where('blog_post_id', $post->id)->count();
-        
+
         expect($likesCount)->toBe(5);
     })->group('likes', 'queries');
 
@@ -383,7 +382,7 @@ describe('Like Queries', function () {
         $userLikedPost = BlogPostLike::where('blog_post_id', $post->id)
             ->where('user_id', $user->id)
             ->exists();
-        
+
         $otherUserLikedPost = BlogPostLike::where('blog_post_id', $post->id)
             ->where('user_id', $otherUser->id)
             ->exists();

@@ -4,7 +4,6 @@ use App\Models\BlogPost;
 use App\Models\User;
 use App\Services\BlogPostService;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 uses(Tests\TestCase::class);
 
@@ -13,9 +12,8 @@ uses(Tests\TestCase::class);
  * @group blog-post-service
  * @group unit
  */
-
 beforeEach(function () {
-    $this->service = new BlogPostService();
+    $this->service = new BlogPostService;
 });
 
 afterEach(function () {
@@ -34,7 +32,7 @@ describe('applyFilters method', function () {
         $query->shouldReceive('getConnection')
             ->once()
             ->andReturn($connection);
-        
+
         // Expect whereRaw for PostgreSQL full-text search
         $query->shouldReceive('whereRaw')
             ->once()
@@ -43,10 +41,10 @@ describe('applyFilters method', function () {
                 Mockery::type('array')
             )
             ->andReturnSelf();
-        
+
         // Act: Apply search filter
         $result = $this->service->applyFilters($query, ['search' => 'Laravel']);
-        
+
         // Assert: Returns query builder
         expect($result)->toBe($query);
     });
@@ -54,16 +52,16 @@ describe('applyFilters method', function () {
     test('filters posts by tag', function () {
         // Arrange: Create a mock query builder
         $query = Mockery::mock(Builder::class);
-        
+
         // Expect whereJsonContains for tag filter
         $query->shouldReceive('whereJsonContains')
             ->once()
             ->with('tags', 'Laravel')
             ->andReturnSelf();
-        
+
         // Act: Apply tag filter
         $result = $this->service->applyFilters($query, ['tag' => 'Laravel']);
-        
+
         // Assert: Returns query builder
         expect($result)->toBe($query);
     });
@@ -71,16 +69,16 @@ describe('applyFilters method', function () {
     test('filters posts by author id', function () {
         // Arrange: Create a mock query builder
         $query = Mockery::mock(Builder::class);
-        
+
         // Expect where clause for author filter
         $query->shouldReceive('where')
             ->once()
             ->with('user_id', 1)
             ->andReturnSelf();
-        
+
         // Act: Apply author filter
         $result = $this->service->applyFilters($query, ['author' => 1]);
-        
+
         // Assert: Returns query builder
         expect($result)->toBe($query);
     });
@@ -96,7 +94,7 @@ describe('applyFilters method', function () {
         $query->shouldReceive('getConnection')
             ->once()
             ->andReturn($connection);
-        
+
         // Expect all filter methods to be called
         $query->shouldReceive('where')
             ->once()
@@ -110,14 +108,14 @@ describe('applyFilters method', function () {
             ->once()
             ->with('user_id', 1)
             ->andReturnSelf();
-        
+
         // Act: Apply multiple filters
         $result = $this->service->applyFilters($query, [
             'search' => 'Laravel',
             'tag' => 'Testing',
             'author' => 1,
         ]);
-        
+
         // Assert: Returns query builder
         expect($result)->toBe($query);
     });
@@ -125,15 +123,15 @@ describe('applyFilters method', function () {
     test('handles empty filters gracefully', function () {
         // Arrange: Create a mock query builder
         $query = Mockery::mock(Builder::class);
-        
+
         // Expect no methods to be called
         $query->shouldReceive('where')->never();
         $query->shouldReceive('whereRaw')->never();
         $query->shouldReceive('whereJsonContains')->never();
-        
+
         // Act: Apply empty filters
         $result = $this->service->applyFilters($query, []);
-        
+
         // Assert: Returns query builder unchanged
         expect($result)->toBe($query);
     });
@@ -149,10 +147,10 @@ describe('getFeaturedPosts method', function () {
     test('returns correct number of posts', function () {
         // Arrange: Create more featured posts than limit
         BlogPost::factory()->count(5)->published()->featured()->create(['user_id' => $this->author1->id]);
-        
+
         // Act: Get featured posts with limit of 2
         $posts = $this->service->getFeaturedPosts(2);
-        
+
         // Assert: Returns exactly 2 posts
         expect($posts)->toHaveCount(2);
     });
@@ -171,10 +169,10 @@ describe('getFeaturedPosts method', function () {
             'tags' => ['Laravel'],
             'user_id' => $this->author2->id,
         ]);
-        
+
         // Act: Get featured posts filtered by tag
         $posts = $this->service->getFeaturedPosts(10, ['tag' => 'Laravel']);
-        
+
         // Assert: Only Laravel tagged posts returned
         expect($posts)->toHaveCount(2);
     });
@@ -193,10 +191,10 @@ describe('getFeaturedPosts method', function () {
             'published_at' => now()->subDays(5),
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get featured posts
         $posts = $this->service->getFeaturedPosts(10);
-        
+
         // Assert: Ordered newest to oldest
         expect($posts[0]->id)->toBe($newest->id)
             ->and($posts[1]->id)->toBe($middle->id)
@@ -211,10 +209,10 @@ describe('getFeaturedPosts method', function () {
             'published_at' => null,
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get featured posts
         $posts = $this->service->getFeaturedPosts(10);
-        
+
         // Assert: Only published posts returned
         expect($posts)->toHaveCount(2);
     });
@@ -226,10 +224,10 @@ describe('getFeaturedPosts method', function () {
             'is_featured' => false,
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get featured posts
         $posts = $this->service->getFeaturedPosts(10);
-        
+
         // Assert: Only featured posts returned
         expect($posts)->toHaveCount(2)
             ->and($posts->every(fn($post) => $post->is_featured))->toBeTrue();
@@ -244,10 +242,10 @@ describe('getRecentPosts method', function () {
             'is_featured' => false,
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get recent posts
         $posts = $this->service->getRecentPosts(10);
-        
+
         // Assert: No featured posts in result
         expect($posts)->toHaveCount(3)
             ->and($posts->every(fn($post) => !$post->is_featured))->toBeTrue();
@@ -263,10 +261,10 @@ describe('getRecentPosts method', function () {
             'is_featured' => false,
             'user_id' => $this->author2->id,
         ]);
-        
+
         // Act: Get recent posts filtered by author
         $posts = $this->service->getRecentPosts(10, ['author' => $this->author1->id]);
-        
+
         // Assert: Only author1's posts returned
         expect($posts)->toHaveCount(2);
     });
@@ -277,10 +275,10 @@ describe('getRecentPosts method', function () {
             'is_featured' => false,
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get recent posts with limit of 3
         $posts = $this->service->getRecentPosts(3);
-        
+
         // Assert: Returns exactly 3 posts
         expect($posts)->toHaveCount(3);
     });
@@ -297,10 +295,10 @@ describe('getRecentPosts method', function () {
             'published_at' => now()->subDays(1),
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get recent posts
         $posts = $this->service->getRecentPosts(10);
-        
+
         // Assert: Ordered newest to oldest
         expect($posts[0]->id)->toBe($newest->id)
             ->and($posts[1]->id)->toBe($oldest->id);
@@ -322,10 +320,10 @@ describe('getAvailableTags method', function () {
             'tags' => ['JavaScript'],
             'user_id' => $this->author2->id,
         ]);
-        
+
         // Act: Get available tags
         $tags = $this->service->getAvailableTags();
-        
+
         // Assert: Returns unique tags (Laravel appears only once)
         expect($tags)->toHaveCount(4)
             ->and($tags->contains('Laravel'))->toBeTrue()
@@ -340,10 +338,10 @@ describe('getAvailableTags method', function () {
             'tags' => ['Zebra', 'Apple', 'Mango'],
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get available tags
         $tags = $this->service->getAvailableTags();
-        
+
         // Assert: Tags are sorted alphabetically
         expect($tags->values()->toArray())->toBe(['Apple', 'Mango', 'Zebra']);
     });
@@ -360,10 +358,10 @@ describe('getAvailableTags method', function () {
             'tags' => ['Draft'],
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get available tags
         $tags = $this->service->getAvailableTags();
-        
+
         // Assert: Only published post tags returned
         expect($tags)->toHaveCount(1)
             ->and($tags->contains('Published'))->toBeTrue()
@@ -380,10 +378,10 @@ describe('getAvailableTags method', function () {
             'tags' => [],
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get available tags
         $tags = $this->service->getAvailableTags();
-        
+
         // Assert: Returns only valid tags
         expect($tags)->toHaveCount(1)
             ->and($tags->first())->toBe('Valid');
@@ -395,12 +393,12 @@ describe('getAvailableAuthors method', function () {
         // Arrange: Create authors with and without published posts
         BlogPost::factory()->published()->create(['user_id' => $this->author1->id]);
         BlogPost::factory()->published()->create(['user_id' => $this->author2->id]);
-        
+
         $authorWithoutPosts = User::factory()->create(['name' => 'Charlie No Posts']);
-        
+
         // Act: Get available authors
         $authors = $this->service->getAvailableAuthors();
-        
+
         // Assert: Only authors with published posts returned
         expect($authors)->toHaveCount(2)
             ->and($authors->pluck('id'))->toContain($this->author1->id, $this->author2->id)
@@ -410,10 +408,10 @@ describe('getAvailableAuthors method', function () {
     test('returns correct user attributes', function () {
         // Arrange: Create author with published post
         BlogPost::factory()->published()->create(['user_id' => $this->author1->id]);
-        
+
         // Act: Get available authors
         $authors = $this->service->getAvailableAuthors();
-        
+
         // Assert: Returns only id and name attributes
         $author = $authors->first();
         expect($author->id)->toBe($this->author1->id)
@@ -429,10 +427,10 @@ describe('getAvailableAuthors method', function () {
             'published_at' => null,
             'user_id' => $this->author2->id,
         ]);
-        
+
         // Act: Get available authors
         $authors = $this->service->getAvailableAuthors();
-        
+
         // Assert: Only author with published posts returned
         expect($authors)->toHaveCount(1)
             ->and($authors->first()->id)->toBe($this->author1->id);
@@ -441,10 +439,10 @@ describe('getAvailableAuthors method', function () {
     test('returns each author once even with multiple posts', function () {
         // Arrange: Create multiple posts for same author
         BlogPost::factory()->published()->count(5)->create(['user_id' => $this->author1->id]);
-        
+
         // Act: Get available authors
         $authors = $this->service->getAvailableAuthors();
-        
+
         // Assert: Author appears only once
         expect($authors)->toHaveCount(1)
             ->and($authors->first()->id)->toBe($this->author1->id);
@@ -459,10 +457,10 @@ describe('getLandingPageData method', function () {
             'is_featured' => false,
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get landing page data
         $data = $this->service->getLandingPageData();
-        
+
         // Assert: All required keys present with correct data
         expect($data)->toHaveKeys(['featured_posts', 'recent_posts', 'available_tags', 'available_authors'])
             ->and($data['featured_posts'])->toHaveCount(2) // Default limit
@@ -486,10 +484,10 @@ describe('getLandingPageData method', function () {
             'tags' => ['Laravel'],
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get landing page data with filters
         $data = $this->service->getLandingPageData(['tag' => 'Laravel']);
-        
+
         // Assert: Filters applied to featured and recent posts
         expect($data['featured_posts'])->toHaveCount(1)
             ->and($data['recent_posts'])->toHaveCount(2);
@@ -504,10 +502,10 @@ describe('getBlogListingData method', function () {
             'is_featured' => false,
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get blog listing data
         $data = $this->service->getBlogListingData();
-        
+
         // Assert: All required keys present with correct data
         expect($data)->toHaveKeys(['featured_posts', 'posts', 'available_tags', 'available_authors'])
             ->and($data['featured_posts'])->toHaveCount(4) // Limited to 4
@@ -523,10 +521,10 @@ describe('getBlogListingData method', function () {
             'is_featured' => false,
             'user_id' => $this->author1->id,
         ]);
-        
+
         // Act: Get blog listing data
         $data = $this->service->getBlogListingData();
-        
+
         // Assert: Featured and non-featured properly separated
         expect($data['featured_posts']->every(fn($post) => $post->is_featured))->toBeTrue()
             ->and($data['posts']->every(fn($post) => !$post->is_featured))->toBeTrue();
@@ -544,10 +542,10 @@ describe('getBlogListingData method', function () {
             'is_featured' => false,
             'user_id' => $this->author2->id,
         ]);
-        
+
         // Act: Get blog listing data filtered by author1
         $data = $this->service->getBlogListingData(['author' => $this->author1->id]);
-        
+
         // Assert: Only author1's posts returned
         expect($data['featured_posts'])->toHaveCount(2)
             ->and($data['posts'])->toHaveCount(3)

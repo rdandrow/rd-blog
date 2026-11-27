@@ -5,11 +5,12 @@ namespace Tests\Feature;
 use App\Models\BlogPost;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+
 use function Pest\Laravel\actingAs;
 
 /*
  * PostgreSQL Index Performance Tests
- * 
+ *
  * These tests demonstrate the performance benefits of the PostgreSQL-specific
  * indexes added in migration 2026_02_16_000000_add_postgresql_optimized_indexes.
  */
@@ -25,17 +26,17 @@ describe('PostgreSQL Index Performance', function () {
         expect($indexExists)->not->toBeNull(
             'GIN index blog_posts_tags_gin_index should exist'
         );
-        
+
         // Create test data
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         BlogPost::factory()->count(50)->create([
             'user_id' => $admin->id,
             'tags' => ['Laravel', 'PHP', 'Testing'],
             'is_published' => true,
             'published_at' => now()->subDays(rand(1, 60)),
         ]);
-        
+
         BlogPost::factory()->count(50)->create([
             'user_id' => $admin->id,
             'tags' => ['Vue', 'JavaScript', 'Frontend'],
@@ -48,7 +49,7 @@ describe('PostgreSQL Index Performance', function () {
         // The index will be used in production with larger datasets when cost-beneficial.
         $posts = BlogPost::whereJsonContains('tags', 'Laravel')->get();
         expect($posts->count())->toBe(50)
-            ->and($posts->every(fn($post) => in_array('Laravel', $post->tags)))->toBeTrue();
+            ->and($posts->every(fn ($post) => in_array('Laravel', $post->tags)))->toBeTrue();
     })->group('performance', 'indexes');
 
     it('has composite index available for published posts and queries work correctly', function () {
@@ -60,16 +61,16 @@ describe('PostgreSQL Index Performance', function () {
         expect($indexExists)->not->toBeNull(
             'Composite index blog_posts_published_date_index should exist'
         );
-        
+
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         // Create test data
         BlogPost::factory()->count(100)->create([
             'user_id' => $admin->id,
             'is_published' => true,
             'published_at' => now()->subDays(rand(1, 90)),
         ]);
-        
+
         BlogPost::factory()->count(50)->create([
             'user_id' => $admin->id,
             'is_published' => false,
@@ -79,7 +80,7 @@ describe('PostgreSQL Index Performance', function () {
         // Index will be used when cost-beneficial for larger datasets
         $posts = BlogPost::published()->orderBy('published_at', 'desc')->take(10)->get();
         expect($posts->count())->toBe(10)
-            ->and($posts->every(fn($post) => $post->is_published))->toBeTrue();
+            ->and($posts->every(fn ($post) => $post->is_published))->toBeTrue();
     })->group('performance', 'indexes');
 
     it('has featured posts index available and queries work correctly', function () {
@@ -91,9 +92,9 @@ describe('PostgreSQL Index Performance', function () {
         expect($indexExists)->not->toBeNull(
             'Featured posts index blog_posts_featured_published_index should exist'
         );
-        
+
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         // Create featured posts
         BlogPost::factory()->count(50)->create([
             'user_id' => $admin->id,
@@ -101,7 +102,7 @@ describe('PostgreSQL Index Performance', function () {
             'is_featured' => true,
             'published_at' => now()->subDays(rand(1, 60)),
         ]);
-        
+
         // Create non-featured posts
         BlogPost::factory()->count(100)->create([
             'user_id' => $admin->id,
@@ -114,7 +115,7 @@ describe('PostgreSQL Index Performance', function () {
         // Index will be used when cost-beneficial
         $posts = BlogPost::published()->where('is_featured', true)->orderBy('published_at', 'desc')->get();
         expect($posts->count())->toBe(50)
-            ->and($posts->every(fn($post) => $post->is_featured))->toBeTrue();
+            ->and($posts->every(fn ($post) => $post->is_featured))->toBeTrue();
     })->group('performance', 'indexes');
 
     it('has draft posts index available for author queries and queries work correctly', function () {
@@ -126,16 +127,16 @@ describe('PostgreSQL Index Performance', function () {
         expect($indexExists)->not->toBeNull(
             'Drafts by author index blog_posts_drafts_by_author_index should exist'
         );
-        
+
         $admin = User::factory()->create(['role' => 'admin']);
-        
+
         // Create drafts for admin
         BlogPost::factory()->count(50)->create([
             'user_id' => $admin->id,
             'is_published' => false,
             'published_at' => null,
         ]);
-        
+
         // Create drafts for other users
         $otherUsers = User::factory()->count(5)->create();
         foreach ($otherUsers as $user) {
@@ -146,16 +147,16 @@ describe('PostgreSQL Index Performance', function () {
         }
 
         actingAs($admin);
-        
+
         // Verify query returns only admin's drafts
         // Index will be used when cost-beneficial for filtering by user_id and is_published
         $drafts = BlogPost::where('user_id', $admin->id)
             ->where('is_published', false)
             ->orderBy('updated_at', 'desc')
             ->get();
-        
+
         expect($drafts->count())->toBe(50)
-            ->and($drafts->every(fn($post) => $post->user_id === $admin->id && !$post->is_published))->toBeTrue();
+            ->and($drafts->every(fn ($post) => $post->user_id === $admin->id && ! $post->is_published))->toBeTrue();
     })->group('performance', 'indexes');
 
     it('verifies all custom indexes exist', function () {

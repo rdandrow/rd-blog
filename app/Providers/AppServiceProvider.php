@@ -47,14 +47,14 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Enable query performance monitoring for development and staging.
-     * 
+     *
      * Note: Query counters and flags are reset per request via ResetQueryMonitoring
      * middleware to ensure clean state in Octane and long-running processes.
      */
     protected function enableQueryMonitoring(): void
     {
         // Only enable in local and staging environments
-        if (!app()->environment(['local', 'staging'])) {
+        if (! app()->environment(['local', 'staging'])) {
             return;
         }
 
@@ -88,7 +88,7 @@ class AppServiceProvider extends ServiceProvider
                     'sql' => $query->sql,
                     'bindings' => $bindings,
                     'binding_count' => count($query->bindings),
-                    'time' => $query->time . 'ms',
+                    'time' => $query->time.'ms',
                     'connection' => $query->connectionName,
                 ]);
             }
@@ -99,7 +99,7 @@ class AppServiceProvider extends ServiceProvider
                     'sql' => $query->sql,
                     'bindings' => $bindings,
                     'binding_count' => count($query->bindings),
-                    'time' => $query->time . 'ms',
+                    'time' => $query->time.'ms',
                     'connection' => $query->connectionName,
                     'trace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10),
                 ]);
@@ -109,7 +109,7 @@ class AppServiceProvider extends ServiceProvider
             // Uses a simple counter instead of query log to avoid memory accumulation
             if ($enableN1Detection && $isHttpRequest && $request && isset($queryCount) && $queryCount > 50) {
                 // Log only once per request when threshold is crossed
-                if (!$request->attributes->get('_n1_logged', false)) {
+                if (! $request->attributes->get('_n1_logged', false)) {
                     Log::warning('Potential N+1 query problem detected', [
                         'query_count' => $queryCount,
                         'last_query' => $query->sql,

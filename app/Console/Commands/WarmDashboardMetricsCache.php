@@ -15,7 +15,7 @@ class WarmDashboardMetricsCache extends Command
 
     public function handle(DashboardMetricsService $dashboardMetricsService): int
     {
-        if (!config('dashboard.cache.enabled', true)) {
+        if (! config('dashboard.cache.enabled', true)) {
             $this->info('Dashboard metrics cache is disabled.');
 
             return self::SUCCESS;

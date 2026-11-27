@@ -12,8 +12,11 @@ use Illuminate\Support\Facades\Schema;
 class DashboardMetricsService
 {
     private const TREND_DAYS = 30;
+
     private const CACHE_KEY_VERSION = 2;
+
     private const DEFAULT_CACHE_TTL_SECONDS = 600;
+
     private const CACHE_RUNTIME_VERSION_KEY = 'dashboard:metrics:cache_version';
 
     private ?bool $viewsTrackingEnabled = null;
@@ -141,7 +144,7 @@ class DashboardMetricsService
 
     private function getCachedRequestedMetrics(?User $user, bool $viewsTrackingEnabled): array
     {
-        if (!config('dashboard.cache.enabled', true)) {
+        if (! config('dashboard.cache.enabled', true)) {
             return $this->getRequestedMetrics($user, $viewsTrackingEnabled);
         }
 
@@ -207,7 +210,7 @@ class DashboardMetricsService
      */
     public function invalidateDashboardCache(): void
     {
-        if (!config('dashboard.cache.enabled', true)) {
+        if (! config('dashboard.cache.enabled', true)) {
             return;
         }
 

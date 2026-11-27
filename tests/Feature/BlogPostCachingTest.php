@@ -5,20 +5,19 @@ use App\Models\User;
 use App\Services\BlogPostService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use function Pest\Laravel\{actingAs};
 
 beforeEach(function () {
     // Clear cache before each test
     Cache::flush();
-    
-    $this->service = new BlogPostService();
+
+    $this->service = new BlogPostService;
 });
 
 describe('BlogPostService Caching', function () {
     describe('Popular Posts Caching', function () {
         it('caches popular posts by published date', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->count(15)->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -38,7 +37,7 @@ describe('BlogPostService Caching', function () {
 
         it('caches different limits separately', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->count(20)->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -48,14 +47,14 @@ describe('BlogPostService Caching', function () {
             $posts5 = $this->service->getPopularPosts(5);
             $posts10 = $this->service->getPopularPosts(10);
 
-            // Verify different limits are cached separately  
+            // Verify different limits are cached separately
             expect($posts5)->toHaveCount(5)
                 ->and($posts10)->toHaveCount(10);
-            
+
             // Call again to verify caching works for both
             $cached5 = $this->service->getPopularPosts(5);
             $cached10 = $this->service->getPopularPosts(10);
-            
+
             expect($cached5->pluck('id')->toArray())->toBe($posts5->pluck('id')->toArray())
                 ->and($cached10->pluck('id')->toArray())->toBe($posts10->pluck('id')->toArray());
         });
@@ -65,7 +64,8 @@ describe('BlogPostService Caching', function () {
         it('falls back to callback when tagged cache read-through throws', function () {
             config(['cache.default' => 'redis']);
 
-            $service = new class {
+            $service = new class
+            {
                 use \App\Services\Concerns\CachesBlogData;
 
                 public function rememberProxy(string $key, callable $callback, ?int $ttl = null): mixed
@@ -81,7 +81,8 @@ describe('BlogPostService Caching', function () {
             Cache::shouldReceive('tags')
                 ->once()
                 ->with(['blog_posts'])
-                ->andReturn(new class {
+                ->andReturn(new class
+                {
                     public function remember(string $key, int $ttl, callable $callback): mixed
                     {
                         throw new \RuntimeException('Redis unavailable');
@@ -114,7 +115,8 @@ describe('BlogPostService Caching', function () {
                 ->andReturn(true);
 
             Cache::shouldReceive('tags')
-                ->andReturn(new class {
+                ->andReturn(new class
+                {
                     public function flush(): void
                     {
                         throw new \RuntimeException('Cache unavailable during invalidation');
@@ -124,8 +126,7 @@ describe('BlogPostService Caching', function () {
             Log::shouldReceive('warning')
                 ->atLeast()
                 ->once()
-                ->withArgs(fn (string $message, array $context): bool =>
-                    str_contains($message, 'Failed to invalidate blog cache')
+                ->withArgs(fn (string $message, array $context): bool => str_contains($message, 'Failed to invalidate blog cache')
                     && ($context['exception'] ?? null) === \RuntimeException::class
                 );
 
@@ -151,7 +152,7 @@ describe('BlogPostService Caching', function () {
     describe('Available Tags Caching', function () {
         it('caches available tags from published posts', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -168,7 +169,7 @@ describe('BlogPostService Caching', function () {
 
             // First call
             $tags = $this->service->getAvailableTags();
-            
+
             expect($tags)->toContain('Laravel', 'PHP', 'Vue');
 
             // Second call should hit cache
@@ -178,7 +179,7 @@ describe('BlogPostService Caching', function () {
 
         it('excludes tags from unpublished posts', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -193,7 +194,7 @@ describe('BlogPostService Caching', function () {
             ]);
 
             $tags = $this->service->getAvailableTags();
-            
+
             expect($tags)->toContain('Published')
                 ->and($tags)->not->toContain('Draft');
         });
@@ -218,7 +219,7 @@ describe('BlogPostService Caching', function () {
             ]);
 
             $authors = $this->service->getAvailableAuthors();
-            
+
             expect($authors)->toHaveCount(2)
                 ->and($authors->pluck('name'))->toContain('Author One', 'Author Two')
                 ->and($authors->pluck('name'))->not->toContain('No Posts');
@@ -228,7 +229,7 @@ describe('BlogPostService Caching', function () {
     describe('Featured and Recent Posts Caching', function () {
         it('caches featured posts without filters', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->count(5)->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -237,7 +238,7 @@ describe('BlogPostService Caching', function () {
             ]);
 
             $posts = $this->service->getFeaturedPosts(2);
-            
+
             expect($posts)->toHaveCount(2);
 
             // Second call hits cache
@@ -248,7 +249,7 @@ describe('BlogPostService Caching', function () {
 
         it('caches recent posts without filters', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->count(10)->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -257,13 +258,13 @@ describe('BlogPostService Caching', function () {
             ]);
 
             $posts = $this->service->getRecentPosts(6);
-            
+
             expect($posts)->toHaveCount(6);
         });
 
         it('caches posts with tag filters', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->count(5)->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -281,9 +282,9 @@ describe('BlogPostService Caching', function () {
             ]);
 
             $posts = $this->service->getFeaturedPosts(10, ['tag' => 'Laravel']);
-            
+
             expect($posts)->toHaveCount(5);
-            
+
             // Verify all posts have the Laravel tag
             foreach ($posts as $post) {
                 expect($post->tags)->toContain('Laravel');
@@ -292,7 +293,7 @@ describe('BlogPostService Caching', function () {
 
         it('bypasses cache for search filters', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->count(5)->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -302,17 +303,17 @@ describe('BlogPostService Caching', function () {
 
             // Search filter should bypass cache - verify by checking DB queries
             DB::enableQueryLog();
-            
+
             // First call with search filter
             $posts1 = $this->service->getFeaturedPosts(10, ['search' => 'test']);
             $firstCallQueries = count(DB::getQueryLog());
             DB::flushQueryLog();
-            
+
             // Second identical call - should still hit DB (not cached)
             $posts2 = $this->service->getFeaturedPosts(10, ['search' => 'test']);
             $secondCallQueries = count(DB::getQueryLog());
             DB::disableQueryLog();
-            
+
             expect($posts1)->toBeInstanceOf(\Illuminate\Support\Collection::class)
                 ->and($firstCallQueries)->toBeGreaterThan(0)
                 ->and($secondCallQueries)->toBeGreaterThan(0)
@@ -323,7 +324,7 @@ describe('BlogPostService Caching', function () {
     describe('Post Statistics Caching', function () {
         it('caches post statistics', function () {
             $author = User::factory()->create();
-            
+
             // Create 10 non-featured posts
             BlogPost::factory()->count(10)->create([
                 'user_id' => $author->id,
@@ -341,7 +342,7 @@ describe('BlogPostService Caching', function () {
             ]);
 
             $stats = $this->service->getPostStats();
-            
+
             expect($stats)->toHaveKeys(['total_posts', 'featured_count', 'total_comments', 'total_likes'])
                 ->and($stats['total_posts'])->toBe(13)
                 ->and($stats['featured_count'])->toBe(3);
@@ -351,7 +352,7 @@ describe('BlogPostService Caching', function () {
     describe('Cache Invalidation', function () {
         it('invalidates cache when blog post is created', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -378,7 +379,7 @@ describe('BlogPostService Caching', function () {
 
         it('invalidates cache when blog post is updated', function () {
             $author = User::factory()->create();
-            
+
             $post = BlogPost::factory()->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -400,7 +401,7 @@ describe('BlogPostService Caching', function () {
 
         it('invalidates cache when blog post is deleted', function () {
             $author = User::factory()->create();
-            
+
             $post = BlogPost::factory()->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -421,7 +422,7 @@ describe('BlogPostService Caching', function () {
 
         it('can manually invalidate cache', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->count(10)->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -445,7 +446,7 @@ describe('BlogPostService Caching', function () {
             $tagsAfter = $this->service->getAvailableTags();
             $authorsAfter = $this->service->getAvailableAuthors();
             $postsAfter = $this->service->getPopularPosts(10);
-            
+
             expect($tagsAfter)->toHaveCount(2)
                 ->and($authorsAfter)->toHaveCount(1)
                 ->and($postsAfter)->toHaveCount(10);
@@ -455,7 +456,7 @@ describe('BlogPostService Caching', function () {
     describe('Cache Performance', function () {
         it('reduces database queries with caching', function () {
             $author = User::factory()->create();
-            
+
             BlogPost::factory()->count(20)->create([
                 'user_id' => $author->id,
                 'is_published' => true,
@@ -486,7 +487,7 @@ describe('BlogPostService Caching', function () {
             // Force use of non-tagged cache store (array driver doesn't support tags)
             config(['cache.default' => 'array']);
             Cache::flush();
-            
+
             $author = User::factory()->create();
             BlogPost::factory()->count(5)->create([
                 'user_id' => $author->id,
@@ -530,9 +531,9 @@ describe('BlogPostService Caching', function () {
         it('bumps cache version on model events for non-tagged stores', function () {
             config(['cache.default' => 'file']);
             Cache::flush();
-            
+
             $author = User::factory()->create();
-            
+
             // Manually set initial version
             Cache::forever('blog:cache_version', 10);
             expect(BlogPost::getCacheVersion())->toBe(10);
@@ -556,12 +557,12 @@ describe('BlogPostService Caching', function () {
         it('handles filtered cache keys with versions', function () {
             config(['cache.default' => 'array']);
             Cache::flush();
-            
+
             $author = User::factory()->create();
-            
+
             // Get baseline version
             $baseVersion = BlogPost::getCacheVersion();
-            
+
             BlogPost::withoutCacheInvalidation(function () use ($author) {
                 BlogPost::factory()->create([
                     'user_id' => $author->id,
@@ -578,7 +579,7 @@ describe('BlogPostService Caching', function () {
 
             // Manually bump version (simulating invalidation)
             BlogPost::bumpCacheVersion();
-            
+
             // Create new post without auto-invalidation
             BlogPost::withoutCacheInvalidation(function () use ($author) {
                 BlogPost::factory()->create([
@@ -603,14 +604,14 @@ describe('BlogPostService Caching', function () {
             // so different cache stores can have different versions
             config(['cache.default' => 'array']);
             Cache::flush();
-            
+
             $version1 = BlogPost::getCacheVersion();
             expect($version1)->toBe(1); // Initial version
-            
+
             BlogPost::bumpCacheVersion();
             $version2 = BlogPost::getCacheVersion();
             expect($version2)->toBe(2);
-            
+
             BlogPost::bumpCacheVersion();
             $version3 = BlogPost::getCacheVersion();
             expect($version3)->toBe(3);

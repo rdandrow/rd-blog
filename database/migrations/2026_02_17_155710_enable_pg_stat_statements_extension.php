@@ -52,16 +52,16 @@ return new class extends Migration
             }
 
             throw new \RuntimeException(
-                "Unable to enable pg_stat_statements automatically.\n" .
-                "Common causes:\n" .
-                "  1) Missing superuser/CREATE EXTENSION privileges\n" .
-                "  2) pg_stat_statements not loaded via shared_preload_libraries\n\n" .
-                "To fix:\n" .
-                "  psql {$this->getDatabaseName()} -c \"SHOW shared_preload_libraries;\"\n" .
-                "  # Ensure postgresql.conf includes: shared_preload_libraries = 'pg_stat_statements'\n" .
-                "  # Restart PostgreSQL after changing postgresql.conf\n" .
-                "  psql {$this->getDatabaseName()} -c \"CREATE EXTENSION IF NOT EXISTS pg_stat_statements;\"\n" .
-                "Then run: php artisan migrate:status to verify.",
+                "Unable to enable pg_stat_statements automatically.\n".
+                "Common causes:\n".
+                "  1) Missing superuser/CREATE EXTENSION privileges\n".
+                "  2) pg_stat_statements not loaded via shared_preload_libraries\n\n".
+                "To fix:\n".
+                "  psql {$this->getDatabaseName()} -c \"SHOW shared_preload_libraries;\"\n".
+                "  # Ensure postgresql.conf includes: shared_preload_libraries = 'pg_stat_statements'\n".
+                "  # Restart PostgreSQL after changing postgresql.conf\n".
+                "  psql {$this->getDatabaseName()} -c \"CREATE EXTENSION IF NOT EXISTS pg_stat_statements;\"\n".
+                'Then run: php artisan migrate:status to verify.',
                 0,
                 $e
             );
@@ -108,12 +108,12 @@ return new class extends Migration
                     // Silent skip for testing/development
                     return;
                 }
-                
+
                 throw new \RuntimeException(
-                    "pg_stat_statements requires superuser privileges to drop.\n" .
-                    "Please run as PostgreSQL superuser:\n" .
-                    "  psql {$this->getDatabaseName()} -c \"DROP EXTENSION IF EXISTS pg_stat_statements;\"\n" .
-                    "Then run: php artisan migrate:rollback to verify.",
+                    "pg_stat_statements requires superuser privileges to drop.\n".
+                    "Please run as PostgreSQL superuser:\n".
+                    "  psql {$this->getDatabaseName()} -c \"DROP EXTENSION IF EXISTS pg_stat_statements;\"\n".
+                    'Then run: php artisan migrate:rollback to verify.',
                     0,
                     $e
                 );

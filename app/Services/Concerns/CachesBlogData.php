@@ -2,13 +2,13 @@
 
 namespace App\Services\Concerns;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Collection;
 
 /**
  * Trait for caching blog-related data with automatic cache invalidation.
- * 
+ *
  * Provides methods for caching expensive queries like popular posts,
  * tag lists, author lists, and post statistics.
  */
@@ -30,10 +30,9 @@ trait CachesBlogData
      * Uses cache tags for efficient invalidation when supported (Redis/Memcached).
      * For other drivers, includes a version number in the key for instant invalidation.
      *
-     * @param string $key Cache key (will be prefixed)
-     * @param callable $callback Callback to execute if cache miss
-     * @param int|null $ttl Time to live in seconds (null = use default)
-     * @return mixed
+     * @param  string  $key  Cache key (will be prefixed)
+     * @param  callable  $callback  Callback to execute if cache miss
+     * @param  int|null  $ttl  Time to live in seconds (null = use default)
      */
     protected function remember(string $key, callable $callback, ?int $ttl = null): mixed
     {
@@ -43,7 +42,7 @@ trait CachesBlogData
         try {
             // Use tags only when the active cache store reports support.
             if (Cache::supportsTags()) {
-                $fullKey = $this->cachePrefix . $key;
+                $fullKey = $this->cachePrefix.$key;
 
                 return Cache::tags(['blog_posts'])->remember($fullKey, $ttl, $callback);
             }
@@ -51,14 +50,14 @@ trait CachesBlogData
             // Fallback: Use versioned cache keys for instant invalidation
             // When cache is invalidated, the version bumps and old keys become stale
             $version = \App\Models\BlogPost::getCacheVersion();
-            $versionedKey = $this->cachePrefix . "v{$version}:" . $key;
+            $versionedKey = $this->cachePrefix."v{$version}:".$key;
 
             return Cache::remember($versionedKey, $ttl, $callback);
         } catch (\Throwable $exception) {
             // Keep request paths alive when cache infrastructure is unavailable.
             Log::warning('Blog cache read-through failed; falling back to direct callback execution.', [
                 'driver' => $driver,
-                'key' => $this->cachePrefix . $key,
+                'key' => $this->cachePrefix.$key,
                 'exception' => $exception::class,
                 'message' => $exception->getMessage(),
             ]);
@@ -74,31 +73,30 @@ trait CachesBlogData
      * For tagged stores (Redis/Memcached) it forgets within the 'blog_posts' tag.
      * For versioned stores it forgets the current versioned key (blog:v{n}:{key}).
      *
-    * Note: For versioned stores, bumping the cache version via
-    * BlogPost::invalidateBlogCache() (or BlogPost::bumpCacheVersion())
+     * Note: For versioned stores, bumping the cache version via
+     * BlogPost::invalidateBlogCache() (or BlogPost::bumpCacheVersion())
      * is the preferred way to invalidate all blog cache keys at once. Use forget() only
      * when you need to invalidate a single key without a full cache bust.
      *
-     * @param string $key Cache key (will be prefixed)
-     * @return bool
+     * @param  string  $key  Cache key (will be prefixed)
      */
     protected function forget(string $key): bool
     {
         if (Cache::supportsTags()) {
-            return Cache::tags(['blog_posts'])->forget($this->cachePrefix . $key);
+            return Cache::tags(['blog_posts'])->forget($this->cachePrefix.$key);
         }
 
         $version = \App\Models\BlogPost::getCacheVersion();
-        $versionedKey = $this->cachePrefix . "v{$version}:" . $key;
+        $versionedKey = $this->cachePrefix."v{$version}:".$key;
+
         return Cache::forget($versionedKey);
     }
 
     /**
      * Get cache key for filtered data.
      *
-     * @param string $baseKey Base cache key
-     * @param array $filters Filters to include in key
-     * @return string
+     * @param  string  $baseKey  Base cache key
+     * @param  array  $filters  Filters to include in key
      */
     protected function getFilteredCacheKey(string $baseKey, array $filters): string
     {
@@ -108,10 +106,10 @@ trait CachesBlogData
 
         // Sort filters for consistent cache keys
         ksort($filters);
-        
+
         // Create hash of filters
         $filterHash = md5(json_encode($filters));
-        
+
         return "{$baseKey}:{$filterHash}";
     }
 
@@ -120,8 +118,7 @@ trait CachesBlogData
      * Note: This uses published_at as a proxy for "popular" since views
      * tracking is not implemented. In production, use views or engagement metrics.
      *
-     * @param int $limit Number of posts
-     * @return Collection
+     * @param  int  $limit  Number of posts
      */
     protected function cachePopularPosts(int $limit = 10): Collection
     {
@@ -136,8 +133,6 @@ trait CachesBlogData
 
     /**
      * Cache available tags.
-     *
-     * @return Collection
      */
     protected function cacheAvailableTags(): Collection
     {
@@ -156,8 +151,6 @@ trait CachesBlogData
 
     /**
      * Cache available authors.
-     *
-     * @return Collection
      */
     protected function cacheAvailableAuthors(): Collection
     {
@@ -170,8 +163,6 @@ trait CachesBlogData
 
     /**
      * Cache post statistics.
-     *
-     * @return array
      */
     protected function cachePostStats(): array
     {
@@ -192,21 +183,20 @@ trait CachesBlogData
     /**
      * Cache featured posts with optional filters.
      *
-     * @param int $limit Number of posts
-     * @param array $filters Optional filters
-     * @return Collection
+     * @param  int  $limit  Number of posts
+     * @param  array  $filters  Optional filters
      */
     protected function cacheFeaturedPosts(int $limit = 2, array $filters = []): Collection
     {
         $cacheKey = $this->getFilteredCacheKey("featured_posts:{$limit}", $filters);
-        
+
         return $this->remember($cacheKey, function () use ($limit, $filters) {
             $query = \App\Models\BlogPost::with('author')
                 ->published()
                 ->where('is_featured', true);
 
             // Apply filters if provided
-            if (!empty($filters) && method_exists($this, 'applyFilters')) {
+            if (! empty($filters) && method_exists($this, 'applyFilters')) {
                 $query = $this->applyFilters($query, $filters);
             }
 
@@ -219,21 +209,20 @@ trait CachesBlogData
     /**
      * Cache recent posts with optional filters.
      *
-     * @param int $limit Number of posts
-     * @param array $filters Optional filters
-     * @return Collection
+     * @param  int  $limit  Number of posts
+     * @param  array  $filters  Optional filters
      */
     protected function cacheRecentPosts(int $limit = 6, array $filters = []): Collection
     {
         $cacheKey = $this->getFilteredCacheKey("recent_posts:{$limit}", $filters);
-        
+
         return $this->remember($cacheKey, function () use ($limit, $filters) {
             $query = \App\Models\BlogPost::with('author')
                 ->published()
                 ->where('is_featured', false);
 
             // Apply filters if provided
-            if (!empty($filters) && method_exists($this, 'applyFilters')) {
+            if (! empty($filters) && method_exists($this, 'applyFilters')) {
                 $query = $this->applyFilters($query, $filters);
             }
 

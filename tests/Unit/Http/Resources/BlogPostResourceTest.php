@@ -13,12 +13,11 @@ uses(Tests\TestCase::class);
  * @group blog-post-resource
  * @group unit
  */
-
 beforeEach(function () {
     $this->author = new User(['name' => 'John Doe']);
     $this->author->id = 1;
     $this->author->avatar = null;
-    
+
     $this->post = new BlogPost([
         'title' => 'Test Post',
         'slug' => 'test-post',
@@ -40,10 +39,10 @@ describe('basic transformation', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Has correct structure
         expect($array)->toBeArray()
             ->toHaveKeys(['id', 'title', 'slug', 'excerpt', 'featured_image', 'author', 'published_at', 'reading_time', 'tags', 'is_featured'])
@@ -56,10 +55,10 @@ describe('basic transformation', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: All required fields present
         expect($array)->toHaveKey('id')
             ->and($array)->toHaveKey('title')
@@ -77,10 +76,10 @@ describe('basic transformation', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: published_at is ISO formatted
         expect($array['published_at'])->toBeString()
             ->and($array['published_at'])->toContain('2026-01-06')
@@ -91,10 +90,10 @@ describe('basic transformation', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Author data is correct
         expect($array['author'])->toHaveKeys(['id', 'name', 'avatar'])
             ->and($array['author']['id'])->toBe($this->author->id)
@@ -106,10 +105,10 @@ describe('basic transformation', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Tags are present
         expect($array['tags'])->toBeArray()
             ->and($array['tags'])->toContain('Laravel')
@@ -123,21 +122,25 @@ describe('conditional content', function () {
         // Arrange: Mock request with blog.show route
         $request = Request::create('/blog/test-post', 'GET');
         $request->setRouteResolver(function () {
-            return new class {
-                public function getName() {
+            return new class
+            {
+                public function getName()
+                {
                     return 'blog.show';
                 }
-                public function named(...$patterns) {
+
+                public function named(...$patterns)
+                {
                     return in_array('blog.show', $patterns);
                 }
             };
         });
-        
+
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Content is included
         expect($array)->toHaveKey('content')
             ->and($array['content'])->toBe('Test content for the blog post');
@@ -147,21 +150,25 @@ describe('conditional content', function () {
         // Arrange: Mock request without blog.show route
         $request = Request::create('/api/blog', 'GET');
         $request->setRouteResolver(function () {
-            return new class {
-                public function getName() {
+            return new class
+            {
+                public function getName()
+                {
                     return 'blog.index';
                 }
-                public function named(...$patterns) {
+
+                public function named(...$patterns)
+                {
                     return false; // Not blog.show
                 }
             };
         });
-        
+
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Content is not included (when() returns MissingValue)
         expect($array)->toHaveKey('content')
             ->and($array['content'])->toBeInstanceOf(\Illuminate\Http\Resources\MissingValue::class);
@@ -175,13 +182,13 @@ describe('edge cases', function () {
         $post->id = 2;
         $post->user_id = $this->author->id;
         $post->setRelation('author', $this->author);
-        
+
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: published_at is null
         expect($array['published_at'])->toBeNull();
     });
@@ -192,34 +199,34 @@ describe('edge cases', function () {
         $post->id = 2;
         $post->user_id = $this->author->id;
         $post->setRelation('author', $this->author);
-        
+
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: featured_image is null
         expect($array['featured_image'])->toBeNull();
     });
 
     test('handles null author avatar', function () {
         // Arrange: Create author (avatar is null by default)
-        $authorNoAvatar = new User();
+        $authorNoAvatar = new User;
         $authorNoAvatar->id = 2;
         $authorNoAvatar->avatar = null;
-        
-        $post = new BlogPost();
+
+        $post = new BlogPost;
         $post->id = 2;
         $post->user_id = $authorNoAvatar->id;
         $post->setRelation('author', $authorNoAvatar);
-        
+
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Author avatar is null
         expect($array['author']['avatar'])->toBeNull();
     });
@@ -230,13 +237,13 @@ describe('array structure', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Has expected keys
         $expectedKeys = ['id', 'title', 'slug', 'excerpt', 'content', 'featured_image', 'author', 'published_at', 'reading_time', 'tags', 'is_featured'];
-        
+
         foreach ($expectedKeys as $key) {
             expect($array)->toHaveKey($key);
         }
@@ -246,10 +253,10 @@ describe('array structure', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Author has correct structure
         expect($array['author'])->toBeArray()
             ->and($array['author'])->toHaveKeys(['id', 'name', 'avatar'])
@@ -264,19 +271,17 @@ describe('additional scenarios', function () {
         $post->id = 2;
         $post->user_id = $this->author->id;
         $post->setRelation('author', $this->author);
-        
+
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Tags is empty array
         expect($array['tags'])->toBeArray()
             ->and($array['tags'])->toBeEmpty();
     });
-
-
 
     test('preserves is_featured boolean value', function () {
         // Arrange: Create post with is_featured false
@@ -284,13 +289,13 @@ describe('additional scenarios', function () {
         $postNotFeatured->id = 2;
         $postNotFeatured->user_id = $this->author->id;
         $postNotFeatured->setRelation('author', $this->author);
-        
+
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($postNotFeatured);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: is_featured is false
         expect($array['is_featured'])->toBeBool()
             ->and($array['is_featured'])->toBeFalse();
@@ -300,10 +305,10 @@ describe('additional scenarios', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: reading_time is an integer (auto-calculated from content)
         expect($array['reading_time'])->toBeInt()
             ->and($array['reading_time'])->toBeGreaterThan(0);
@@ -313,10 +318,10 @@ describe('additional scenarios', function () {
         // Arrange: Create resource
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: All attributes match
         expect($array['id'])->toBe($this->post->id)
             ->and($array['title'])->toBe('Test Post')
@@ -331,21 +336,25 @@ describe('additional scenarios', function () {
         // Arrange: Mock request with explicit blog.index route
         $request = Request::create('/blog', 'GET');
         $request->setRouteResolver(function () {
-            return new class {
-                public function getName() {
+            return new class
+            {
+                public function getName()
+                {
                     return 'blog.index';
                 }
-                public function named(...$patterns) {
+
+                public function named(...$patterns)
+                {
                     return false; // Not blog.show
                 }
             };
         });
-        
+
         $resource = new BlogPostResource($this->post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Content is MissingValue (excluded)
         expect($array['content'])->toBeInstanceOf(\Illuminate\Http\Resources\MissingValue::class);
     });
@@ -356,13 +365,13 @@ describe('additional scenarios', function () {
         $post->id = 2;
         $post->user_id = $this->author->id;
         $post->setRelation('author', $this->author);
-        
+
         $request = Request::create('/api/blog', 'GET');
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: All tags present
         expect($array['tags'])->toBeArray()
             ->and($array['tags'])->toHaveCount(5)
@@ -377,7 +386,7 @@ describe('Snapshot Testing', function () {
         $author = new User(['name' => 'Jane Smith', 'email' => 'jane@example.com']);
         $author->id = 100;
         $author->avatar = 'https://example.com/avatar.jpg';
-        
+
         $post = new BlogPost([
             'title' => 'Snapshot Test Post',
             'slug' => 'snapshot-test-post',
@@ -392,23 +401,23 @@ describe('Snapshot Testing', function () {
         $post->id = 100;
         $post->user_id = 100;
         $post->setRelation('author', $author);
-        
+
         $request = Request::create('/blog', 'GET');
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Matches snapshot (content should be excluded on index)
         expect($array)->toMatchSnapshot();
     })->group('snapshots');
-    
+
     test('blog post resource matches snapshot for show route', function () {
         // Arrange: Create consistent test data
         $author = new User(['name' => 'Jane Smith', 'email' => 'jane@example.com']);
         $author->id = 100;
         $author->avatar = 'https://example.com/avatar.jpg';
-        
+
         $post = new BlogPost([
             'title' => 'Snapshot Test Post',
             'slug' => 'snapshot-test-post',
@@ -423,30 +432,31 @@ describe('Snapshot Testing', function () {
         $post->id = 100;
         $post->user_id = 100;
         $post->setRelation('author', $author);
-        
+
         // Simulate blog.show route
         $request = Request::create('/blog/snapshot-test-post', 'GET');
         $request->setRouteResolver(function () {
             $route = new \Illuminate\Routing\Route('GET', '/blog/{slug}', []);
             $route->name('blog.show');
+
             return $route;
         });
-        
+
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Matches snapshot (content should be included on show route)
         expect($array)->toMatchSnapshot();
     })->group('snapshots');
-    
+
     test('blog post resource with null values matches snapshot', function () {
         // Arrange: Create post with null optional fields
         $author = new User(['name' => 'No Avatar User', 'email' => 'noavatar@example.com']);
         $author->id = 101;
         $author->avatar = null;
-        
+
         $post = new BlogPost([
             'title' => 'Post Without Image',
             'slug' => 'post-without-image',
@@ -461,23 +471,23 @@ describe('Snapshot Testing', function () {
         $post->id = 101;
         $post->user_id = 101;
         $post->setRelation('author', $author);
-        
+
         $request = Request::create('/blog', 'GET');
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Matches snapshot with null values
         expect($array)->toMatchSnapshot();
     })->group('snapshots');
-    
+
     test('blog post resource with multiple tags matches snapshot', function () {
         // Arrange: Create post with many tags
         $author = new User(['name' => 'Multi Tag Author', 'email' => 'tags@example.com']);
         $author->id = 102;
         $author->avatar = 'https://example.com/author2.jpg';
-        
+
         $post = new BlogPost([
             'title' => 'Post With Many Tags',
             'slug' => 'post-with-many-tags',
@@ -492,23 +502,23 @@ describe('Snapshot Testing', function () {
         $post->id = 102;
         $post->user_id = 102;
         $post->setRelation('author', $author);
-        
+
         $request = Request::create('/blog', 'GET');
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Matches snapshot with multiple tags
         expect($array)->toMatchSnapshot();
     })->group('snapshots');
-    
+
     test('blog post resource with complete attributes matches snapshot', function () {
         // Arrange: Create post with all populated attributes
         $author = new User(['name' => 'Complete Author', 'email' => 'complete@example.com']);
         $author->id = 103;
         $author->avatar = 'https://example.com/complete-avatar.jpg';
-        
+
         $post = new BlogPost([
             'title' => 'Complete Test Post',
             'slug' => 'complete-test-post',
@@ -523,20 +533,21 @@ describe('Snapshot Testing', function () {
         $post->id = 103;
         $post->user_id = 103;
         $post->setRelation('author', $author);
-        
+
         // Simulate blog.show route to include content
         $request = Request::create('/blog/complete-test-post', 'GET');
         $request->setRouteResolver(function () {
             $route = new \Illuminate\Routing\Route('GET', '/blog/{slug}', []);
             $route->name('blog.show');
+
             return $route;
         });
-        
+
         $resource = new BlogPostResource($post);
-        
+
         // Act: Transform to array
         $array = $resource->toArray($request);
-        
+
         // Assert: Matches snapshot with all complete attributes
         expect($array)->toMatchSnapshot();
     })->group('snapshots');

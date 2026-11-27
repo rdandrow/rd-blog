@@ -14,16 +14,16 @@ uses(Tests\TestCase::class);
  * @group authorization
  * @group unit
  */
-
 beforeEach(function () {
-    $this->user = new User();
+    $this->user = new User;
     $this->user->id = 1;
-    $this->request = new StoreBlogPostRequest();
-    
+    $this->request = new StoreBlogPostRequest;
+
     // Helper to validate rules and check for field errors
     $this->validateField = function (array $data, string $field): bool {
         $rules = $this->request->rules();
         $validator = Validator::make($data, $rules);
+
         return $validator->fails() && $validator->errors()->has($field);
     };
 });
@@ -31,22 +31,22 @@ beforeEach(function () {
 describe('authorization', function () {
     test('authorizes authenticated users', function () {
         // Arrange: Set authenticated user
-        $this->request->setUserResolver(fn() => $this->user);
-        
+        $this->request->setUserResolver(fn () => $this->user);
+
         // Act: Check authorization
         $result = $this->request->authorize();
-        
+
         // Assert: Returns true
         expect($result)->toBeTrue();
     });
 
     test('denies guest users', function () {
         // Arrange: Set null user (guest)
-        $this->request->setUserResolver(fn() => null);
-        
+        $this->request->setUserResolver(fn () => null);
+
         // Act: Check authorization
         $result = $this->request->authorize();
-        
+
         // Assert: Returns false
         expect($result)->toBeFalse();
     });
@@ -56,7 +56,7 @@ describe('required fields', function () {
     test('validates title is required', function () {
         // Arrange & Act: Validate missing title
         $hasError = ($this->validateField)(['title' => null], 'title');
-        
+
         // Assert: Validation fails for title field
         expect($hasError)->toBeTrue();
     });
@@ -67,7 +67,7 @@ describe('required fields', function () {
             'title' => 'Test Title',
             'excerpt' => null,
         ], 'excerpt');
-        
+
         // Assert: Validation fails for excerpt field
         expect($hasError)->toBeTrue();
     });
@@ -79,7 +79,7 @@ describe('required fields', function () {
             'excerpt' => 'Test excerpt',
             'content' => null,
         ], 'content');
-        
+
         // Assert: Validation fails for content field
         expect($hasError)->toBeTrue();
     });
@@ -94,10 +94,10 @@ describe('field length validation', function () {
             'excerpt' => 'Test excerpt',
             'content' => 'Test content',
         ], $rules);
-        
+
         // Act: Run validation
         $fails = $validator->fails();
-        
+
         // Assert: Validation fails
         expect($fails)->toBeTrue()
             ->and($validator->errors()->has('title'))->toBeTrue();
@@ -111,10 +111,10 @@ describe('field length validation', function () {
             'excerpt' => str_repeat('a', 501),
             'content' => 'Test content',
         ], $rules);
-        
+
         // Act: Run validation
         $fails = $validator->fails();
-        
+
         // Assert: Validation fails
         expect($fails)->toBeTrue()
             ->and($validator->errors()->has('excerpt'))->toBeTrue();
@@ -129,10 +129,10 @@ describe('field length validation', function () {
             'content' => 'Test content',
             'tags' => [str_repeat('a', 51)],
         ], $rules);
-        
+
         // Act: Run validation
         $fails = $validator->fails();
-        
+
         // Assert: Validation fails
         expect($fails)->toBeTrue()
             ->and($validator->errors()->has('tags.0'))->toBeTrue();
@@ -144,7 +144,7 @@ describe('image validation', function () {
         // Arrange: Non-image file
         Storage::fake('public');
         $file = UploadedFile::fake()->create('document.pdf', 100);
-        
+
         $rules = $this->request->rules();
         $validator = Validator::make([
             'title' => 'Test Title',
@@ -152,7 +152,7 @@ describe('image validation', function () {
             'content' => 'Test content',
             'featured_image_file' => $file,
         ], $rules);
-        
+
         // Act & Assert: Validation fails
         expect($validator->fails())->toBeTrue()
             ->and($validator->errors()->has('featured_image_file'))->toBeTrue();
@@ -162,10 +162,10 @@ describe('image validation', function () {
         // Arrange: Valid image types
         Storage::fake('public');
         $validMimes = ['jpeg', 'png', 'jpg', 'gif', 'webp'];
-        
+
         foreach ($validMimes as $mime) {
             $file = UploadedFile::fake()->image("test.$mime");
-            
+
             $rules = $this->request->rules();
             $validator = Validator::make([
                 'title' => 'Test Title',
@@ -173,7 +173,7 @@ describe('image validation', function () {
                 'content' => 'Test content',
                 'featured_image_file' => $file,
             ], $rules);
-            
+
             // Assert: Validation passes for each valid mime type
             expect($validator->fails())->toBeFalse();
         }
@@ -183,7 +183,7 @@ describe('image validation', function () {
         // Arrange: Image exceeding 2MB (2048 KB)
         Storage::fake('public');
         $file = UploadedFile::fake()->image('large.jpg')->size(2049);
-        
+
         $rules = $this->request->rules();
         $validator = Validator::make([
             'title' => 'Test Title',
@@ -191,7 +191,7 @@ describe('image validation', function () {
             'content' => 'Test content',
             'featured_image_file' => $file,
         ], $rules);
-        
+
         // Act & Assert: Validation fails
         expect($validator->fails())->toBeTrue()
             ->and($validator->errors()->has('featured_image_file'))->toBeTrue();
@@ -206,7 +206,7 @@ describe('image validation', function () {
             'content' => 'Test content',
             'featured_image' => 'https://example.com/image.jpg',
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -222,7 +222,7 @@ describe('boolean and array validation', function () {
             'content' => 'Test content',
             'is_featured' => 'not-a-boolean',
         ], $rules);
-        
+
         // Act & Assert: Validation fails
         expect($validator->fails())->toBeTrue()
             ->and($validator->errors()->has('is_featured'))->toBeTrue();
@@ -237,7 +237,7 @@ describe('boolean and array validation', function () {
             'content' => 'Test content',
             'is_published' => 'not-a-boolean',
         ], $rules);
-        
+
         // Act & Assert: Validation fails
         expect($validator->fails())->toBeTrue()
             ->and($validator->errors()->has('is_published'))->toBeTrue();
@@ -252,7 +252,7 @@ describe('boolean and array validation', function () {
             'content' => 'Test content',
             'tags' => 'not-an-array',
         ], $rules);
-        
+
         // Act & Assert: Validation fails
         expect($validator->fails())->toBeTrue()
             ->and($validator->errors()->has('tags'))->toBeTrue();
@@ -269,7 +269,7 @@ describe('optional fields', function () {
             'content' => 'Test content',
             'featured_image' => null,
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -283,7 +283,7 @@ describe('optional fields', function () {
             'content' => 'Test content',
             'tags' => null,
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -293,7 +293,7 @@ describe('custom messages', function () {
     test('returns custom message for title required', function () {
         // Arrange
         $messages = $this->request->messages();
-        
+
         // Assert
         expect($messages)->toHaveKey('title.required')
             ->and($messages['title.required'])->toBe('The blog post title is required.');
@@ -302,7 +302,7 @@ describe('custom messages', function () {
     test('returns custom message for excerpt required', function () {
         // Arrange
         $messages = $this->request->messages();
-        
+
         // Assert
         expect($messages)->toHaveKey('excerpt.required')
             ->and($messages['excerpt.required'])->toBe('The blog post excerpt is required.');
@@ -311,7 +311,7 @@ describe('custom messages', function () {
     test('returns custom message for content required', function () {
         // Arrange
         $messages = $this->request->messages();
-        
+
         // Assert
         expect($messages)->toHaveKey('content.required')
             ->and($messages['content.required'])->toBe('The blog post content is required.');
@@ -320,7 +320,7 @@ describe('custom messages', function () {
     test('returns custom message for featured image file validation', function () {
         // Arrange
         $messages = $this->request->messages();
-        
+
         // Assert
         expect($messages)->toHaveKey('featured_image_file.image')
             ->and($messages['featured_image_file.image'])->toBe('The file must be an image.')
@@ -331,7 +331,7 @@ describe('custom messages', function () {
     test('returns custom message for tags validation', function () {
         // Arrange
         $messages = $this->request->messages();
-        
+
         // Assert
         expect($messages)->toHaveKey('tags.array')
             ->and($messages['tags.array'])->toBe('Tags must be an array.')
@@ -345,7 +345,7 @@ describe('edge cases', function () {
         // Arrange: Valid complete data
         Storage::fake('public');
         $file = UploadedFile::fake()->image('test.jpg')->size(1024);
-        
+
         $rules = $this->request->rules();
         $validator = Validator::make([
             'title' => 'Test Blog Post',
@@ -358,7 +358,7 @@ describe('edge cases', function () {
             'is_published' => false,
             'published_at' => '2026-01-06',
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -371,7 +371,7 @@ describe('edge cases', function () {
             'excerpt' => 'Test excerpt',
             'content' => 'Test content',
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -384,7 +384,7 @@ describe('edge cases', function () {
             'excerpt' => 'Test excerpt',
             'content' => 'Test content',
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -397,7 +397,7 @@ describe('edge cases', function () {
             'excerpt' => str_repeat('a', 500),
             'content' => 'Test content',
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -411,7 +411,7 @@ describe('edge cases', function () {
             'content' => 'Test content',
             'tags' => [str_repeat('a', 50)],
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -425,7 +425,7 @@ describe('edge cases', function () {
             'content' => 'Test content',
             'tags' => ['php', 'laravel', 'testing', 'unit-tests'],
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -440,7 +440,7 @@ describe('edge cases', function () {
             'is_featured' => 1,
             'is_published' => 0,
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -454,7 +454,7 @@ describe('edge cases', function () {
             'content' => 'Test content',
             'published_at' => '2026-01-06 10:30:00',
         ], $rules);
-        
+
         // Act & Assert: Validation passes
         expect($validator->fails())->toBeFalse();
     });
@@ -468,7 +468,7 @@ describe('edge cases', function () {
             'content' => 'Test content',
             'published_at' => 'not-a-date',
         ], $rules);
-        
+
         // Act & Assert: Validation fails
         expect($validator->fails())->toBeTrue()
             ->and($validator->errors()->has('published_at'))->toBeTrue();

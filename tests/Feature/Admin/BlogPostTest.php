@@ -8,8 +8,6 @@
  */
 
 use App\Models\BlogPost;
-use App\Models\User;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {

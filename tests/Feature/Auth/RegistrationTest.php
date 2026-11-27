@@ -6,7 +6,6 @@
  * Tests user registration functionality including account creation,
  * validation, and mandatory two-factor authentication setup.
  */
-
 describe('User Registration', function () {
     it('renders registration screen', function () {
         $response = $this->get(route('register'));

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\BlogPost;
-use App\Models\User;
 use App\Services\Concerns\CachesBlogData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -11,15 +10,16 @@ use Illuminate\Support\Collection;
 class BlogPostService
 {
     use CachesBlogData;
+
     /**
      * Apply search and filter conditions to a query.
      */
     public function applyFilters(Builder $query, array $filters): Builder
     {
         // Apply search filter
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $search = $filters['search'];
-            
+
             // Use PostgreSQL full-text search for better performance
             if ($this->isPostgreSqlConnection($query)) {
                 $language = config('database.full_text_search.language', 'english');
@@ -32,19 +32,19 @@ class BlogPostService
                 $searchLower = strtolower($search);
                 $query->where(function (Builder $q) use ($searchLower) {
                     $q->whereRaw('LOWER(title) LIKE ?', ["%{$searchLower}%"])
-                      ->orWhereRaw('LOWER(excerpt) LIKE ?', ["%{$searchLower}%"])
-                      ->orWhereRaw('LOWER(content) LIKE ?', ["%{$searchLower}%"]);
+                        ->orWhereRaw('LOWER(excerpt) LIKE ?', ["%{$searchLower}%"])
+                        ->orWhereRaw('LOWER(content) LIKE ?', ["%{$searchLower}%"]);
                 });
             }
         }
 
         // Apply tag filter
-        if (!empty($filters['tag'])) {
+        if (! empty($filters['tag'])) {
             $query->whereJsonContains('tags', $filters['tag']);
         }
 
         // Apply author filter
-        if (!empty($filters['author'])) {
+        if (! empty($filters['author'])) {
             $query->where('user_id', $filters['author']);
         }
 
@@ -181,26 +181,26 @@ class BlogPostService
 
     /**
      * Check if filters are cacheable.
-     * 
+     *
      * Only cache common filter combinations to avoid cache pollution.
      */
     protected function isCacheable(array $filters): bool
     {
         // Only cache tag and author filters (most common)
         $allowedKeys = ['tag', 'author'];
-        
+
         foreach (array_keys($filters) as $key) {
-            if (!in_array($key, $allowedKeys)) {
+            if (! in_array($key, $allowedKeys)) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
     /**
      * Invalidate all blog caches.
-     * 
+     *
      * Call this after creating/updating/deleting posts.
      * This delegates to the model's cache invalidation logic.
      */

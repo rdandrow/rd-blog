@@ -1,19 +1,17 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Laravel\Fortify\Features;
-use App\Http\Controllers\PublicBlogController;
-use App\Http\Controllers\BlogPostController;
-use App\Http\Controllers\CommentController;
-use App\Http\Controllers\BlogPostLikeController;
-use App\Http\Controllers\UserFollowController;
-use App\Http\Controllers\AuthorProfileController;
-use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\InvitationController;
-use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Auth\InvitationController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\AuthorProfileController;
+use App\Http\Controllers\BlogPostController;
+use App\Http\Controllers\BlogPostLikeController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\PublicBlogController;
+use App\Http\Controllers\UserFollowController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicBlogController::class, 'index'])->name('home');
 
@@ -35,21 +33,21 @@ Route::post('/invitation/accept/{token}', [InvitationController::class, 'accept'
 // Blog Post Management Routes (Admin)
 Route::middleware(['auth', 'verified', 'ensure.2fa', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('blog-posts/drafts', [BlogPostController::class, 'drafts'])->name('blog-posts.drafts');
-    
+
     // Image upload for markdown content
     Route::post('blog-posts/upload-image', [BlogPostController::class, 'uploadImage'])
         ->middleware('throttle:20,1')
         ->name('blog-posts.upload-image');
-    
+
     // Blog post resource routes (store and update have custom rate limiting below)
     Route::resource('blog-posts', BlogPostController::class)
         ->except(['store', 'update']);
-    
+
     // Store and update routes with stricter rate limiting (10 requests per minute)
     Route::post('blog-posts', [BlogPostController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('blog-posts.store');
-    
+
     Route::match(['put', 'patch'], 'blog-posts/{blog_post}', [BlogPostController::class, 'update'])
         ->middleware('throttle:10,1')
         ->name('blog-posts.update');
@@ -61,7 +59,7 @@ Route::middleware(['auth', 'verified', 'ensure.2fa', 'master.admin'])->prefix('a
     Route::get('members', [UserManagementController::class, 'indexMembers'])->name('members');
     Route::patch('{user}/role', [UserManagementController::class, 'updateRole'])->name('updateRole');
     Route::delete('{user}', [UserManagementController::class, 'destroy'])->name('destroy');
-    
+
     // User creation and invitation routes with rate limiting (email-sending operations)
     Route::post('/', [UserManagementController::class, 'store'])
         ->middleware('throttle:20,1')
@@ -92,10 +90,11 @@ Route::middleware(['auth'])->group(function () {
 // Two-factor authentication setup routes (for new users during registration)
 Route::middleware(['auth'])->group(function () {
     Route::get('/register/setup-two-factor', function () {
-        $registerController = new RegisterController();
+        $registerController = new RegisterController;
+
         return $registerController->setupTwoFactorAuthentication(Auth::user());
     })->name('register.setup-two-factor');
-    
+
     Route::post('/two-factor-challenge/confirm', [RegisterController::class, 'confirmTwoFactorAuthentication']);
 });
 

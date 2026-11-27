@@ -24,7 +24,7 @@ class RegisterResponse implements RegisterResponseContract
         }
 
         // Ensure user is authenticated
-        if (!$user) {
+        if (! $user) {
             return redirect('/login');
         }
 

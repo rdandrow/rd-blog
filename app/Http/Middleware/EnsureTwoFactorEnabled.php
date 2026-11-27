@@ -39,7 +39,7 @@ class EnsureTwoFactorEnabled
         $user = Auth::user();
 
         // Skip if user is not authenticated
-        if (!$user) {
+        if (! $user) {
             return $next($request);
         }
 
@@ -51,7 +51,7 @@ class EnsureTwoFactorEnabled
         }
 
         // If user is authenticated but doesn't have 2FA enabled
-        if (!$user->hasEnabledTwoFactorAuthentication()) {
+        if (! $user->hasEnabledTwoFactorAuthentication()) {
             // Redirect to 2FA setup route
             return redirect()->route('register.setup-two-factor');
         }

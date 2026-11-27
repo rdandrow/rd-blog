@@ -32,6 +32,7 @@ class AnalyzeQueryPerformance extends Command
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
             $this->error('This command only works with PostgreSQL databases.');
+
             return self::FAILURE;
         }
 
@@ -50,7 +51,7 @@ class AnalyzeQueryPerformance extends Command
             $this->showCacheStats();
         }
 
-        if (!$this->option('indexes') && !$this->option('slow-queries') && !$this->option('cache')) {
+        if (! $this->option('indexes') && ! $this->option('slow-queries') && ! $this->option('cache')) {
             // Show all by default
             $this->showIndexUsage();
             $this->newLine(2);
@@ -94,7 +95,7 @@ class AnalyzeQueryPerformance extends Command
 
             $this->newLine();
             $this->line("Table: <comment>{$table}</comment>");
-            
+
             $data = array_map(function ($index) {
                 return [
                     'Index' => $index->indexname,
@@ -123,7 +124,7 @@ class AnalyzeQueryPerformance extends Command
         $tables = $this->option('table') ?: ['blog_posts', 'comments', 'blog_post_likes', 'user_follows', 'users'];
 
         $placeholders = implode(',', array_fill(0, count($tables), '?'));
-        
+
         $stats = DB::select("
             SELECT 
                 schemaname,
@@ -143,14 +144,14 @@ class AnalyzeQueryPerformance extends Command
         ", $tables);
 
         $data = array_map(function ($stat) {
-            $deadPercent = $stat->live_tuples > 0 
-                ? round(($stat->dead_tuples / $stat->live_tuples) * 100, 1) 
+            $deadPercent = $stat->live_tuples > 0
+                ? round(($stat->dead_tuples / $stat->live_tuples) * 100, 1)
                 : 0;
 
             return [
                 'Table' => $stat->tablename,
                 'Rows' => number_format($stat->live_tuples),
-                'Dead' => number_format($stat->dead_tuples) . " ({$deadPercent}%)",
+                'Dead' => number_format($stat->dead_tuples)." ({$deadPercent}%)",
                 'Size' => $stat->total_size,
                 'Vacuum' => $stat->last_autovacuum ? 'Auto' : ($stat->last_vacuum ? 'Manual' : 'Never'),
             ];
@@ -163,8 +164,8 @@ class AnalyzeQueryPerformance extends Command
 
         // Check for bloat
         foreach ($stats as $stat) {
-            $deadPercent = $stat->live_tuples > 0 
-                ? ($stat->dead_tuples / $stat->live_tuples) * 100 
+            $deadPercent = $stat->live_tuples > 0
+                ? ($stat->dead_tuples / $stat->live_tuples) * 100
                 : 0;
 
             if ($deadPercent > 20) {
@@ -182,19 +183,19 @@ class AnalyzeQueryPerformance extends Command
         $this->line('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
         // Database cache hit rate
-        $dbCache = DB::selectOne("
+        $dbCache = DB::selectOne('
             SELECT 
                 sum(heap_blks_read) as heap_read,
                 sum(heap_blks_hit) as heap_hit,
                 sum(heap_blks_hit) / nullif(sum(heap_blks_hit) + sum(heap_blks_read), 0) * 100 as cache_hit_rate
             FROM pg_statio_user_tables
-        ");
+        ');
 
         $cacheRate = round($dbCache->cache_hit_rate ?? 0, 2);
         $status = $cacheRate > 99 ? '✓' : ($cacheRate > 90 ? '⚠' : '✗');
 
         $this->line("Database Cache Hit Rate: <comment>{$status} {$cacheRate}%</comment>");
-        
+
         if ($cacheRate < 90) {
             $this->warn('Low cache hit rate detected. Consider increasing shared_buffers in postgresql.conf');
         } elseif ($cacheRate > 99) {
@@ -202,13 +203,13 @@ class AnalyzeQueryPerformance extends Command
         }
 
         // Index cache hit rate
-        $indexCache = DB::selectOne("
+        $indexCache = DB::selectOne('
             SELECT 
                 sum(idx_blks_read) as idx_read,
                 sum(idx_blks_hit) as idx_hit,
                 sum(idx_blks_hit) / nullif(sum(idx_blks_hit) + sum(idx_blks_read), 0) * 100 as cache_hit_rate
             FROM pg_statio_user_indexes
-        ");
+        ');
 
         $indexCacheRate = round($indexCache->cache_hit_rate ?? 0, 2);
         $indexStatus = $indexCacheRate > 99 ? '✓' : ($indexCacheRate > 90 ? '⚠' : '✗');
@@ -234,6 +235,7 @@ class AnalyzeQueryPerformance extends Command
         if ($hasExtension->count == 0) {
             $this->warn('pg_stat_statements extension not enabled. Enable it for detailed query statistics.');
             $this->line('Run: CREATE EXTENSION IF NOT EXISTS pg_stat_statements;');
+
             return;
         }
 
@@ -253,16 +255,17 @@ class AnalyzeQueryPerformance extends Command
 
         if (empty($slowQueries)) {
             $this->info('No slow queries detected (threshold: >10ms)');
+
             return;
         }
 
         $data = array_map(function ($query) {
             return [
-                'Query' => $query->query_start . '...',
+                'Query' => $query->query_start.'...',
                 'Calls' => number_format($query->calls),
-                'Avg Time' => $query->avg_time_ms . 'ms',
-                'Max Time' => $query->max_time_ms . 'ms',
-                'Total' => $query->total_time_sec . 's',
+                'Avg Time' => $query->avg_time_ms.'ms',
+                'Max Time' => $query->max_time_ms.'ms',
+                'Total' => $query->total_time_sec.'s',
             ];
         }, $slowQueries);
 

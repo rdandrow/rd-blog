@@ -67,6 +67,7 @@ expect()->extend('toBeOne', function () {
 expect()->extend('toBeSuccessfulInertiaResponse', function (string $component) {
     $this->value->assertStatus(200);
     $this->value->assertInertia(fn ($page) => $page->component($component));
+
     return $this;
 });
 
@@ -75,6 +76,7 @@ expect()->extend('toBeSuccessfulInertiaResponse', function (string $component) {
  */
 expect()->extend('toBeUnauthorized', function () {
     expect($this->value->status())->toBeIn([401, 403]);
+
     return $this;
 });
 
@@ -83,6 +85,7 @@ expect()->extend('toBeUnauthorized', function () {
  */
 expect()->extend('toBeForbidden', function () {
     $this->value->assertStatus(403);
+
     return $this;
 });
 
@@ -91,6 +94,7 @@ expect()->extend('toBeForbidden', function () {
  */
 expect()->extend('toRedirectToLogin', function () {
     $this->value->assertRedirect(route('login'));
+
     return $this;
 });
 
@@ -99,6 +103,7 @@ expect()->extend('toRedirectToLogin', function () {
  */
 expect()->extend('toBeNotFound', function () {
     $this->value->assertNotFound();
+
     return $this;
 });
 
@@ -107,6 +112,7 @@ expect()->extend('toBeNotFound', function () {
  */
 expect()->extend('toBeRateLimited', function () {
     $this->value->assertStatus(429);
+
     return $this;
 });
 
@@ -115,6 +121,7 @@ expect()->extend('toBeRateLimited', function () {
  */
 expect()->extend('toHaveValidationError', function (string $field) {
     $this->value->assertSessionHasErrors($field);
+
     return $this;
 });
 
@@ -123,6 +130,7 @@ expect()->extend('toHaveValidationError', function (string $field) {
  */
 expect()->extend('toHaveSuccessMessage', function (string $message) {
     $this->value->assertSessionHas('success', $message);
+
     return $this;
 });
 
@@ -131,6 +139,7 @@ expect()->extend('toHaveSuccessMessage', function (string $message) {
  */
 expect()->extend('toHaveErrorMessage', function (string $message) {
     $this->value->assertSessionHas('error', $message);
+
     return $this;
 });
 
@@ -147,6 +156,7 @@ expect()->extend('toBeValidBlogPost', function () {
     expect($this->value)
         ->toBeArray()
         ->toHaveKeys(['id', 'title', 'slug', 'excerpt', 'content', 'author', 'is_published', 'published_at']);
+
     return $this;
 });
 
@@ -155,13 +165,13 @@ expect()->extend('toBeValidBlogPost', function () {
  */
 expect()->extend('toHaveCorrectPostStructure', function () {
     $value = $this->value;
-    
+
     expect($value)->toBeArray();
     expect($value['id'])->toBeInt();
     expect($value['title'])->toBeString();
     expect($value['slug'])->toBeString();
     expect($value['excerpt'])->toBeString();
-    
+
     return $this;
 });
 
@@ -170,13 +180,13 @@ expect()->extend('toHaveCorrectPostStructure', function () {
  */
 expect()->extend('toBeValidUser', function () {
     $user = $this->value;
-    
+
     expect($user)->toBeInstanceOf(App\Models\User::class);
     expect($user->id)->not->toBeNull();
     expect($user->name)->not->toBeNull();
     expect($user->email)->not->toBeNull();
     expect($user->role)->not->toBeNull();
-    
+
     return $this;
 });
 
@@ -185,9 +195,9 @@ expect()->extend('toBeValidUser', function () {
  */
 expect()->extend('toHaveEfficientQueryCount', function (int $threshold = MODERATE_QUERY_THRESHOLD) {
     $count = $this->value;
-    
+
     expect($count)->toBeLessThan($threshold);
-    
+
     return $this;
 });
 
@@ -196,9 +206,9 @@ expect()->extend('toHaveEfficientQueryCount', function (int $threshold = MODERAT
  */
 expect()->extend('toExecuteWithinTime', function (float $maxSeconds = MAX_QUERY_TIME_SECONDS) {
     $executionTime = $this->value;
-    
+
     expect($executionTime)->toBeLessThan($maxSeconds);
-    
+
     return $this;
 });
 
@@ -207,13 +217,13 @@ expect()->extend('toExecuteWithinTime', function (float $maxSeconds = MAX_QUERY_
  */
 expect()->extend('toHaveRelationshipsLoaded', function (array $relationships) {
     $model = $this->value;
-    
+
     foreach ($relationships as $relationship) {
         expect($model->relationLoaded($relationship))->toBeTrue(
             "Expected relationship '{$relationship}' to be loaded"
         );
     }
-    
+
     return $this;
 });
 
@@ -222,12 +232,12 @@ expect()->extend('toHaveRelationshipsLoaded', function (array $relationships) {
  */
 expect()->extend('toBeValidComment', function () {
     $comment = $this->value;
-    
+
     expect($comment)->toBeInstanceOf(App\Models\Comment::class)
         ->and($comment->blog_post_id)->not->toBeNull()
         ->and($comment->user_id)->not->toBeNull()
         ->and($comment->content)->not->toBeEmpty();
-    
+
     return $this;
 });
 
@@ -275,6 +285,7 @@ function authenticatedDelete($user, string $route)
  */
 expect()->extend('toHaveErrorMessage', function (string $message) {
     $this->value->assertSessionHas('error', $message);
+
     return $this;
 });
 
@@ -318,10 +329,10 @@ function createTestMember(array $attributes = []): App\Models\User
  */
 function createPublishedPost(array $attributes = []): App\Models\BlogPost
 {
-    if (!isset($attributes['user_id'])) {
+    if (! isset($attributes['user_id'])) {
         $attributes['user_id'] = createTestAdmin()->id;
     }
-    
+
     return App\Models\BlogPost::factory()->published()->create($attributes);
 }
 
@@ -330,10 +341,10 @@ function createPublishedPost(array $attributes = []): App\Models\BlogPost
  */
 function createDraftPost(array $attributes = []): App\Models\BlogPost
 {
-    if (!isset($attributes['user_id'])) {
+    if (! isset($attributes['user_id'])) {
         $attributes['user_id'] = createTestAdmin()->id;
     }
-    
+
     return App\Models\BlogPost::factory()->draft()->create($attributes);
 }
 
@@ -344,7 +355,7 @@ function createComment(App\Models\BlogPost $post, ?App\Models\User $user = null,
 {
     $attributes['blog_post_id'] = $post->id;
     $attributes['user_id'] = $user?->id ?? createTestMember()->id;
-    
+
     return App\Models\Comment::factory()->create($attributes);
 }
 
@@ -362,32 +373,32 @@ function createComment(App\Models\BlogPost $post, ?App\Models\User $user = null,
  * All user role types.
  */
 dataset('user_roles', [
-    'admin' => fn() => createTestAdmin(),
-    'master_admin' => fn() => createTestMasterAdmin(),
-    'member' => fn() => createTestMember(),
+    'admin' => fn () => createTestAdmin(),
+    'master_admin' => fn () => createTestMasterAdmin(),
+    'member' => fn () => createTestMember(),
 ]);
 
 /**
  * Admin-level roles (admin and master_admin).
  */
 dataset('admin_roles', [
-    'admin' => fn() => createTestAdmin(),
-    'master_admin' => fn() => createTestMasterAdmin(),
+    'admin' => fn () => createTestAdmin(),
+    'master_admin' => fn () => createTestMasterAdmin(),
 ]);
 
 /**
  * Non-admin roles (only members).
  */
 dataset('non_admin_roles', [
-    'member' => fn() => createTestMember(),
+    'member' => fn () => createTestMember(),
 ]);
 
 /**
  * Unauthorized roles for master admin actions (admin and member).
  */
 dataset('unauthorized_for_master_admin', [
-    'regular admin' => fn() => createTestAdmin(),
-    'member' => fn() => createTestMember(),
+    'regular admin' => fn () => createTestAdmin(),
+    'member' => fn () => createTestMember(),
 ]);
 
 /**

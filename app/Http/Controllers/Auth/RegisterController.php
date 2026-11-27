@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -12,12 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
-use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
 
 class RegisterController extends Controller
 {
@@ -60,12 +59,12 @@ class RegisterController extends Controller
     public function setupTwoFactorAuthentication(User $user)
     {
         $twoFactorProvider = app(TwoFactorAuthenticationProvider::class);
-        
+
         // Generate recovery codes using Laravel's standard approach
         $recoveryCodes = Collection::times(8, function () {
-            return Str::random(10) . '-' . Str::random(10);
+            return Str::random(10).'-'.Str::random(10);
         })->toArray();
-        
+
         // Enable 2FA for the user
         $user->forceFill([
             'two_factor_secret' => encrypt($twoFactorProvider->generateSecretKey()),
@@ -103,8 +102,8 @@ class RegisterController extends Controller
         ])->save();
 
         // Redirect based on user role
-        $redirectUrl = ($user->isMasterAdmin() || $user->isRegularAdmin()) 
-            ? '/admin/dashboard' 
+        $redirectUrl = ($user->isMasterAdmin() || $user->isRegularAdmin())
+            ? '/admin/dashboard'
             : '/';
 
         return redirect($redirectUrl)->with('status', 'Two-factor authentication has been enabled successfully!');
@@ -123,7 +122,7 @@ class RegisterController extends Controller
 
         $renderer = new ImageRenderer(
             new RendererStyle(192),
-            new SvgImageBackEnd()
+            new SvgImageBackEnd
         );
 
         $writer = new Writer($renderer);
